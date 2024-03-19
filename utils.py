@@ -27,5 +27,5 @@ def add_frame(writer,worldmap):
 def save_image(worldmap):
     os.makedirs('Images',exist_ok=True)
     numimgs = len(os.listdir('Images/'))
-    img_name = f'img_{numimgs}.png'
+    img_name = f'img_{numimgs}'
     saveTensImage(torch.tensor(worldmap).permute(2,1,0),folderpath='Images',name = img_name)

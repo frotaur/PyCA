@@ -21,9 +21,9 @@ camera = Camera(W,H)
 # draw() should update the (3,H,W) tensor self._worldmap, for the visualization
 
 init_state = torch.zeros((W),dtype=torch.int) # Initial state of the automaton
-# init_state = torch.zeros_like(init_state)# Uncomment to set the middle cell to 1
-# init_state[W//2]=1 # Uncomment to set the middle cell to 1
-init_state = torch.randint_like(init_state,0,2)
+init_state = torch.zeros_like(init_state)# Uncomment to set the middle cell to 1
+init_state[W//2]=1 # Uncomment to set the middle cell to 1
+# init_state = torch.randint_like(init_state,0,2)
 
 auto = CA1D((H,W),wolfram_num=90,init_state=init_state) 
 
@@ -75,11 +75,13 @@ while running:
             if(event.key == pygame.K_p):
                 save_image(auto.worldmap)
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/ADAPT IF USING ANOTHER AUTOMATON
-                auto.time=0
-                auto._worldmap = torch.zeros_like(auto._worldmap)
-                auto.world = torch.zeros_like(auto.world)
-                auto.world[W//2]=1
+                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
+                auto.reset(init_state=init_state) 
+            if(event.key == pygame.K_n):
+                # Picks a random rule
+                rule = torch.randint(0,256,(1,)).item()
+                auto.change_num(rule)
+                print('rule : ', rule)
 
     if(not stopped):
         auto.step() # step the automaton

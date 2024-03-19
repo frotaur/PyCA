@@ -3,18 +3,23 @@
 This little project contains the necessary tools to easily implement and Visualize cellular automata, using python and pygame.
 ## How to use, quick
 You need python 3.9 or later.
-First install the dependencies with `pip install -r requirements.txt`. 
+First install the dependencies with `pip install -r requirements.txt` or `pip3 install -r requirements.txt`. 
 Run `python main.py` or `python3 main.py` and a window should open, displaying a 1D CA.
 
+CAUTION ! : if using a windows PC, and you have a NVIDIA GPU, before running `pip install -r requirements.txt`, run `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121` (or whatever is appropriate for your case, check pytorch's website). If you don't do this, python will install torch WITHOUT CUDA, and you won't be able to run your CA's on the GPU, making them much slower !
 ### Keyboard and mouse controls
 - Camera
     - You can Zoom in and out by CTRL+mousewheel
     - You can move the camera around when zoom by holding CTRL and dragging with left click
 
 - Keyboard commands
-    - 'R' : start/stop recording. A red circle with appear, showing it is recording. Press 'R' again to stop. Video will be saved in  `./Videos/`
+    - 'r' : start/stop recording. A red circle with appear, showing it is recording. Press 'R' again to stop. Video will be saved in  `./Videos/`
+    - 'p' : save a picture of the current world. Saved in './Images'
     - 'spacebar' : start/stop automaton evolution.
     - 'q' : quits the program
+    - 'DEL' : Resets the configuration
+    - 'n' : Switch to a new rule
+
 
 
 ## Main

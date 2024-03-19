@@ -83,7 +83,28 @@ class CA1D(Automaton):
         
         return out.to(dtype=torch.int)
     
+    def change_num(self,wolfram_num : int):
+        """
+            Changes the rule of the automaton to the one specified by wolfram_num
+        """
+        self.rule = self.convert_wolfram_num(wolfram_num)
+    
+    def reset(self, init_state: torch.Tensor = None):
+        """
+            Resets the automaton to the initial state.
+        """
+        self._worlmap = torch.zeros((3,self.h,self.w))
+        self.time=0
+        self._worldmap = torch.zeros((3,self.h,self.w))
+        self.time=0
 
+        if(init_state is not None):
+            self.world = init_state
+        else:
+            self.world = torch.zeros((self.w),dtype=torch.int)
+            self.world[self.w//2]=1
+
+        
     def draw(self):
         # Draw should be called each step
         # We update the _worldmap tensor with the current state of the automaton
