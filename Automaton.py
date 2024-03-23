@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import pygame
 
 class Automaton :
     """
@@ -33,6 +34,19 @@ class Automaton :
         """
         return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
     
+    def process_event(self,event,camera=None):
+        """
+            Processes a pygame event, if needed.
+
+            Parameters:
+            event : pygame.event
+                The event to process
+            camera : Camera
+                The camera object. Might be needed to convert mouse positions to world coordinates.
+                Use camera.convert_mouse_pos(pygame.mouse.get_pos()) to convert the mouse position to world coordinates.
+        """
+        pass
+
     @property
     def worldmap(self):
         """
@@ -49,29 +63,63 @@ class CA1D(Automaton):
         Class that implements all 1D Cellular Automata, the "Elementary" cellular automata.
     """
 
-    def __init__(self, size, wolfram_num : int, init_state: torch.Tensor = None):
+    def __init__(self, size, wolfram_num : int, random: bool = False):
         """
             Parameters:
             size : 2-uple (H,W)
                 Shape of the CA world
             wolfram_num : int
                 Number of the wolfram rule
-            init_state : torch.Tensor
-                Initial state of the automaton. If None, it will be a single cell in the middle of the world.
+            random : bool
+                If True, the initial state of the automaton is random. Otherwise, the initial state is the middle cell set to 1.
         """
         super().__init__(size)
         self.rule = self.convert_wolfram_num(wolfram_num) # (8,) tensor, rule[i] is 0 if the i'th neighborhood yields 0, 1 otherwise
 
         self.world = torch.zeros((self.w),dtype=torch.int)
-
-        if(init_state is not None):
-            self.world = init_state
-        else:
-            self.world[self.w//2]=1
-        
         self.time = 0 # Current time step, to keep track for plotting the full evolution
 
+        self.reset(random=random)
+        
+        self.random = random
 
+        self.left_pressed=False
+        self.right_pressed=False
+
+    def process_event(self, event, camera=None):
+        if(event.type == pygame.KEYDOWN):
+            if(event.key == pygame.K_DELETE):
+                self.reset(random=self.random) 
+            if(event.key == pygame.K_n):
+                # Picks a random rule
+                rule = torch.randint(0,256,(1,)).item()
+                self.change_num(rule)
+                print('rule : ', rule)
+
+        self._process_mouse_event(event,camera)
+
+    def _process_mouse_event(self,event,camera):
+        """
+            Helper function, processes mouse events.
+        """
+        if event.type == pygame.MOUSEBUTTONDOWN :
+            if(event.button == 1):
+                self.left_pressed=True
+            if(event.button ==3):
+                self.right_pressed=True
+        if event.type == pygame.MOUSEBUTTONUP:
+            if(event.button==1):
+                self.left_pressed=False
+            elif(event.button==3):
+                self.right_pressed=False
+        if event.type == pygame.MOUSEMOTION:
+            if(self.left_pressed):
+                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
+                # Add interactions when dragging with left-click
+            elif(self.right_pressed):
+                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
+                # Add interactions when dragging with right-click
+    
     def convert_wolfram_num(self,wolfram_num : int):
         """
             Converts a wolfram number to a rule tensor.
@@ -89,22 +137,19 @@ class CA1D(Automaton):
         """
         self.rule = self.convert_wolfram_num(wolfram_num)
     
-    def reset(self, init_state: torch.Tensor = None):
+    def reset(self, random = False):
         """
             Resets the automaton to the initial state.
         """
-        self._worlmap = torch.zeros((3,self.h,self.w))
-        self.time=0
         self._worldmap = torch.zeros((3,self.h,self.w))
         self.time=0
 
-        if(init_state is not None):
-            self.world = init_state
+        if(random):
+            self.world = torch.randint_like(self.world,0,2)
         else:
             self.world = torch.zeros((self.w),dtype=torch.int)
             self.world[self.w//2]=1
-
-        
+     
     def draw(self):
         # Draw should be called each step
         # We update the _worldmap tensor with the current state of the automaton

@@ -20,12 +20,10 @@ camera = Camera(W,H)
 # Define here the automaton. Should be a subclass of Automaton, and implement 'draw()' and 'step()'.
 # draw() should update the (3,H,W) tensor self._worldmap, for the visualization
 
-init_state = torch.zeros((W),dtype=torch.int) # Initial state of the automaton
-init_state = torch.zeros_like(init_state)# Uncomment to set the middle cell to 1
-init_state[W//2]=1 # Uncomment to set the middle cell to 1
+
 # init_state = torch.randint_like(init_state,0,2)
 
-auto = CA1D((H,W),wolfram_num=90,init_state=init_state) 
+auto = CA1D((H,W),wolfram_num=90,random=True) 
 
 # Booleans for mouse events
 stopped=True
@@ -44,24 +42,7 @@ while running:
             running = False
         
         camera.handle_event(event) # Handle the camera events
-        if event.type == pygame.MOUSEBUTTONDOWN :
-            if(event.button == 1):
-                add_drag=True
-            if(event.button ==3):
-                rem_drag=True
-        if event.type == pygame.MOUSEBUTTONUP:
-            if(event.button==1):
-                add_drag=False
-            elif(event.button==3):
-                rem_drag=False
-        if event.type == pygame.MOUSEMOTION:
-            if(add_drag):
-                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                # Add interactions when dragging with left-click
-            elif(rem_drag):
-                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                # Add interactions when dragging with right-click
-    
+
         if event.type == pygame.KEYDOWN :
             if(event.key == pygame.K_SPACE): # Press 'SPACE' to start/stop the automaton
                 stopped=not(stopped)
@@ -74,14 +55,9 @@ while running:
                     writer.release()
             if(event.key == pygame.K_p):
                 save_image(auto.worldmap)
-            if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
-                auto.reset(init_state=init_state) 
-            if(event.key == pygame.K_n):
-                # Picks a random rule
-                rule = torch.randint(0,256,(1,)).item()
-                auto.change_num(rule)
-                print('rule : ', rule)
+    
+        auto.process_event(event) # Process the event in the automaton
+
 
     if(not stopped):
         auto.step() # step the automaton
