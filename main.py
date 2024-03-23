@@ -6,7 +6,6 @@
 import pygame
 from Camera import Camera
 from Automaton import *
-import cv2 
 from utils import launch_video, add_frame, save_image
 pygame.init()
 W,H =600,300 # Width and height of the window
@@ -17,13 +16,19 @@ clock = pygame.time.Clock()
 running = True
 camera = Camera(W,H)
 
+random = True
 # Define here the automaton. Should be a subclass of Automaton, and implement 'draw()' and 'step()'.
 # draw() should update the (3,H,W) tensor self._worldmap, for the visualization
+#################   MULTICOLOR OUTER TOTALISTIC   ##################
+r = 3
+k = 3
 
+auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random) 
+################################################################
 
-# init_state = torch.randint_like(init_state,0,2)
-
-auto = CA1D((H,W),wolfram_num=90,random=True) 
+#################   ELEMENTARY CA   #################################
+# auto = CA1D((H,W),wolfram_num=90,random=True) 
+################################################################
 
 # Booleans for mouse events
 stopped=True
@@ -56,7 +61,7 @@ while running:
             if(event.key == pygame.K_p):
                 save_image(auto.worldmap)
     
-        auto.process_event(event) # Process the event in the automaton
+        auto.process_event(event,camera) # Process the event in the automaton
 
 
     if(not stopped):

@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+import colorsys
+import random
 import pygame
 
 class Automaton :
@@ -162,5 +164,115 @@ class CA1D(Automaton):
         indices = (torch.roll(self.world,shifts=(1))*4+self.world*2+torch.roll(self.world,shifts=(-1))) # (W,), compute in parallel all sums
 
         self.world=self.rule[indices]
+
+        self.time+=1
+
+
+
+class GeneralCA1D(Automaton):
+    """
+        General TOTALISTIC 1D Cellular Automaton, supports arbitrary neighborhoods and states.
+        Totalistic means that the output state of a cell depends only on the sum of the states of the neighborhood.
+    """
+
+    def __init__(self, size, wolfram_num: int, r=1, k=2, random=False):
+        """
+            Parameters :
+            size : 2-uple (H,W)
+                Shape of the CA world
+            wolfram_num : 0<=int<=k^(2r+1)-1, number of the wolfram rule 
+            r : int, radius of the neighborhood
+            k : int, number of states
+            random : bool
+                If True, the initial state of the automaton is random. Otherwise, the initial state is the middle cell set to a random non-zero value.
+        """
+        super().__init__(size)
+        self.r = r
+        self.k = k
+        self.colors = self.get_color_list(k) # (k,3) tensor, contains the RGB values of the colors
+
+        self.world = torch.zeros((self.w),dtype=torch.int)
+        self.rule = self.convert_wolfram_num(wolfram_num) # (k^(2r+1),) tensor, rule[i] is the output state for a sum of i
+        self.time = 0 # Current time step, to keep track for plotting the full evolution
+
+        self.random = random
+
+        self.reset(random=self.random)
+
+    def process_event(self, event, camera=None):
+        if(event.type == pygame.KEYDOWN):
+            if(event.key == pygame.K_DELETE):
+                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
+                self.reset(random=self.random) 
+                self.draw()
+            if(event.key == pygame.K_n):
+                # Picks a random rule
+                rule = random.randint(0,self.k**((2*self.r+1)*(self.k-1)+1))
+                self.change_num(rule)
+                print('rule : ', rule)
+
+    def get_color_list(self,n):
+        colors = []
+        zerohue = random.random()
+        for i in range(n):
+            hue = (i / n + zerohue)%1.  # Hue varies from 0 to 1, representing 0 to 360 degrees
+            saturation = 0.7  # High saturation for vivid colors
+            lightness = 0.5  # Balanced lightness for brightness
+            if(i==0):
+                lightness = 0.1
+            # Convert HSL to RGB. colorsys returns values from 0 to 1
+            rgb = torch.tensor(colorsys.hls_to_rgb(hue, lightness, saturation),dtype=torch.float) 
+            colors.append(rgb)
+
+        return torch.stack(colors) #(n,3) tensor, contains the RGB values of the colors
+
+
+    def convert_wolfram_num(self,wolfram_num : int):
+        """
+            Converts a wolfram number to a rule tensor.
+
+            Parameters :
+            wolfram_num : 0<=int<=k^((2r+1))-1, number of the wolfram rule
+
+            Returns :
+            A tensor, with k^(2r+1) elements, containing the output state for each of the neighborhoods.
+        """
+        out = torch.zeros((2*self.r+1)*(self.k-1)+1,dtype=torch.int) # (2r+1,) tensor, rule[i] is the output state for a sum of i
+        for i in range((2*self.r+1)*(self.k-1)+1):
+            out[i] = wolfram_num//(self.k**i) % self.k # Extract the i'th digit of the wolfram number in base k
+        
+        return out.to(dtype=torch.int)    
+    
+    def change_num(self,wolfram_num : int):
+        """
+            Changes the rule of the automaton to the one specified by wolfram_num
+        """
+        self.rule = self.convert_wolfram_num(wolfram_num)
+        self.colors = self.get_color_list(self.k)
+
+    def draw(self):
+        self._worldmap[:,self.time%self.h,:]=self.colors[self.world,:].permute(1,0) # (3,W), contains the RGB values of the colors
+    
+    def reset(self, random = False):
+        """
+            Resets the automaton to the initial state.
+        """
+        self._worldmap = torch.zeros((3,self.h,self.w))
+        self.time=0
+
+        if(not random):
+            self.world = torch.zeros((self.w),dtype=torch.int)
+            self.world[self.w//2]=torch.randint(1,self.k,(1,)) # Random initial state
+        else:
+            self.world = torch.randint(0,self.k,(self.w,))
+        
+    
+    def step(self):
+        """
+            Steps the automaton one timestep, recording the state of the world in self.world.
+        """
+        summed_states = sum([torch.roll(self.world,shifts=(i)) for i in range(-self.r,self.r+1)]) # (W,), compute in parallel all sums
+        # print('k = ',self.k,' r = ',self.r,' summed_states = ',summed_states[self.w//2-1:self.w//2+2])
+        self.world=self.rule[summed_states]
 
         self.time+=1
