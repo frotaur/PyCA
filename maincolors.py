@@ -6,8 +6,10 @@
 import pygame
 from Camera import Camera
 from Automaton import *
-import cv2 
 from utils import launch_video, add_frame, save_image
+import random
+
+
 pygame.init()
 W,H =600,300 # Width and height of the window
 fps = 30 # Visualization (target) frames per second
@@ -23,9 +25,12 @@ camera = Camera(W,H)
 init_state = torch.zeros((W),dtype=torch.int) # Initial state of the automaton
 init_state = torch.zeros_like(init_state)
 init_state[W//2]=1 
-init_state = torch.randint_like(init_state,0,2)# Uncomment to use a random initial state
+# init_state = torch.randint_like(init_state,0,2)# Uncomment to use a random initial state
 
-auto = CA1D((H,W),wolfram_num=54,init_state=init_state) 
+r = 3
+k = 3
+
+auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,init_state=None) 
 
 # Booleans for mouse events
 stopped=True
@@ -76,11 +81,11 @@ while running:
                 save_image(auto.worldmap)
             if(event.key == pygame.K_DELETE):
                 # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
-                auto.reset(init_state=init_state) 
+                auto.reset(randomize=False) 
                 auto.draw()
             if(event.key == pygame.K_n):
                 # Picks a random rule
-                rule = torch.randint(0,256,(1,)).item()
+                rule = random.randint(0,k**((2*r+1)*(k-1)+1))
                 auto.change_num(rule)
                 print('rule : ', rule)
 
