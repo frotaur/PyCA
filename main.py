@@ -5,7 +5,8 @@
 
 import pygame
 from Camera import Camera
-from Automaton import *
+from CA1D import CA1D, GeneralCA1D
+from Baricelli import Baricelli1D
 from utils import launch_video, add_frame, save_image
 pygame.init()
 W,H =600,300 # Width and height of the window
@@ -30,6 +31,9 @@ auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random)
 # auto = CA1D((H,W),wolfram_num=90,random=True) 
 ################################################################
 
+#################   BARICELLI   ####################################
+auto = Baricelli1D((H,W),n_species=8,reprod_collision=False)
+################################################################
 # Booleans for mouse events
 stopped=True
 add_drag = False
