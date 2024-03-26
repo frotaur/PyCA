@@ -6,10 +6,10 @@
 import pygame
 from Camera import Camera
 from CA1D import CA1D, GeneralCA1D
-from Baricelli import Baricelli1D
+from Baricelli import Baricelli1D, Baricelli2D
 from utils import launch_video, add_frame, save_image
 pygame.init()
-W,H =600,300 # Width and height of the window
+W,H =800,600 # Width and height of the window
 fps = 30 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
@@ -32,7 +32,12 @@ auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random)
 ################################################################
 
 #################   BARICELLI   ####################################
+
+#################   1D   ###########################################
 auto = Baricelli1D((H,W),n_species=8,reprod_collision=False)
+
+#################   2D   ###########################################
+auto = Baricelli2D((H,W),n_species=5,reprod_collision=False,device='cuda')
 ################################################################
 # Booleans for mouse events
 stopped=True
@@ -43,6 +48,7 @@ launch_vid=True
 
 writer=None
 
+alt= 0
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -70,8 +76,9 @@ while running:
 
     if(not stopped):
         auto.step() # step the automaton
-
+    
     auto.draw() # draw the worldstate
+        
     world_state = auto.worldmap
     surface = pygame.surfarray.make_surface(world_state)
 
