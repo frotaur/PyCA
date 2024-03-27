@@ -19,7 +19,7 @@ class Baricelli1D(Automaton):
                 Size of the spacetime
             n_species : int
                 Allowed integers will be -n_species to n_species
-            reprod_collision : bool (NOT IMPLEMENTED YET)
+            reprod_collision : bool
                 If False, will not attempt to reproduce on an already lit pixel. 
                 If True, attempting to reproduce on an already lit pixel will result in a collision and annihilation.
                 In BOTH cases, two attempt at reproduction on the same cell result in collisions.
@@ -61,8 +61,10 @@ class Baricelli1D(Automaton):
         reprod_success =(new_world[rep_locs]==0) | (new_world[rep_locs]==reprod_parent) # (N',) Success mask, if already empty or same species
         new_world[rep_locs[reprod_success]] = reprod_parent[reprod_success] # (W,), update the world with successful reproducers        
         
+        if(self.repcol):
+            new_world[rep_locs[~reprod_success]] = 0
+    
         self.time+=1
-
         self.world = new_world
 
 
@@ -105,8 +107,8 @@ class Baricelli1D(Automaton):
 
         self.world = torch.randint(-self.speciesnum,self.speciesnum+1,(self.w,),dtype=torch.int)
         # self.world = torch.zeros_like(self.world)
-        # self.world[self.w//2-5]=1
-        # self.world[self.w//2+2]=-2
+        # self.world[self.w//2-5]=torch.randint(1,self.speciesnum+1,(1,)).item()
+        # self.world[self.w//2+2]=-torch.randint(1,self.speciesnum+1,(1,)).item()
 
     def process_event(self, event, camera=None):
         if(event.type == pygame.KEYDOWN):
@@ -137,7 +139,7 @@ class Baricelli2D(Automaton):
                 Size of the spacetime
             n_species : int
                 Allowed integer directions will be -n_species to n_species
-            reprod_collision : bool (NOT IMPLEMENTED YET)
+            reprod_collision : bool
                 If False, will not attempt to reproduce on an already lit pixel. 
                 If True, attempting to reproduce on an already lit pixel will result in a collision and annihilation.
                 In BOTH cases, two attempt at reproduction on the same cell result in collisions.
@@ -181,12 +183,15 @@ class Baricelli2D(Automaton):
 
         rep_mask, rep_locs = self._move_collision(rep_pos) 
 
+
         reprod_parent = reprod_parent[rep_mask] # (N',), parent species of non-colliding reproducers
         cur_state_at_rep_loc = new_world[rep_locs[:,0],rep_locs[:,1]] # (N',), current state at reproduction location
         reprod_success =(cur_state_at_rep_loc==0).all(dim=-1) | (cur_state_at_rep_loc==reprod_parent).all(dim=-1) # (N',) Success mask, if already empty or same species
-
+            
         new_world[rep_locs[reprod_success][:,0],rep_locs[reprod_success][:,1]] = reprod_parent[reprod_success] # (N',2), update the world with successful reproducers        
-        
+        if(self.repcol):
+            new_world[rep_locs[~reprod_success][:,0],rep_locs[~reprod_success][:,1]] = 0
+    
         self.time+=1
 
         self.world = new_world
