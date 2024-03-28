@@ -49,17 +49,17 @@ class Baricelli1D(Automaton):
 
         ## Then reproduction
         # No repcol : no reproduction on already lit cells
-        reprod_attempt = (self.world!=0) & (new_world!=0) # (W,), mask of cells that can attempt reproduction
-        reprod_parent = new_world[reprod_attempt] # (N,), parent species
+        # reprod_attempt = (self.world!=0) & (new_world!=0) # (W,), mask of cells that can attempt reproduction
+        # reprod_parent = new_world[reprod_attempt] # (N,), parent species
 
-        rep_pos= (self.positions[reprod_attempt]+self.world[reprod_attempt]-new_world[reprod_attempt])%self.w # (N,), positions of reproduction
+        # rep_pos= (self.positions[reprod_attempt]+self.world[reprod_attempt]-new_world[reprod_attempt])%self.w # (N,), positions of reproduction
 
-        rep_mask, rep_locs = self._move_collision(rep_pos) 
+        # rep_mask, rep_locs = self._move_collision(rep_pos) 
 
-        reprod_parent = reprod_parent[rep_mask] # (N',), parent species of non-colliding reproducers
+        # reprod_parent = reprod_parent[rep_mask] # (N',), parent species of non-colliding reproducers
 
-        reprod_success =(new_world[rep_locs]==0) | (new_world[rep_locs]==reprod_parent) # (N',) Success mask, if already empty or same species
-        new_world[rep_locs[reprod_success]] = reprod_parent[reprod_success] # (W,), update the world with successful reproducers        
+        # reprod_success =(new_world[rep_locs]==0) | (new_world[rep_locs]==reprod_parent) # (N',) Success mask, if already empty or same species
+        # new_world[rep_locs[reprod_success]] = reprod_parent[reprod_success] # (W,), update the world with successful reproducers        
         
         if(self.repcol):
             new_world[rep_locs[~reprod_success]] = 0
