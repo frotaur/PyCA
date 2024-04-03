@@ -2,9 +2,18 @@ from Automaton import Automaton
 import torch, pygame
 
 class CA2D(Automaton):
-
+    """
+        2D outer holistic cellular automaton, with two states.
+    """
 
     def __init__(self, size, s_num='23', b_num='3', random=False):
+        """
+            Params :
+            size : tuple, size of the automaton
+            s_num : str, rule for survival
+            b_num : str, rule for birth
+            random : bool, if True, the initial state of the automaton is random. Otherwise, a small random square is placed in the middle.
+        """
         super().__init__(size)
 
         self.s_num = self.get_num_rule(s_num) # Translate string to number form
