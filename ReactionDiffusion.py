@@ -10,7 +10,7 @@ class ReactionDiffusion(Automaton):
 
 
     def __init__(self, size, num_reagents=2, diffusion_coeffs:torch.Tensor = None, reaction_func=None,
-                  dx=0.01, dt=0.01, device='cpu'):
+                  dx=0.01, device='cpu'):
         """
             Parameters:
             size : tuple, size of the automaton
@@ -19,8 +19,7 @@ class ReactionDiffusion(Automaton):
             reaction_func : reaction function. Given a tensor of shape (num_reagents,N) of floats in [0,1]
                 should return a tensor of shape (num_reagents,N), the value of the reaction part. Here N
                 is simply a 'batch' dimension, so we evaluate the function in parallel on N different states.
-            dx : float, spatial discretization
-            dt : float, temporal discretization
+            dx : float, spatial discretization. dt automatically chosen to be dx^2/4
             device : str, device to use
 
             ###################################################################
@@ -48,7 +47,7 @@ class ReactionDiffusion(Automaton):
         self.num_reagents = num_reagents
         self.reaction_func = reaction_func
         self.dx = dx
-        self.dt = dt
+        self.dt = 0.1
 
 
         min_dim = min(self.h,self.w)
@@ -61,16 +60,17 @@ class ReactionDiffusion(Automaton):
         self.Nh, self.Nw = self.grid.shape[0], self.grid.shape[1]
 
         self.u = torch.rand((self.Nh,self.Nw,num_reagents),dtype=torch.float, device=device) # (N_h,N_w,num_reagents), concentration of reagents
-        # x = torch.linspace(-1, 1, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
-        # y = torch.linspace(-1, 1, steps=self.Nh).unsqueeze(1).repeat(1, self.Nw)
-        # self.u = torch.exp(-(x**2 + y**2)*10).unsqueeze(-1).repeat(1, 1, 2)
-        # self.u[:,:,1] = 0.
+        x = torch.linspace(-1, 1, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
+        y = torch.linspace(-1, 1, steps=self.Nh).unsqueeze(1).repeat(1, self.Nw)
+        self.u[:,:,0] = 1.
+        self.u[:,:,1] = ((x+0.8)**2+y**2<0.04).to(torch.float)
+        self.u = self.u.to(device)
 
         if(reaction_func is None):
             # Default reaction function
             # Override num_reagents
             self.num_reagents = 2
-            self.R = lambda u : torch.stack([2.*u[0]-u[0]**3-1.-0.5*u[1],u[0]-u[1]],dim=0) # Change this to nice one
+            self.R = lambda u : torch.stack([-u[0]*u[1]**2+0.055*(1-u[0]),u[0]*u[1]**2-(0.062+0.055)*u[1]],dim=0) # Change this to nice one
         else :
             self.R = reaction_func
 
@@ -79,21 +79,24 @@ class ReactionDiffusion(Automaton):
         assert out.shape == test.shape, 'Reaction function problem; expected shape {}, got shape {}'.format(test.shape,out.shape)
 
         if(diffusion_coeffs is None):
-            self.D = torch.ones((num_reagents),dtype=torch.float,device=device)[None,None,:] # (1,1,num_reagents)
-            self.D[:,:,1] = 3.
+            self.D = (1.)*torch.ones((num_reagents),dtype=torch.float,device=device)[None,None,:] # (1,1,num_reagents)
+            self.D[:,:,1] = .5
         else:
             assert diffusion_coeffs.shape == (num_reagents,), 'Diffusion coefficients shape should be (num_reagents,), got shape {}'.format(diffusion_coeffs.shape)
             self.D = diffusion_coeffs[None,None,:] # (1,1,num_reagents)
 
-        self.r_colors = []
-        for _ in range(num_reagents):
+        self.r_colors = [torch.ones(3,dtype=torch.float)]
+        for _ in range(num_reagents-1):
             hue = torch.rand(1).item()
-            lightness = 0.7
-            saturation = 0.5
-            self.r_colors.append(torch.tensor(colorsys.hls_to_rgb(hue, lightness, saturation),dtype=torch.float))
+            print('#hue : ', hue)
+            value = 0.5*torch.rand(1).item()+0.5
+            saturation = 0.5*torch.rand(1).item()+0.5
+            self.r_colors.append(torch.tensor(colorsys.hsv_to_rgb(hue, saturation, value),dtype=torch.float))
+            
 
-        self.r_colors = torch.stack(self.r_colors,dim=0) # (num_reagents,3)
-        self.resizer = Resize((self.h,self.w))
+        self.r_colors = torch.stack(self.r_colors,dim=0).to(device) # (num_reagents,3)
+        print('colors : ', self.r_colors)
+        self.resizer = Resize((self.h,self.w),antialias=True)
 
     def lapl(self, u):
         """
@@ -113,7 +116,6 @@ class ReactionDiffusion(Automaton):
 
         lapl = (u_xplus+u_xminus+u_yplus+u_yminus-4*u) # (H,W,num_reagents)
 
-        print('max lapl',lapl.max())
         return lapl # (H,W,num_reagents)
     
     def compute_R(self,u):
@@ -123,17 +125,21 @@ class ReactionDiffusion(Automaton):
 
         return u
 
-
+    @torch.no_grad()
     def step(self):
         """
             Steps the automaton one timestep.
         """
-        self.u = self.u+self.dt*(self.D*self.lapl(self.u) + self.compute_R(self.u))
+        self.u = self.u+self.dt*(self.D*self.lapl(self.u)+ self.compute_R(self.u))
         # self.u = self.u+self.dt*self.lapl(self.u)
     
     def draw(self):
         """
             Draws a representation of the worldmap, reshaping in case the dx resolution is too high/low.
         """
-        new_world = (self.u[...,None] * self.r_colors[None,None]).mean(dim=2) # (H,W,3)
+        max = self.u.max(dim=2)
+        winner = max.indices
+        max = max.values
+
+        new_world = ((max[...,None]) * self.r_colors[winner,:]) # (H,W,3)
         self._worldmap = self.resizer(new_world.permute(2,0,1)) # (3,H,W) resized to match window

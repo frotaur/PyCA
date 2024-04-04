@@ -24,7 +24,7 @@ class Automaton :
 
         self._worldmap = torch.zeros((3,self.h,self.w)) # (3,H,W), contains a 2D 'view' of the CA world
     
-
+    
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')
     
@@ -54,5 +54,5 @@ class Automaton :
 
             Can be overriden if you use another format for self._worldmap, instead of a torch (3,H,W) tensor.
         """
-        return (255*self._worldmap.permute(2,1,0)).detach().numpy().astype(dtype=np.uint8)
+        return (255*self._worldmap.permute(2,1,0)).detach().cpu().numpy().astype(dtype=np.uint8)
 
