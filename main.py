@@ -35,10 +35,10 @@ auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random)
 #################   BARICELLI   ####################################
 
 #################   1D   ###########################################
-# auto = Baricelli1D((H,W),n_species=8,reprod_collision=False)
+# auto = Baricelli1D((H,W),n_species=6,reprod_collision=False)
 
 #################   2D   ###########################################
-auto = Baricelli2D((H,W),n_species=5,reprod_collision=False,device='cuda')
+auto = Baricelli2D((H,W),n_species=7,reprod_collision=True,device='cuda')
 ################################################################
 
 #################   CA2D   #################################
@@ -90,7 +90,7 @@ while running:
     if(recording):
         if(launch_vid):# If the video is not launched, we create it
             launch_vid = False
-            writer = launch_video((H,W),fps,'h264')
+            writer = launch_video((H,W),fps,'H265')
         add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
 
     # Clear the screen

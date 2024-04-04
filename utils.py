@@ -18,10 +18,11 @@ def launch_video(size,fps,fourcc='avc1'):
     return cv2.VideoWriter(vid_loc, fourcc, fps, (size[1], size[0]))
 
 def add_frame(writer,worldmap):
-    frame = worldmap.transpose(1,0,2)
-    tempB = np.copy(frame[:,:,2])
-    frame[:,:,2]=frame[:,:,0]
-    frame[:,:,0]=tempB
+    frame = worldmap.transpose(1,0,2) # (H,W,3)
+    # tempB = np.copy(frame[:,:,2])
+    # frame[:,:,2]=frame[:,:,0]
+    # frame[:,:,0]=tempB
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     writer.write(frame)
 
 def save_image(worldmap):
