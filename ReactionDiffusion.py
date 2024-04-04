@@ -56,15 +56,21 @@ class ReactionDiffusion(Automaton):
         self.h_len = self.h/min_dim
         self.w_len = self.w/min_dim
 
-        self.grid = torch.stack(torch.meshgrid(torch.arange(0,self.h_len,dx),torch.arange(0,self.w_len,dx),indexing='ij'),dim=-1).to(device) # (H,W,2), grid[x,y] = (x,y)
 
-        self.u = torch.zeros((self.grid.shape[0],self.grid.shape[1],num_reagents),dtype=torch.float, device=device) # (N_h,N_w,num_reagents), concentration of reagents
+        self.grid = torch.stack(torch.meshgrid(torch.arange(0,self.h_len,dx),torch.arange(0,self.w_len,dx),indexing='ij'),dim=-1).to(device) # (H,W,2), grid[x,y] = (x,y)
+        self.Nh, self.Nw = self.grid.shape[0], self.grid.shape[1]
+
+        self.u = torch.rand((self.Nh,self.Nw,num_reagents),dtype=torch.float, device=device) # (N_h,N_w,num_reagents), concentration of reagents
+        # x = torch.linspace(-1, 1, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
+        # y = torch.linspace(-1, 1, steps=self.Nh).unsqueeze(1).repeat(1, self.Nw)
+        # self.u = torch.exp(-(x**2 + y**2)*10).unsqueeze(-1).repeat(1, 1, 2)
+        # self.u[:,:,1] = 0.
 
         if(reaction_func is None):
             # Default reaction function
             # Override num_reagents
             self.num_reagents = 2
-            self.R = lambda u : torch.stack([u[0]-3*u[1],u[1]-u[0]],dim=0) # Change this to nice one
+            self.R = lambda u : torch.stack([2.*u[0]-u[0]**3-1.-0.5*u[1],u[0]-u[1]],dim=0) # Change this to nice one
         else :
             self.R = reaction_func
 
@@ -74,6 +80,7 @@ class ReactionDiffusion(Automaton):
 
         if(diffusion_coeffs is None):
             self.D = torch.ones((num_reagents),dtype=torch.float,device=device)[None,None,:] # (1,1,num_reagents)
+            self.D[:,:,1] = 3.
         else:
             assert diffusion_coeffs.shape == (num_reagents,), 'Diffusion coefficients shape should be (num_reagents,), got shape {}'.format(diffusion_coeffs.shape)
             self.D = diffusion_coeffs[None,None,:] # (1,1,num_reagents)
@@ -87,6 +94,7 @@ class ReactionDiffusion(Automaton):
 
         self.r_colors = torch.stack(self.r_colors,dim=0) # (num_reagents,3)
         self.resizer = Resize((self.h,self.w))
+
     def lapl(self, u):
         """
             Laplacian of u, computed with finite differences.
@@ -98,19 +106,20 @@ class ReactionDiffusion(Automaton):
             tensor, shape (H,W,num_reagents), laplacian of u
         """
 
-        u_xplus = torch.roll(u,shifts=(-1),dims=(0))
-        u_xminus = torch.roll(u,shifts=(1),dims=(0))
-        u_yplus = torch.roll(u,shifts=(-1),dims=(1))
-        u_yminus = torch.roll(u,shifts=(1),dims=(1))
+        u_xplus = torch.roll(u,shifts=(-1,0),dims=(0,1))
+        u_xminus = torch.roll(u,shifts=(1,0),dims=(0,1))
+        u_yplus = torch.roll(u,shifts=(0,-1),dims=(0,1))
+        u_yminus = torch.roll(u,shifts=(0,1),dims=(0,1))
 
-        lapl = (u_xplus+u_xminus+u_yplus+u_yminus-4*u)/(self.dx**2)
+        lapl = (u_xplus+u_xminus+u_yplus+u_yminus-4*u) # (H,W,num_reagents)
 
+        print('max lapl',lapl.max())
         return lapl # (H,W,num_reagents)
     
     def compute_R(self,u):
-        u = u.permute(2,0,1).reshape(self.num_reagents,self.h_len*self.w_len) # (num_reagents,H*W)
+        u = u.permute(2,0,1).reshape(self.num_reagents,self.Nh*self.Nw) # (num_reagents,H*W)
         u = self.R(u) # (num_reagents,H*W) reactions
-        u = u.reshape(self.num_reagents,self.h_len,self.w_len).permute(1,2,0) # (H,W,num_reagents) reaction
+        u = u.reshape(self.num_reagents,self.Nh,self.Nw).permute(1,2,0) # (H,W,num_reagents) reaction
 
         return u
 
@@ -119,8 +128,8 @@ class ReactionDiffusion(Automaton):
         """
             Steps the automaton one timestep.
         """
-        u = self.u+self.dt*(self.D*self.lapl(self.u) + self.compute_R(u))
-
+        self.u = self.u+self.dt*(self.D*self.lapl(self.u) + self.compute_R(self.u))
+        # self.u = self.u+self.dt*self.lapl(self.u)
     
     def draw(self):
         """

@@ -8,9 +8,10 @@ from Camera import Camera
 from CA1D import CA1D, GeneralCA1D
 from CA2D import CA2D
 from Baricelli import Baricelli1D, Baricelli2D
+from ReactionDiffusion import ReactionDiffusion
 from utils import launch_video, add_frame, save_image
 pygame.init()
-W,H =400,300 # Width and height of the window
+W,H =800,400 # Width and height of the window
 fps = 30 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
@@ -39,11 +40,16 @@ auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random)
 # auto = Baricelli1D((H,W),n_species=6,reprod_collision=False)
 
 #################   2D   ###########################################
-auto = Baricelli2D((H,W),n_species=7,reprod_collision=True,device='cuda')
+# auto = Baricelli2D((H,W),n_species=7,reprod_collision=True,device='cuda')
 ################################################################
 
 #################   CA2D   #################################
-auto = CA2D((H,W),b_num='3',s_num='23',random=random)
+# auto = CA2D((H,W),b_num='3',s_num='23',random=random)
+################################################################
+
+################# Reaction Diffusion ############################
+auto = ReactionDiffusion((H,W))
+################################################################
 # Booleans for mouse events
 stopped=True
 add_drag = False
@@ -85,7 +91,7 @@ while running:
     auto.draw() # draw the worldstate
         
     world_state = auto.worldmap
-    print('world_state shape : ',world_state.shape)
+
     surface = pygame.surfarray.make_surface(world_state)
 
     if(recording):
