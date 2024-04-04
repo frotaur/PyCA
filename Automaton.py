@@ -10,7 +10,6 @@ class Automaton :
         (3,H,W). It contains float values between 0 and 1, which
         are mapped to 0 255 when returning output, and describes how the
         world is 'seen' by an observer.
-
     """
 
     def __init__(self,size):

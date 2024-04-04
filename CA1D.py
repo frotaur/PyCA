@@ -26,9 +26,10 @@ class CA1D(Automaton):
                 If True, the initial state of the automaton is random. Otherwise, the initial state is the middle cell set to 1.
         """
         super().__init__(size)
+        # Below here I do what I need to do to initialize the automaton
         self.rule = self.convert_wolfram_num(wolfram_num) # (8,) tensor, rule[i] is 0 if the i'th neighborhood yields 0, 1 otherwise
 
-        self.world = torch.zeros((self.w),dtype=torch.int)
+        self.world = torch.zeros((self.w),dtype=torch.int) # Vector of W elements
         self.time = 0 # Current time step, to keep track for plotting the full evolution
 
         self.reset(random=random)
@@ -37,18 +38,25 @@ class CA1D(Automaton):
 
         self.left_pressed=False
         self.right_pressed=False
+        self.color = torch.tensor([1.,1.,1.]) # White color
 
     def process_event(self, event, camera=None):
+        """
+            This method processes the events recorded by pygame.
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 self.reset(random=self.random) 
-            if(event.key == pygame.K_n):
+            if(event.key == pygame.K_n): #Pressed the letter n
                 # Picks a random rule
                 rule = torch.randint(0,256,(1,)).item()
                 self.change_num(rule)
                 print('rule : ', rule)
+            if(event.key == pygame.K_c):
+                self.color = torch.rand((3,)) # Random color
 
         self._process_mouse_event(event,camera)
+
 
     def _process_mouse_event(self,event,camera):
         """
@@ -68,6 +76,7 @@ class CA1D(Automaton):
             if(self.left_pressed):
                 x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
                 # Add interactions when dragging with left-click
+        
             elif(self.right_pressed):
                 x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
                 # Add interactions when dragging with right-click
@@ -77,11 +86,13 @@ class CA1D(Automaton):
             Converts a wolfram number to a rule tensor.
             A tensor, with 8 elements, 0 if the rule is 0, 1 if the rule is 1.
         """
-        out = torch.zeros(8,dtype=torch.int8)
+        out = torch.zeros(8,dtype=torch.int8) # Prepare my arary of 8 binary elements
         for i in range(8):
             out[i] = (wolfram_num >> i) & 1
         
-        return out.to(dtype=torch.int)
+        # Now the array out contains the binary representation of wolfram_num
+
+        return out.to(dtype=torch.int) # (Array of 8 elements, where out[i]=0 if the  neighborhood number i yields 0)
     
     def change_num(self,wolfram_num : int):
         """
@@ -105,15 +116,21 @@ class CA1D(Automaton):
     def draw(self):
         # Draw should be called each step
         # We update the _worldmap tensor with the current state of the automaton
-        self._worldmap[:,self.time%self.h,:]=self.world[None,:].float()
+        # self._worldmap is a (3,H,W) tensor, which should be seen as an RGB image.
+        # self.world is a (W,) array, but we want to set a (3,W) array, so we should duplicate the wrold.
+        self._worldmap[:,self.time%self.h,:]=self.color[:,None]*self.world[None,:].float()
     
     def step(self):
         """
             Steps the automaton one timestep, recording the state of the world in self.world.
         """
-        indices = (torch.roll(self.world,shifts=(1))*4+self.world*2+torch.roll(self.world,shifts=(-1))) # (W,), compute in parallel all sums
+        # One way to do it (which is not parallized ):
 
-        self.world=self.rule[indices]
+        # How to do it all at once
+        
+        indices = (torch.roll(self.world,shifts=(1))*4+self.world*2+torch.roll(self.world,shifts=(-1))*1) # (W,), compute in parallel all sums
+
+        self.world=self.rule[indices] # This is the same as [ rule[indices[i]] for i in range(W)]
 
         self.time+=1
 

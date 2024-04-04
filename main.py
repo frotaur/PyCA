@@ -2,7 +2,6 @@
     Contains the main loop, used to run and visualize the automaton dynamics.
 """
 
-
 import pygame
 from Camera import Camera
 from CA1D import CA1D, GeneralCA1D
@@ -85,7 +84,7 @@ while running:
     auto.draw() # draw the worldstate
         
     world_state = auto.worldmap
-    print('world_state shape : ',world_state.shape)
+
     surface = pygame.surfarray.make_surface(world_state)
 
     if(recording):
