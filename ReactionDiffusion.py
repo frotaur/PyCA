@@ -2,6 +2,7 @@ from Automaton import Automaton
 import torch
 import colorsys
 from torchvision.transforms import Resize
+import torch.nn.functional as F
 
 class ReactionDiffusion(Automaton):
     """
@@ -46,8 +47,8 @@ class ReactionDiffusion(Automaton):
 
         self.num_reagents = num_reagents
         self.reaction_func = reaction_func
-        self.dx = dx
-        self.dt = 0.1
+        self.dx = 1.
+        self.dt = 1.
 
 
         min_dim = min(self.h,self.w)
@@ -62,15 +63,17 @@ class ReactionDiffusion(Automaton):
         self.u = torch.rand((self.Nh,self.Nw,num_reagents),dtype=torch.float, device=device) # (N_h,N_w,num_reagents), concentration of reagents
         x = torch.linspace(-1, 1, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
         y = torch.linspace(-1, 1, steps=self.Nh).unsqueeze(1).repeat(1, self.Nw)
-        self.u[:,:,0] = 1.
-        self.u[:,:,1] = ((x+0.8)**2+y**2<0.04).to(torch.float)
+        self.u[:,:,1] = (x**2+y**2<0.001).to(torch.float)
+        self.u[:,:,0] = torch.where(self.u[:,:,1]>0,0.,1.)
         self.u = self.u.to(device)
 
         if(reaction_func is None):
             # Default reaction function
             # Override num_reagents
             self.num_reagents = 2
-            self.R = lambda u : torch.stack([-u[0]*u[1]**2+0.055*(1-u[0]),u[0]*u[1]**2-(0.062+0.055)*u[1]],dim=0) # Change this to nice one
+            f=.0545
+            k=.062
+            self.R = lambda u : torch.stack([-u[0]*u[1]**2+f*(1-u[0]),u[0]*u[1]**2-(k+f)*u[1]],dim=0) # Change this to nice one
         else :
             self.R = reaction_func
 
@@ -80,7 +83,7 @@ class ReactionDiffusion(Automaton):
 
         if(diffusion_coeffs is None):
             self.D = (1.)*torch.ones((num_reagents),dtype=torch.float,device=device)[None,None,:] # (1,1,num_reagents)
-            self.D[:,:,1] = .5
+            self.D[:,:,1] = .2
         else:
             assert diffusion_coeffs.shape == (num_reagents,), 'Diffusion coefficients shape should be (num_reagents,), got shape {}'.format(diffusion_coeffs.shape)
             self.D = diffusion_coeffs[None,None,:] # (1,1,num_reagents)
@@ -98,6 +101,12 @@ class ReactionDiffusion(Automaton):
         print('colors : ', self.r_colors)
         self.resizer = Resize((self.h,self.w),antialias=True)
 
+        self.lapl_kern =torch.tensor([
+                        [0.05, 0.2, 0.05],
+                        [0.2, -1.0, 0.2],
+                        [0.05, 0.2, 0.05]
+                    ]).unsqueeze(0).unsqueeze(0).expand(self.num_reagents,-1,-1,-1).to(device) # (1,1,3,3)
+
     def lapl(self, u):
         """
             Laplacian of u, computed with finite differences.
@@ -109,13 +118,14 @@ class ReactionDiffusion(Automaton):
             tensor, shape (H,W,num_reagents), laplacian of u
         """
 
-        u_xplus = torch.roll(u,shifts=(-1,0),dims=(0,1))
-        u_xminus = torch.roll(u,shifts=(1,0),dims=(0,1))
-        u_yplus = torch.roll(u,shifts=(0,-1),dims=(0,1))
-        u_yminus = torch.roll(u,shifts=(0,1),dims=(0,1))
+        # u_xplus = torch.roll(u,shifts=(-1,0),dims=(0,1))
+        # u_xminus = torch.roll(u,shifts=(1,0),dims=(0,1))
+        # u_yplus = torch.roll(u,shifts=(0,-1),dims=(0,1))
+        # u_yminus = torch.roll(u,shifts=(0,1),dims=(0,1))
 
-        lapl = (u_xplus+u_xminus+u_yplus+u_yminus-4*u) # (H,W,num_reagents)
-
+        # lapl = (u_xplus+u_xminus+u_yplus+u_yminus-4*u) # (H,W,num_reagents)
+        u = F.pad(u.permute(2,0,1),(1,1,1,1),'circular')
+        lapl = F.conv2d(u.unsqueeze(0),self.lapl_kern,groups=self.num_reagents).squeeze(0).permute(1,2,0)
         return lapl # (H,W,num_reagents)
     
     def compute_R(self,u):
@@ -137,9 +147,7 @@ class ReactionDiffusion(Automaton):
         """
             Draws a representation of the worldmap, reshaping in case the dx resolution is too high/low.
         """
-        max = self.u.max(dim=2)
-        winner = max.indices
-        max = max.values
 
-        new_world = ((max[...,None]) * self.r_colors[winner,:]) # (H,W,3)
+        # u : (N_h,N_w,num_reagents,1), r_colors : (num_reagents,3)
+        new_world = ((self.u[...,None]) * self.r_colors[None,None]).mean(dim=2)/(self.u[...,None].mean(dim=2)+1e-5) # (H,W,3)
         self._worldmap = self.resizer(new_world.permute(2,0,1)) # (3,H,W) resized to match window

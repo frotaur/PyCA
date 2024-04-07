@@ -11,8 +11,8 @@ from Baricelli import Baricelli1D, Baricelli2D
 from ReactionDiffusion import ReactionDiffusion
 from utils import launch_video, add_frame, save_image
 pygame.init()
-W,H =800,600 # Width and height of the window
-fps = 240 # Visualization (target) frames per second
+W,H =1000, 500 # Width and height of the window
+fps = 300 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
 clock = pygame.time.Clock()
@@ -44,11 +44,11 @@ auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random)
 ################################################################
 
 #################   CA2D   #################################
-# auto = CA2D((H,W),b_num='3',s_num='23',random=random)
+auto = CA2D((H,W),b_num='3',s_num='23',random=random)
 ################################################################
 
 ################# Reaction Diffusion ############################
-auto = ReactionDiffusion((H,W),device='cuda')
+# auto = ReactionDiffusion((H,W),device='cpu')
 ################################################################
 # Booleans for mouse events
 stopped=True
@@ -116,6 +116,6 @@ while running:
     pygame.display.flip()
 
     clock.tick(fps)  # limits FPS to 60
-    print('FPS : ', clock.get_fps(), end='\r')
+    # print('FPS : ', clock.get_fps(), end='\r')
 
 pygame.quit()
