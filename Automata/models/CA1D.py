@@ -2,7 +2,7 @@
     Variations on the 1D Cellular Automata.
 """
 
-from Automaton import Automaton
+from ..Automaton import Automaton
 import colorsys
 import random
 import pygame

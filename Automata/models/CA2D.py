@@ -1,4 +1,4 @@
-from Automaton import Automaton
+from ..Automaton import Automaton
 import torch, pygame
 import torch.nn.functional as F
 import colorsys

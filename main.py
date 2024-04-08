@@ -5,17 +5,14 @@
 
 import pygame
 from Camera import Camera
-from CA1D import CA1D, GeneralCA1D
-from CA2D import CA2D
-from Baricelli import Baricelli1D, Baricelli2D
-from ReactionDiffusion import ReactionDiffusion
+from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA
 from utils import launch_video, add_frame, save_image
 pygame.init()
-W,H =1000, 500 # Width and height of the window
-fps = 300 # Visualization (target) frames per second
+W,H =800, 600 # Width and height of the window
+fps = 144 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
-clock = pygame.time.Clock()
+clock = pygame.time.Clock() 
 running = True
 camera = Camera(W,H)
 
@@ -50,16 +47,22 @@ auto = CA2D((H,W),b_num='3',s_num='23',random=random)
 ################# Reaction Diffusion ############################
 # auto = ReactionDiffusion((H,W),device='cpu')
 ################################################################
-# Booleans for mouse events
+
+################# Reaction Diffusion ############################
+# auto = ReactionDiffusion((H,W),device='cpu')
+################################################################
+
+#################   LGCA   #################################
+auto = LGCA((H,W), device='cuda')
+################################################################
+
+
+# Booleans for the main loop
 stopped=True
-add_drag = False
-rem_drag = False
 recording=False
 launch_vid=True
-
 writer=None
 
-alt= 0
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -81,6 +84,8 @@ while running:
                     writer.release()
             if(event.key == pygame.K_p):
                 save_image(auto.worldmap)
+            if(event.key == pygame.K_s):
+                auto.step()
     
         auto.process_event(event,camera) # Process the event in the automaton
 
@@ -116,6 +121,6 @@ while running:
     pygame.display.flip()
 
     clock.tick(fps)  # limits FPS to 60
-    # print('FPS : ', clock.get_fps(), end='\r')
+    print('FPS : ', clock.get_fps(), end='\r')
 
 pygame.quit()

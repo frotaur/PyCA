@@ -1,4 +1,4 @@
-from Automaton import Automaton
+from ..Automaton import Automaton
 import torch
 import colorsys
 from torchvision.transforms import Resize

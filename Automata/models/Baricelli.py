@@ -1,9 +1,9 @@
 """
     Baricelli automata, both 1D and 2D.
 """
-from Automaton import Automaton
+from ..Automaton import Automaton
 import torch
-from matplotlib.colors import hsv_to_rgb
+from colorsys import hsv_to_rgb
 import pygame
 
 
