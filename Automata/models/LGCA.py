@@ -2,6 +2,8 @@ from ..Automaton import Automaton
 import torch
 from colorsys import hsv_to_rgb
 import pygame
+from torchvision.transforms import GaussianBlur
+
 
 class LGCA(Automaton):
     """
@@ -34,14 +36,30 @@ class LGCA(Automaton):
 
         self.left_pressed=False
         self.right_pressed=False
-
+        self.w_pressed=False
         self.brush_size = 5
-        # x,y=25,25
-        # slices = slice(max(int(y)-5,0),min(int(y)+5,self.h-1)), slice(max(int(x)-5,0),min(int(x)+5,self.w))
-        # self.walls[slices[0],slices[1]] = True
-        # self.world[slices[0],slices[1],:] = False
+
+        # For drawing : 
+        self.Y, self.X = torch.meshgrid(torch.arange(0, self.h, device=self.device), torch.arange(0, self.w, device=self.device), indexing='ij')
 
     def process_event(self, event, camera=None):
+        """
+            Adds interactions : 
+            - Left click and drag to add particles
+            - Right click and drag to erase particles
+            - Left click and drag while pressing W : add walls
+            - Right click and drag while pressing W : erase walls
+            - Scroll wheel to change brush size
+            - Delete to reset the particles to homogeneous
+        """
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w:
+                self.w_pressed = True
+            if event.key == pygame.K_DELETE:
+                self.reset()
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_w:
+                self.w_pressed = False
         if event.type == pygame.MOUSEBUTTONDOWN :
             if(event.button == 1):
                 self.left_pressed=True
@@ -52,20 +70,45 @@ class LGCA(Automaton):
                 self.left_pressed=False
             elif(event.button==3):
                 self.right_pressed=False
+    
         if event.type == pygame.MOUSEMOTION:
             if(self.left_pressed):
                 x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                slices = slice(max(int(y)-1,0),min(int(y)+self.brush_size,self.h-self.brush_size)), slice(max(int(x)-self.brush_size,0),min(int(x)+self.brush_size,self.w))
-                self.walls[slices[0],slices[1]] = True
-                self.world[slices[0],slices[1],:] = False
+                set_mask = self.get_brush_slice(x,y)
+                if(self.w_pressed):
+                    # Add walls
+                    self.walls[set_mask] = True
+                    self.world[set_mask,:] = False
+                else:
+                    # Add particles
+                    self.world[set_mask,:] = (self.world[set_mask,:] | 
+                                        (torch.rand(self.world[set_mask,:].shape,device=self.device)<0.1)) & ~self.walls[set_mask][:,None]
             elif(self.right_pressed):
                 x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                # Add interactions when dragging with right-click
-                self.walls[int(y),int(x)] = False
-
+                set_mask = self.get_brush_slice(x,y)
+                if(self.w_pressed):
+                    # Erase walls
+                    self.walls[set_mask] = False
+                else:
+                    # Erase particles
+                    self.world[set_mask,:] = False
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:  # Scroll wheel up
+                self.brush_size += 1  # Increase brush size
+            elif event.y < 0:  # Scroll wheel down
+                self.brush_size -= 1  # Decrease brush size
+    
+            # Optional: Prevent brush size from going below 1
+            self.brush_size = max(1, self.brush_size)
+    
+    def get_brush_slice(self, x, y):
+        """Gets coordinate slices corresponding to the brush located at x,y"""
+        set_mask = (self.Y-y)**2 + (self.X-x)**2 < self.brush_size**2
+        return set_mask # (H,W)
+    
     def reset(self):
-        self.world = torch.rand((self.h,self.w,4),device=self.device)<0.2 # 20% filled
-        self.world[:,:,0] = torch.rand((self.h,self.w),device=self.device)<0.7 # 70% going north
+        self.world = torch.rand((self.h,self.w,4),device=self.device)<0.3 # 20% filled
+        # self.world[:,:,0] = torch.rand((self.h,self.w),device=self.device)<0.7 # 70% going north
         # Erase particles which are on walls, to avoid bugs
         self.world = torch.where(self.walls[:,:,None],False,self.world) # Hope the h,w,1 broadcasting works, if not, expand
         
@@ -107,7 +150,7 @@ class LGCA(Automaton):
         heat_sum = self.world.sum(dim=2).to(torch.int) # (H,W) tensor values between 0 and 4
         colors = self.palette[heat_sum] # (H,W,3) tensor
         self._worldmap = colors.permute(2,0,1) # (3,H,W) tensor
-
+        self._worldmap = self._worldmap
         # Draw walls
         self._worldmap = torch.where(self.walls[None],torch.tensor([1.,0.,0.2],device=self.device)[:,None,None],self._worldmap) # Draw walls
-        self._worldmap = torch.where((self.walls & self.world.any(dim=-1))[None,:,:],torch.tensor([1.,1.,0.],device=self.device)[:,None,None],self._worldmap)
+        # self._worldmap = torch.where((self.walls & self.world.any(dim=-1))[None,:,:],torch.tensor([1.,1.,0.],device=self.device)[:,None,None],self._worldmap)

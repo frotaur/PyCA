@@ -71,7 +71,7 @@ class CA1D(Automaton):
             elif(self.right_pressed):
                 x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
                 # Add interactions when dragging with right-click
-    
+
     def convert_wolfram_num(self,wolfram_num : int):
         """
             Converts a wolfram number to a rule tensor.
