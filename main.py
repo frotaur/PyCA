@@ -8,8 +8,8 @@ from Camera import Camera
 from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA
 from utils import launch_video, add_frame, save_image
 pygame.init()
-W,H =500, 500 # Width and height of the window
-fps = 60 # Visualization (target) frames per second
+W,H = 30, 30 # Width and height of the window
+fps = 120 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
 clock = pygame.time.Clock() 
@@ -23,7 +23,7 @@ random = True
 r = 3
 k = 3
 
-auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random) 
+# auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random) 
 ################################################################
 
 #################   ELEMENTARY CA   #################################
@@ -34,14 +34,14 @@ auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random)
 #################   BARICELLI   ####################################
 
 #################   1D   ###########################################
-# auto = Baricelli1D((H,W),n_species=6,reprod_collision=True)
+# auto = Baricelli1D((H,W),n_species=8,reprod_collision=True)
 
 #################   2D   ###########################################
 # auto = Baricelli2D((H,W),n_species=7,reprod_collision=True,device='cuda')
 ################################################################
 
 #################   CA2D   #################################
-auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
+# auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
 ################################################################
 
 ################# Reaction Diffusion ############################
@@ -49,7 +49,7 @@ auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
 ################################################################
 
 ################# Reaction Diffusion ############################
-# auto = ReactionDiffusion((H,W),device='cpu')
+auto = ReactionDiffusion((H,W),device='cpu')
 ################################################################
 
 #################   LGCA   #################################
@@ -117,8 +117,8 @@ while running:
     if(recording):
         pygame.draw.circle(screen, (255,0,0), (15, H-15), 5)
 
-    if hasattr(auto, 'brush_size'):
-        pygame.draw.circle(screen, (128,50,50,50), camera.convert_mouse_pos(pygame.mouse.get_pos()), auto.brush_size)
+    # if hasattr(auto, 'brush_size'):
+    #     pygame.draw.circle(screen, (128,50,50,50), camera.convert_mouse_pos(pygame.mouse.get_pos()), auto.brush_size)
     # Update the screen
     pygame.display.flip()
 

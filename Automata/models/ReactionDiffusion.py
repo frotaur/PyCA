@@ -3,15 +3,16 @@ import torch
 import colorsys
 from torchvision.transforms import Resize
 import torch.nn.functional as F
+import pygame
+
 
 class ReactionDiffusion(Automaton):
     """
         Reaction diffusion automaton.
     """ 
 
-
     def __init__(self, size, num_reagents=2, diffusion_coeffs:torch.Tensor = None, reaction_func=None,
-                  dx=0.01, device='cpu'):
+                  dx=None, device='cpu'):
         """
             Parameters:
             size : tuple, size of the automaton
@@ -19,8 +20,9 @@ class ReactionDiffusion(Automaton):
             diffusion_coeffs : float tensor, shape (num_reagents,), diffusion coefficients of the reagents
             reaction_func : reaction function. Given a tensor of shape (num_reagents,N) of floats in [0,1]
                 should return a tensor of shape (num_reagents,N), the value of the reaction part. Here N
-                is simply a 'batch' dimension, so we evaluate the function in parallel on N different states.
-            dx : float, spatial discretization. dt automatically chosen to be dx^2/4
+                is simply a 'batch' dimension, so we evaluate the function in parallel on N different positions.
+            dx : float or None, spatial discretization. If None, dx=1 and window is not scaled to [0,1].
+                If not None, scales window to [0,1], and uses set dx. In both cases, dt automatically chosen to be dx^2/4
             device : str, device to use
 
             ###################################################################
@@ -47,24 +49,39 @@ class ReactionDiffusion(Automaton):
 
         self.num_reagents = num_reagents
         self.reaction_func = reaction_func
-        self.dx = 1.
-        self.dt = 1.
+        self.device=device
+
+        if(dx is None):
+            self.dx = 1.
+            # No scaling, 1 pixel = 1 unit
+            self.h_len = self.h
+            self.w_len = self.w
+            self.resizer=None
+        else:
+            self.dx = dx
+            # Scale window to [0,1]
+            min_dim = min(self.h,self.w)
+            # Normalized size of box so that smaller dim is [0,1]
+            self.h_len = self.h/min_dim
+            self.w_len = self.w/min_dim
+            self.resizer = Resize((self.h,self.w),antialias=False)
 
 
-        min_dim = min(self.h,self.w)
-        # Normalized size of box so that smaller dim is [0,1]
-        self.h_len = self.h/min_dim
-        self.w_len = self.w/min_dim
+        self.dt = self.dx**2/4
+
+        self.step_increment = 0.25 # This is dt/dx^2
 
 
-        self.grid = torch.stack(torch.meshgrid(torch.arange(0,self.h_len,dx),torch.arange(0,self.w_len,dx),indexing='ij'),dim=-1).to(device) # (H,W,2), grid[x,y] = (x,y)
+
+
+        self.grid = torch.stack(torch.meshgrid(torch.arange(0,self.h_len,self.dx),torch.arange(0,self.w_len,self.dx),indexing='ij'),dim=-1).to(device) # (H,W,2), grid[x,y] = (x,y)
         self.Nh, self.Nw = self.grid.shape[0], self.grid.shape[1]
 
-        self.u = torch.rand((self.Nh,self.Nw,num_reagents),dtype=torch.float, device=device) # (N_h,N_w,num_reagents), concentration of reagents
-        x = torch.linspace(-1, 1, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
-        y = torch.linspace(-1, 1, steps=self.Nh).unsqueeze(1).repeat(1, self.Nw)
-        self.u[:,:,1] = (x**2+y**2<0.001).to(torch.float)
-        self.u[:,:,0] = torch.where(self.u[:,:,1]>0,0.,1.)
+        self.u = torch.zeros((self.Nh,self.Nw,num_reagents),dtype=torch.float, device=device) # (N_h,N_w,num_reagents), concentration of reagents
+        x = torch.linspace(-self.w/2, self.w/2, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
+        y = torch.linspace(-self.h/2, self.h/2, steps=self.Nh).unsqueeze(1).repeat(1, self.Nw)
+        self.u[:,:,0] = (x**2+y**2<100).to(torch.float)
+        # self.u[:,:,0] = torch.where(self.u[:,:,1]>0,0.,1.)
         self.u = self.u.to(device)
 
         if(reaction_func is None):
@@ -88,25 +105,34 @@ class ReactionDiffusion(Automaton):
             assert diffusion_coeffs.shape == (num_reagents,), 'Diffusion coefficients shape should be (num_reagents,), got shape {}'.format(diffusion_coeffs.shape)
             self.D = diffusion_coeffs[None,None,:] # (1,1,num_reagents)
 
+
+        self.recolor()
+
+
+        self.lapl_kern =torch.tensor([
+                        [0.2, 0.8, 0.2],
+                        [0.8, -4.0, 0.8],
+                        [0.2, 0.8, 0.2]
+                    ]).unsqueeze(0).unsqueeze(0).expand(self.num_reagents,-1,-1,-1).to(device) # (1,1,3,3)
+
+        self.brush_size = 10
+        self.left_pressed=False
+        self.right_pressed=False
+        self.selected_reagent = 0
+        self.reagent_mask = torch.zeros((self.num_reagents),dtype=torch.bool,device=device)
+        self.reagent_mask[self.selected_reagent] = True
+
+    def recolor(self):
         self.r_colors = [torch.ones(3,dtype=torch.float)]
-        for _ in range(num_reagents-1):
+        for _ in range(self.num_reagents-1):
             hue = torch.rand(1).item()
-            print('#hue : ', hue)
-            value = 0.5*torch.rand(1).item()+0.5
-            saturation = 0.5*torch.rand(1).item()+0.5
+            value = 0.2*torch.rand(1).item()+0.8
+            saturation = 0.2*torch.rand(1).item()+0.8
             self.r_colors.append(torch.tensor(colorsys.hsv_to_rgb(hue, saturation, value),dtype=torch.float))
             
 
-        self.r_colors = torch.stack(self.r_colors,dim=0).to(device) # (num_reagents,3)
-        print('colors : ', self.r_colors)
-        self.resizer = Resize((self.h,self.w),antialias=True)
-
-        self.lapl_kern =torch.tensor([
-                        [0.05, 0.2, 0.05],
-                        [0.2, -1.0, 0.2],
-                        [0.05, 0.2, 0.05]
-                    ]).unsqueeze(0).unsqueeze(0).expand(self.num_reagents,-1,-1,-1).to(device) # (1,1,3,3)
-
+        self.r_colors = torch.stack(self.r_colors,dim=0).to(self.device) # (num_reagents,3)
+        print('self.r_colors',self.r_colors)    
     def lapl(self, u):
         """
             Laplacian of u, computed with finite differences.
@@ -134,13 +160,66 @@ class ReactionDiffusion(Automaton):
         u = u.reshape(self.num_reagents,self.Nh,self.Nw).permute(1,2,0) # (H,W,num_reagents) reaction
 
         return u
+    
+    def process_event(self, event, camera=None):
+        """
+            Adds interactions : 
+            - Left click and drag to add selected chemical
+            - Right click and drag to remove selected chemical
+            - Scroll wheel to change chemical
+            - Delete to reset the state to homogeneous
+        """
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_DELETE:
+                self.reset()
+            if event.key == pygame.K_c:
+                self.recolor()
+        if event.type == pygame.MOUSEBUTTONDOWN :
+            if(event.button == 1):
+                self.left_pressed=True
+            if(event.button ==3):
+                self.right_pressed=True
+        if event.type == pygame.MOUSEBUTTONUP:
+            if(event.button==1):
+                self.left_pressed=False
+            elif(event.button==3):
+                self.right_pressed=False
+    
+        if event.type == pygame.MOUSEMOTION:
+            if(self.left_pressed):
+                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
+                set_mask = self.get_brush_slice(x,y)[...,None] # (H,W,1)
+                set_mask = set_mask & self.reagent_mask[None,None,:]
+                # Add particles
+                self.u[set_mask] = 1.
+            elif(self.right_pressed):
+                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
+                set_mask = self.get_brush_slice(x,y)[...,None] # (H,W,1)
+                set_mask = set_mask & self.reagent_mask[None,None,:]
+                # Remove particles
+                self.u[set_mask] = 0.
 
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:  # Scroll wheel up
+                self.selected_reagent = (self.selected_reagent+1)%self.num_reagents  # Increase brush size
+                self.reagent_mask = torch.zeros((self.num_reagents),dtype=torch.bool,device=self.u.device)
+                self.reagent_mask[self.selected_reagent] = True
+            elif event.y < 0:  # Scroll wheel down
+                self.selected_reagent = (self.selected_reagent-1)%self.num_reagents  # Increase brush size
+                self.reagent_mask = torch.zeros((self.num_reagents),dtype=torch.bool,device=self.u.device)
+                self.reagent_mask[self.selected_reagent] = True
+    
+    def get_brush_slice(self, x, y):
+        """Gets coordinate slices corresponding to the brush located at x,y"""
+        set_mask = (self.grid[:,:,0]-y)**2 + (self.grid[:,:,1]-x)**2 < self.brush_size**2
+        return set_mask # (H,W)
+    
     @torch.no_grad()
     def step(self):
         """
             Steps the automaton one timestep.
         """
-        self.u = self.u+self.dt*(self.D*self.lapl(self.u)+ self.compute_R(self.u))
+        self.u = self.u+self.step_increment*self.D*self.lapl(self.u)#+ self.dt*self.compute_R(self.u)
         # self.u = self.u+self.dt*self.lapl(self.u)
     
     def draw(self):
@@ -148,6 +227,35 @@ class ReactionDiffusion(Automaton):
             Draws a representation of the worldmap, reshaping in case the dx resolution is too high/low.
         """
 
-        # u : (N_h,N_w,num_reagents,1), r_colors : (num_reagents,3)
-        new_world = ((self.u[...,None]) * self.r_colors[None,None]).mean(dim=2)/(self.u[...,None].mean(dim=2)+1e-5) # (H,W,3)
-        self._worldmap = self.resizer(new_world.permute(2,0,1)) # (3,H,W) resized to match window
+        # u : (N_h,N_w,num_reagents,1), r_colors : (1,1,num_reagents,3)
+        new_world = ((self.u[...,None]) * self.r_colors[None,None]).sum(dim=2)/(self.u[...,None].sum(dim=2)+1e-6)*self.u[...,None].max(dim=2)[0] # (H,W,3)
+
+        select_size= 4
+        new_world[:select_size,:select_size,:] = self.r_colors[self.selected_reagent] # Draw a square of the selected reagent in the top left corner
+        # Put a black border around the square
+        new_world[select_size,:select_size+1,:] = 0
+        new_world[:select_size+1,select_size,:] = 0
+
+        if(self.resizer is not None):
+            self._worldmap = self.resizer(new_world.permute(2,0,1)) # (3,H,W) resized to match window
+        else:
+            self._worldmap = new_world.permute(2,0,1)
+
+
+class GrayScott(ReactionDiffusion):
+    """
+        Gray-Scott model.
+    """
+
+    def __init__(self, size, Da=1.,Db=0.5,f=0.055,k=.062,device='cpu'):
+        """
+            Parameters:
+            size : tuple, size of the automaton
+            device : str, device to use
+        """
+        def gray_scott_reaction(u):
+            return torch.stack([-u[0]*u[1]**2+f*(1-u[0]),u[0]*u[1]**2-(k+f)*u[1]],dim=0) # (2,N)
+        
+        super().__init__(size, num_reagents=2, diffusion_coeffs=torch.tensor([Da,Db]), reaction_func=gray_scott_reaction, device=device)
+
+        
