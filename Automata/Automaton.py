@@ -50,7 +50,7 @@ class Automaton :
     @property
     def worldmap(self):
         """
-            Converts _worldmap to a numpy array, and returns it in a pygame-plottable format (H,W,3).
+            Converts _worldmap to a numpy array, and returns it in a pygame-plottable format (W,H,3).
 
             Can be overriden if you use another format for self._worldmap, instead of a torch (3,H,W) tensor.
         """

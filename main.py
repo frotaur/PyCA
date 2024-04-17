@@ -5,12 +5,12 @@
 
 import pygame
 from Camera import Camera
-from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA
+from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA, FallingSand
 from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
 
 from utils import launch_video, add_frame, save_image
 pygame.init()
-W,H = 800, 600 # Width and height of the window
+W,H = 300, 300 # Width and height of the window
 fps = 120 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
@@ -53,14 +53,16 @@ k = 3
 ################# Reaction Diffusion ############################
 # auto = GrayScott((H,W),device='cuda')
 # auto = BelousovZhabotinsky((H,W),device='cuda')
-auto = Brusselator((H,W),device='cuda')
+# auto = Brusselator((H,W),device='cuda')
 ################################################################
 
 #################   LGCA   #################################
 # auto = LGCA((H,W), device='cuda')
 ################################################################
 
-
+#################   Falling Sand   #################################
+auto = FallingSand((H,W))
+################################################################
 # Booleans for the main loop
 stopped=True
 recording=False
