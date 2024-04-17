@@ -6,7 +6,7 @@
 import pygame
 from Camera import Camera
 from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA
-from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky
+from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
 
 from utils import launch_video, add_frame, save_image
 pygame.init()
@@ -52,7 +52,8 @@ k = 3
 
 ################# Reaction Diffusion ############################
 # auto = GrayScott((H,W),device='cuda')
-auto = BelousovZhabotinsky((H,W),device='cuda')
+# auto = BelousovZhabotinsky((H,W),device='cuda')
+auto = Brusselator((H,W),device='cuda')
 ################################################################
 
 #################   LGCA   #################################

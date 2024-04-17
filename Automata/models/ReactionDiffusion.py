@@ -110,7 +110,7 @@ class ReactionDiffusion(Automaton):
         self.reagent_mask = torch.zeros((self.num_reagents),dtype=torch.bool,device=device)
         self.reagent_mask[self.selected_reagent] = True
 
-        self.stepnum=1
+        # self.stepnum=1
     def reset(self):
         self.u = torch.zeros((self.num_reagents,self.Nh,self.Nw),dtype=torch.float, device=self.device) # (num_reagents,N_h,N_w), concentration of reagents
         x = torch.linspace(-self.w/2, self.w/2, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
@@ -168,6 +168,14 @@ class ReactionDiffusion(Automaton):
                 self.reset()
             if event.key == pygame.K_c:
                 self.recolor()
+            if event.key == pygame.K_1:
+                # If ctrl is pressed, decrease Da
+                if(pygame.key.get_mods() & pygame.KMOD_CTRL):
+                    self.D[self.selected_reagent] = torch.clip(self.D[self.selected_reagent]-0.1,0.1,3.)
+                else :
+                    self.D[self.selected_reagent] = torch.clip(self.D[self.selected_reagent]+0.1,0.1,3.)
+                print('D{} : '.format(self.selected_reagent),self.D[self.selected_reagent])
+    
         if event.type == pygame.MOUSEBUTTONDOWN :
             if(event.button == 1):
                 self.left_pressed=True
@@ -223,7 +231,12 @@ class ReactionDiffusion(Automaton):
         """
 
         # u : (num_reagents,N_h,N_w,1), r_colors : (num_reagents,1,1,3)
-        new_world = ((self.u[...,None]) * self.r_colors[:,None,None]).sum(dim=0)/(self.u[...,None].sum(dim=0)+1e-6)*self.u[...,None].max(dim=0)[0] # (H,W,3)
+        if(self.renormalize is not None):
+            self.renormalize = torch.maximum(self.u.reshape(self.num_reagents,-1).max(dim=1)[0],self.renormalize) # (num_reagents,)
+            drawu = self.u[...,None]/self.renormalize[:,None,None,None]
+        else :
+            drawu = self.u[...,None]
+        new_world = ((drawu) * self.r_colors[:,None,None]).sum(dim=0)/(drawu.sum(dim=0)+1e-6)*drawu.max(dim=0)[0] # (H,W,3)
 
         select_size= 4
         new_world[:select_size,:select_size,:] = self.r_colors[self.selected_reagent] # Draw a square of the selected reagent in the top left corner
@@ -254,12 +267,12 @@ class GrayScott(ReactionDiffusion):
         Da = Da/4.
         Db = Db/4.
 
-        self.stepnum=30
+        self.stepnum=40
         def gray_scott_reaction(u):
             return torch.stack([-u[0]*u[1]**2+self.f*(1-u[0]),u[0]*u[1]**2-(self.k+self.f)*u[1]],dim=0) # (2, N)
         
         super().__init__(size, num_reagents=2, diffusion_coeffs=torch.tensor([Da,Db]), reaction_func=gray_scott_reaction, device=device)
-    
+        self.renormalize = None
         print('dt is : ', self.dt)
 
 
@@ -313,7 +326,7 @@ class BelousovZhabotinsky(ReactionDiffusion):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-
+        self.renormalize = None
         def belousov_zhabotinsky_reaction(u):
             return torch.stack([u[0]*(self.alpha*u[1]-self.gamma*u[2]),u[1]*(self.beta*u[2]-self.alpha*u[0]),u[2]*(self.gamma*u[0]-self.beta*u[1])],dim=0) # (3, N)
         
@@ -332,18 +345,6 @@ class BelousovZhabotinsky(ReactionDiffusion):
         super().process_event(event, camera)
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_1:
-                # If ctrl is pressed, decrease Da
-                if(pygame.key.get_mods() & pygame.KMOD_CTRL):
-                    self.D[0] = torch.clip(self.D[0]-0.1,0.1,3.)
-                else :
-                    self.D[0] = torch.clip(self.D[0]+0.1,0.1,3.)
-            if event.key == pygame.K_2:
-                # If ctrl is pressed, decrease Db
-                if(pygame.key.get_mods() & pygame.KMOD_CTRL):
-                    self.D[1] = torch.clip(self.D[1]-0.1,0.1,3.)
-                else :
-                    self.D[1] = torch.clip(self.D[1]+0.1,0.1,3.)
             if event.key == pygame.K_a :
                 # If ctrl is pressed, decrease alpha
                 if(pygame.key.get_mods() & pygame.KMOD_CTRL):
@@ -365,3 +366,52 @@ class BelousovZhabotinsky(ReactionDiffusion):
                 else :
                     self.gamma = self.gamma+0.01
                 print('gamma : ',self.gamma)
+
+class Brusselator(ReactionDiffusion):
+    """
+        Brusselator model.
+    """
+    def __init__(self, size, Da=.64,Db=.4,alpha=0.7,beta=2.5,device='cpu'):
+        """
+            Parameters:
+            size : tuple, size of the automaton
+            device : str, device to use
+        """
+        Da,Db = Da,Db
+
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = 0.2
+        def brusselator_reaction(u):
+            return torch.stack([self.gamma*(u[0]**2*u[1]-self.beta*u[0]-u[0]+self.alpha),self.gamma*(self.beta*u[0]-u[0]**2*u[1])],dim=0) # (2, N)
+        
+        super().__init__(size, num_reagents=2, diffusion_coeffs=torch.tensor([Da,Db]), reaction_func=brusselator_reaction, device=device)
+        
+        print('dt is : ', self.dt)
+        self.u = torch.zeros_like(self.u)
+        self.u[1] =.1
+        self.stepnum=1
+        self.dt=0.5
+        self.brush_size=10
+
+        self.renormalize = torch.ones((2),dtype=torch.float,device=device) # (num_reagents,)
+
+    def process_event(self, event, camera=None):
+        # Process common diffusion models events
+        super().process_event(event, camera)
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a :
+                # If ctrl is pressed, decrease alpha
+                if(pygame.key.get_mods() & pygame.KMOD_CTRL):
+                    self.alpha = max(self.alpha-0.1,0.1)
+                else :
+                    self.alpha = self.alpha+0.1
+                print('alpha : ',self.alpha)
+            if event.key == pygame.K_b :
+                # If ctrl is pressed, decrease beta
+                if(pygame.key.get_mods() & pygame.KMOD_CTRL):
+                    self.beta = max(self.beta-0.1,0.1)
+                else :
+                    self.beta = self.beta+0.1
+                print('beta : ',self.beta)
