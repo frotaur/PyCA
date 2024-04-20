@@ -5,7 +5,7 @@
 
 import pygame
 from Camera import Camera
-from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA, FallingSand
+from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA, FallingSand, NCA
 from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
 
 from utils import launch_video, add_frame, save_image
@@ -43,7 +43,7 @@ k = 3
 ################################################################
 
 #################   CA2D   #################################
-# auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
+auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
 ################################################################
 
 ################# Reaction Diffusion ############################
@@ -61,7 +61,11 @@ k = 3
 ################################################################
 
 #################   Falling Sand   #################################
-auto = FallingSand((H,W))
+# auto = FallingSand((H,W))
+################################################################
+
+#################   NCA   #################################
+# auto = NCA((H,W), model_path='NCA_train/runs/NCANew/state/latestNCA.pt',device='cuda')
 ################################################################
 # Booleans for the main loop
 stopped=True
