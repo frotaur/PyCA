@@ -5,12 +5,12 @@ import torch
 class Automaton :
     """
         Class that internalizes the rules and evolution of 
-        the cellular automaton at hand. It has a step function
-        that makes one timestep of the evolution. By convention, the world tensor has shape
+        a cellular automaton. It has a step function
+        that makes one timestep of evolution. 
+        By convention, the world tensor has shape
         (3,H,W). It contains float values between 0 and 1, which
-        are mapped to 0 255 when returning output, and describes how the
-        world is 'seen' by an observer.
-
+        are mapped to [0, 255] and casted to a uint8 numpy array,
+        which is compatible with pygame.
     """
 
     def __init__(self,size):
@@ -34,6 +34,15 @@ class Automaton :
         """
         return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
     
+    @property
+    def worldmap(self):
+        """
+            Converts _worldmap to a numpy array, and returns it in a pygame-plottable format (W,H,3).
+
+            Can be overriden if you use another format for self._worldmap, instead of a torch (3,H,W) tensor.
+        """
+        return (255*self._worldmap.permute(2,1,0)).detach().cpu().numpy().astype(dtype=np.uint8)
+    
     def process_event(self,event,camera=None):
         """
             Processes a pygame event, if needed.
@@ -47,12 +56,5 @@ class Automaton :
         """
         pass
 
-    @property
-    def worldmap(self):
-        """
-            Converts _worldmap to a numpy array, and returns it in a pygame-plottable format (W,H,3).
 
-            Can be overriden if you use another format for self._worldmap, instead of a torch (3,H,W) tensor.
-        """
-        return (255*self._worldmap.permute(2,1,0)).detach().cpu().numpy().astype(dtype=np.uint8)
 

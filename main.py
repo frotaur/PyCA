@@ -4,11 +4,11 @@
 
 
 import pygame
-from Camera import Camera
+from utils.Camera import Camera
 from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, Baricelli2D, ReactionDiffusion, LGCA, FallingSand, NCA
 from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
 
-from utils import launch_video, add_frame, save_image
+from utils.utils import launch_video, add_frame, save_image
 pygame.init()
 W,H = 300, 300 # Width and height of the window
 fps = 120 # Visualization (target) frames per second
@@ -18,12 +18,12 @@ clock = pygame.time.Clock()
 running = True
 camera = Camera(W,H)
 
-random = True
 # Define here the automaton. Should be a subclass of Automaton, and implement 'draw()' and 'step()'.
 # draw() should update the (3,H,W) tensor self._worldmap, for the visualization
 #################   MULTICOLOR OUTER TOTALISTIC   ##################
-r = 3
-k = 3
+# r = 3
+# k = 3
+# random = True
 
 # auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random) 
 ################################################################
@@ -43,12 +43,9 @@ k = 3
 ################################################################
 
 #################   CA2D   #################################
-auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
+auto = CA2D((H,W),b_num='3',s_num='23',random=True,device='cuda')
 ################################################################
 
-################# Reaction Diffusion ############################
-# auto = ReactionDiffusion((H,W),device='cpu')
-################################################################
 
 ################# Reaction Diffusion ############################
 # auto = GrayScott((H,W),device='cuda')
@@ -67,6 +64,10 @@ auto = CA2D((H,W),b_num='3',s_num='23',random=random,device='cuda')
 #################   NCA   #################################
 # auto = NCA((H,W), model_path='NCA_train/runs/NCANew/state/latestNCA.pt',device='cuda')
 ################################################################
+
+################# GoL Tutorial ############################
+# auto = GoLTutorial((H,W),device='cpu')
+
 # Booleans for the main loop
 stopped=True
 recording=False
