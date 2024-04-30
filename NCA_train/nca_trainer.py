@@ -13,6 +13,7 @@ from torchenhanced import Trainer
 from torchenhanced.util import gridify,showTens
 from torchvision.transforms import transforms
 from PIL import Image
+import math
 
 import wandb
 
@@ -43,7 +44,8 @@ class NCA_Trainer(Trainer):
 
     
 
-    def train_steps(self, steps, batch_size,*, save_every=50, step_log:int=None, backup_every=float('inf'), norm_grads=False):
+    def train_steps(self, steps, batch_size,*, save_every=50, step_log:int=None, backup_every=float('inf'), norm_grads=False
+                        , corrupt=True, num_cor=3, replace_num=1, varying_frames=True):
         """ 
             Train the model for a number of steps
 
@@ -56,6 +58,18 @@ class NCA_Trainer(Trainer):
                     Save a checkpoint every 'save_every' steps
                 step_log : int
                     Log the loss every 'step_log' steps
+                backup_every : int
+                    Save a backup every 'backup_every' steps
+                norm_grads : bool
+                    Normalize gradients before applying them
+                corrupt : bool
+                    Corrupt the samples before training
+                num_cor : int
+                    Number of corruptions to apply
+                replace_num : int
+                    Number of samples to replace by seed. Use replace_num=batch_size to emulate NO POOL
+                varying_frames : bool
+                    Use varying number of frames to evolve the NCA
         """
 
         self._init_logger()
@@ -71,10 +85,17 @@ class NCA_Trainer(Trainer):
         numsteps=0
 
         load_bar = tqdm(total=steps, desc='Training', unit='step')
+        do_corrupt=False
+
         while not steps_completed:
             self.do_step_log = numsteps % self.step_log == 0 if self.step_log is not None else False
-            batch, indices = self.pool.sample(num_samples=batch_size, replace_num=1, corrupt=True,num_cor=3)
-            rand_evo = torch.randint(self.frame_run,self.frame_run+32,(1,)).item()
+            if(corrupt and self.steps_done >1000):
+                do_corrupt=True
+            batch, indices = self.pool.sample(num_samples=batch_size, replace_num=replace_num, corrupt=do_corrupt,num_cor=num_cor)
+            if(varying_frames):
+                rand_evo = torch.randint(self.frame_run,self.frame_run+32,(1,)).item()
+            else:
+                rand_evo = self.frame_run
 
             state = torch.clone(batch)
             
@@ -100,12 +121,13 @@ class NCA_Trainer(Trainer):
             with torch.no_grad():
                 self.pool.update(indices, state, batchloss=loss.detach())
                 
-                self.step_loss.append(loss.detach().mean().item())
+                self.step_loss.append(loss.mean().item())
 
                 if(self.do_step_log):
-                    self.logger.log({'losslog/train_step':torch.sum(torch.log10(torch.tensor(self.step_loss))).item()/len(self.step_loss)},commit=False)
+                    self.logger.log({'loss/logl2':sum([math.log10(ell) for ell in self.step_loss])/len(self.step_loss)},commit=False)
+                    self.logger.log({'loss/l2':sum(self.step_loss)/len(self.step_loss)},commit=False)
                     before_after = torch.cat((batch[0:8],state[0:8]),dim=0) # (8,C,H,W)
-                    before_after = gridify(self.to_rgb(before_after,bg_color=0.2), out_size=400, columns=8) # (3,H',W') grid of images
+                    before_after = gridify(self.to_rgb(before_after,bg_color=0.6), out_size=400, columns=8) # (3,H',W') grid of images
                     # showTens(before_after.cpu())
                     before_after = wandb.Image(before_after.cpu(), caption=f'Up : Before, Down : After')
                     
@@ -139,9 +161,9 @@ class NCA_Trainer(Trainer):
         self.model.save_model(os.path.join(self.save_loc,'latestNCA.pt'))
 
         if(self.steps_done % backup_every == 0 and self.steps_done > 0):
-            self.model.save_model(os.path.join(self.save_loc,'backups',f'{self.run_name}_{self.steps_done/1000:.1f}k.pt'))
+            self.model.save_model(os.path.join(self.save_loc,'backups',f'{self.run_name}_{self.steps_done/1000:.2f}k.pt'))
 
-        return super()._save_and_backup(curstep, save_every, backup_every)
+        # return super()._save_and_backup(curstep, save_every, backup_every)
 
 
 def prepare_img(img_path:str, tarsize:tuple, pad:int=4):
@@ -153,5 +175,6 @@ def prepare_img(img_path:str, tarsize:tuple, pad:int=4):
     transfo = transforms.Compose([transforms.ToTensor(),
                                   transforms.Resize(tarsize),
                                   transforms.Pad(pad,fill=0)])
-
-    return transfo(target)
+    tensimg = transfo(target)
+    tensimg[:3] = tensimg[:3]*tensimg[3:4]  # Premultiply by alpha, sometimes have non-zero RGB values where alpha is 0
+    return tensimg
