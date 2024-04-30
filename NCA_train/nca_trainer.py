@@ -43,7 +43,7 @@ class NCA_Trainer(Trainer):
 
     
 
-    def train_steps(self, steps, batch_size,*, save_every=50, step_log:int=None):
+    def train_steps(self, steps, batch_size,*, save_every=50, step_log:int=None, backup_every=float('inf'), norm_grads=False):
         """ 
             Train the model for a number of steps
 
@@ -73,18 +73,25 @@ class NCA_Trainer(Trainer):
         load_bar = tqdm(total=steps, desc='Training', unit='step')
         while not steps_completed:
             self.do_step_log = numsteps % self.step_log == 0 if self.step_log is not None else False
-            batch, indices = self.pool.sample(num_samples=batch_size, replace_num=batch_size//3, corrupt=True)
+            batch, indices = self.pool.sample(num_samples=batch_size, replace_num=1, corrupt=True,num_cor=3)
             rand_evo = torch.randint(self.frame_run,self.frame_run+32,(1,)).item()
 
             state = torch.clone(batch)
-            for _ in range(rand_evo):
-                state = self.model(state)
+            
+            state = self.model(state,n_steps=rand_evo) # (B,C,H,W) evolved state
             
             loss = self.model.loss(state, self.tar_image.expand(batch_size,-1,-1,-1)).mean(dim=(1,2,3)) # (B,) loss per sample
             loss.mean().backward()
 
-            
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            if(not norm_grads):
+                # Use clipping
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            else :
+                # Normalize gradients
+                for param in self.model.parameters():
+                    if param.grad is not None:
+                        norm = param.grad.norm() + 1e-8
+                        param.grad.div_(norm)
 
             self.optim.step()
             self.optim.zero_grad()
@@ -93,14 +100,14 @@ class NCA_Trainer(Trainer):
             with torch.no_grad():
                 self.pool.update(indices, state, batchloss=loss.detach())
                 
-                self.step_loss.append(loss.mean().item())
+                self.step_loss.append(loss.detach().mean().item())
 
                 if(self.do_step_log):
-                    self.logger.log({'loss/train_step':sum(self.step_loss)/len(self.step_loss)},commit=False)
-                    before_after = torch.cat((batch[0:4],state[0:4]),dim=0) # (8,C,H,W)
-                    before_after = gridify(self.to_rgb(before_after), out_size=400, columns=4) # (3,H',W') grid of images
+                    self.logger.log({'losslog/train_step':torch.sum(torch.log10(torch.tensor(self.step_loss))).item()/len(self.step_loss)},commit=False)
+                    before_after = torch.cat((batch[0:8],state[0:8]),dim=0) # (8,C,H,W)
+                    before_after = gridify(self.to_rgb(before_after,bg_color=0.2), out_size=400, columns=8) # (3,H',W') grid of images
                     # showTens(before_after.cpu())
-                    before_after = wandb.Image(before_after.permute(1,2,0).cpu().numpy(), caption=f'Up : Before, Down : After')
+                    before_after = wandb.Image(before_after.cpu(), caption=f'Up : Before, Down : After')
                     
                     self.logger.log({'evolved' : before_after},commit=False)
 
@@ -113,21 +120,26 @@ class NCA_Trainer(Trainer):
             load_bar.update(1)
 
             numsteps+=1
-            self._save_and_backup(numsteps, save_every=save_every, backup_every=float('inf'))
+            self._save_and_backup(numsteps, save_every=save_every, backup_every=backup_every)
 
             if(numsteps>steps):
                 steps_completed=True
 
-    def to_rgb(self, state:torch.Tensor, bg_color:int=0):
+    def to_rgb(self, state:torch.Tensor, bg_color:float=0):
         """
             Convert a state tensor to an RGB tensor
         """
         argb = torch.clamp(self.model.state_to_argb(state),min=0,max=1) # (B,4,H,W) ARGB tensor
-        return argb[:,:3]*argb[:,3:]+torch.full_like(argb[:,:3],fill_value=bg_color)*(1-argb[:,3:]) # (B,3,H,W) RGB tensor
+        alpha = argb[:,3:] # (B,1,H,W) Alpha channel
+        return argb[:,:3]*alpha+torch.full_like(argb[:,:3],fill_value=bg_color)*(1-alpha) # (B,3,H,W) RGB tensor
 
     def _save_and_backup(self, curstep, save_every, backup_every):
         os.makedirs(self.save_loc,exist_ok=True)
-        self.model.save_model(self.save_loc+'/latestNCA.pt')
+        os.makedirs(os.path.join(self.save_loc,'backups'),exist_ok=True)
+        self.model.save_model(os.path.join(self.save_loc,'latestNCA.pt'))
+
+        if(self.steps_done % backup_every == 0 and self.steps_done > 0):
+            self.model.save_model(os.path.join(self.save_loc,'backups',f'{self.run_name}_{self.steps_done/1000:.1f}k.pt'))
 
         return super()._save_and_backup(curstep, save_every, backup_every)
 

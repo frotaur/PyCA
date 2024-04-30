@@ -63,11 +63,11 @@ auto = CA2D((H,W),b_num='3',s_num='23',random=True,device='cuda')
 ################################################################
 
 #################   NCA   #################################
-# auto = NCA((H,W), model_path='NCA_train/runs/NCANew/state/latestNCA.pt',device='cuda')
+auto = NCA((H,W), model_path='NCA_train/runs/NCANew/state/latestNCA.pt',device='cpu')
 ################################################################
 
 ################# Lenia ############################
-auto = MultiLenia((H,W),param_path='LeniaParams',device='cuda')
+# auto = MultiLenia((H,W),param_path='LeniaParams',device='cuda')
 
 # Booleans for the main loop
 stopped=True
