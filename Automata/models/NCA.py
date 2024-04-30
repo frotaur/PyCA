@@ -296,11 +296,12 @@ class SamplePool:
         Pool of samples for training NCA's.
     """
 
-    def __init__(self, seed: torch.Tensor, pool_size: int=1024, return_device='cpu'):
+    def __init__(self, seed: torch.Tensor, pool_size: int=1024, loss_f = None, return_device='cpu'):
         """
             Args:
                 seed : tensor (n_states,H,W), NCA 'seed', or initial condition
                 pool_size : int, size of the pool
+                loss_f : function, should return loss given a batch of states (B,n_states,H,W)
                 return_device : str, device on which to return samples
         """
 
@@ -320,7 +321,8 @@ class SamplePool:
         self.xgrid = self.xgrid[None,None]
 
         self.seed_mask = self.seed > 0.01 # (n_states,H,W), location where seed is not zero
-
+        self.loss_f = loss_f
+    
     @torch.no_grad()
     def sample(self,num_samples:int,replace_num=1,corrupt=False,num_cor=None):
         """
@@ -345,7 +347,7 @@ class SamplePool:
                 num_cor = num_samples//3 # A third of corruptions
 
             # Draw a the corruption circle center by drawing r and theta
-            r_size = torch.rand((num_cor,))*self.rmax//3 # (num_cor)
+            r_size = torch.rand((num_cor,))*self.rmax//3+self.rmax//6 # (num_cor)
             r_loc = (self.rmax-(r_size+.5))*torch.rand((num_cor,))
             theta_loc = torch.rand((num_cor,))*2*torch.pi
 
