@@ -39,6 +39,7 @@ class LGCA(Automaton):
         self.w_pressed=False
         self.brush_size = 5
 
+        self._worldmap=self._worldmap.to(device)
         # For drawing : 
         self.Y, self.X = torch.meshgrid(torch.arange(0, self.h, device=self.device), torch.arange(0, self.w, device=self.device), indexing='ij')
 

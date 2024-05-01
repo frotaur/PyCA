@@ -22,6 +22,8 @@ class CA2D(Automaton):
         self.s_num = self.get_num_rule(s_num) # Translate string to number form
         self.b_num = self.get_num_rule(b_num) # Translate string to number form
         self.random = random
+        self.device=device
+
 
         self.world = torch.zeros((self.h,self.w),dtype=torch.int, device=device)
         self.reset()
@@ -34,6 +36,7 @@ class CA2D(Automaton):
         self.change_highlight_color()
         self.decay_speed = 0.1
 
+        self._worldmap = self._worldmap.to(device)
 
     def change_highlight_color(self):
         """
@@ -42,7 +45,7 @@ class CA2D(Automaton):
         hue = torch.rand(1).item()
         light = 0.5
         saturation = .5
-        self.highlight_color = torch.tensor(colorsys.hls_to_rgb(hue, saturation, light),dtype=torch.float)
+        self.highlight_color = torch.tensor(colorsys.hls_to_rgb(hue, saturation, light),dtype=torch.float,device=self.device)
     
     def get_num_rule(self,num):
         """
@@ -63,8 +66,8 @@ class CA2D(Automaton):
         if(self.random):
             self.world = self.get_init_mat(0.5)
         else:
-            self.world = torch.zeros_like(self.world,dtype=torch.int)
-            self.world[self.w//2-1:self.w//2+1,self.h//2-1:self.h//2+1]=torch.ranint(0,2,(2,2))
+            self.world = torch.zeros_like(self.world,dtype=torch.int,device=self.device)
+            self.world[self.w//2-1:self.w//2+1,self.h//2-1:self.h//2+1]=torch.randint(0,2,(2,2),device=self.device)
     
     def draw(self):
         """
@@ -146,4 +149,4 @@ class CA2D(Automaton):
         init_mat = init_mat.to(torch.int16)
 
 
-        return init_mat # (B,H,W)
+        return init_mat.to(self.device) # (B,H,W)

@@ -11,8 +11,8 @@ from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Br
 
 from utils.utils import launch_video, add_frame, save_image
 pygame.init()
-W,H = 120, 120 # Width and height of the window
-fps = 40 # Visualization (target) frames per second
+W,H = 300, 200 # Width and height of the window
+fps = 400 # Visualization (target) frames per second
 
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
 clock = pygame.time.Clock() 
@@ -49,7 +49,7 @@ camera = Camera(W,H)
 
 
 ################# Reaction Diffusion ############################
-# auto = GrayScott((H,W),device='cuda')
+auto = GrayScott((H,W),device='cuda')
 # auto = BelousovZhabotinsky((H,W),device='cuda')
 # auto = Brusselator((H,W),device='cuda')
 ################################################################
@@ -63,8 +63,9 @@ camera = Camera(W,H)
 ################################################################
 
 #################   NCA   #################################
-model_location = os.path.join('NCA_train','runs','NCANew','state','latestNCA.pt')
-auto = NCA((H,W), model_path=model_location,device='cuda')
+# model_location = os.path.join('NCA_train','trained_model','repairing_betta.pt')
+# model_location ='NCA_train/runs/NCANew/state/backups/miss_4.00k.pt'
+# auto = NCA((H,W), model_path=model_location,device='cuda')
 ################################################################
 
 ################# Lenia ############################

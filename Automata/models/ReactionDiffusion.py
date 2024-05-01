@@ -144,7 +144,7 @@ class ReactionDiffusion(Automaton):
         """
 
         # u = F.pad(u,(1,1,1,1),'circular')
-        lapl = torch.clamp(F.conv2d(u[None],self.lapl_kern,groups=self.num_reagents,padding=1).squeeze(0),min=-0.8,max=0.8)
+        lapl = torch.clamp(F.conv2d(u[None],self.lapl_kern,groups=self.num_reagents,padding=1).squeeze(0),min=-5,max=5)
 
         return lapl # (num_reagents,H,W)
     
@@ -267,7 +267,8 @@ class GrayScott(ReactionDiffusion):
         Da = Da/4.
         Db = Db/4.
 
-        self.stepnum=40
+        self.stepnum=20
+        
         def gray_scott_reaction(u):
             return torch.stack([-u[0]*u[1]**2+self.f*(1-u[0]),u[0]*u[1]**2-(self.k+self.f)*u[1]],dim=0) # (2, N)
         

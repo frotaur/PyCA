@@ -8,8 +8,9 @@ from torchenhanced.util import showTens
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import MultiStepLR
 
-RUN_NAME = 'betta' # Name of the run, for saving/loading and logging
-IMG_PATH = 'images/betta.png' # Relative path to the image to train on
+RUN_NAME = 'miss' # Name of the run, for saving/loading and logging
+IMG_PATH = 'images/miss.png' # Relative path to the image to train on
+
 TARGET_SIZE = (40,40) # Size of the target image (will be resized to this)
 FRAMES = 64 # Number of frames to evolve the NCA before evaluation
 target = prepare_img(IMG_PATH,tarsize=TARGET_SIZE, pad=8)
@@ -35,5 +36,5 @@ if(os.path.exists(state_path)):
     trainer.load_state(state_path)
 
 trainer.train_steps(TRAIN_STEPS, batch_size=BATCH_SIZE, save_every=SAVE_EVERY, 
-                    step_log=STEP_LOG,backup_every=BACKUP_EVERY, norm_grads=False,
-                    replace_num=2, corrupt=False, varying_frames=False)
+                    step_log=STEP_LOG,backup_every=BACKUP_EVERY, norm_grads=True,
+                    replace_num=2, corrupt=True, varying_frames=True)
