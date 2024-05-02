@@ -111,7 +111,7 @@ class NCA_Trainer(Trainer):
                 # Normalize gradients
                 for param in self.model.parameters():
                     if param.grad is not None:
-                        norm = param.grad.norm() + 1e-8
+                        norm = param.grad.norm() + 1e-7
                         param.grad.div_(norm)
 
             self.optim.step()
@@ -119,8 +119,6 @@ class NCA_Trainer(Trainer):
 
 
             with torch.no_grad():
-                self.pool.update(indices, state, batchloss=loss.detach())
-                
                 self.step_loss.append(loss.mean().item())
 
                 if(self.do_step_log):
@@ -135,6 +133,11 @@ class NCA_Trainer(Trainer):
 
                     self._update_x_axis()
                     self.step_loss=[]
+                
+                self.pool.update(indices, state, batchloss=loss.detach())
+
+
+
             
             self.steps_done+=1
             self.batches+=1

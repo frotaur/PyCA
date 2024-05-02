@@ -62,6 +62,7 @@ class NCA(Automaton):
             Might add Blend background in the future
         """
         pic = torch.clamp(self.model.state_to_argb(self.state).squeeze(0),0,1) # (4,H,W)
+        
         # Convert to RGB
         pic = pic[:3]*pic[3:] # Blend assuming black background
 
@@ -206,7 +207,7 @@ class NCAModule(ConfigModule):
 
             state = state*life_mask # Kill cells that were not alive before and after
         
-        return state
+        return torch.nan_to_num(state,nan=1.0,posinf=100.0,neginf=-100.0)
         
     
     @staticmethod
@@ -375,7 +376,7 @@ class SamplePool:
         return self.seed.repeat(num_samples,1,1,1)
     
     
-    def update(self,indices, batch, batchloss=None, kill=0.1):
+    def update(self,indices, batch, batchloss=None, kill=0.1,cutoff=0.06):
         """
             Update the pool at 'indices' with the provided batch.
             If batchloss is also provided, will update only the strongest
@@ -386,7 +387,13 @@ class SamplePool:
             batch : (num_samples,n_states,H,W) of states to be replaced in pool
             batchloss : (num_samples,) of loss of the batch
             kill : bottom kill fraction in terms of loss are reset to seed
+            cutoff : loss cutoff, above which the samples are not updated
         """
+        cutoff_mask = batchloss>cutoff
+        num_bad = cutoff_mask.sum().item()
+        # Replace by seed if above cutoff
+        batch[cutoff_mask] = self.batch_blank_seed(num_bad).to(batch.device)
+
         if(batchloss is not None):
             _,sortind = torch.sort(batchloss) # Indices of sorted loss, ascending
             killind = sortind[-math.ceil(kill*len(sortind)):] # Kill the higher loss
