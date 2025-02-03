@@ -4,3 +4,6 @@ __pycache__
 wandb
 runs
 testwindowtorch.py
+Images
+__pycache__
+env
