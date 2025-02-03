@@ -35,14 +35,8 @@ class FallingSand(Automaton):
     
     def process_event(self, event, camera=None):
         """
-            Processes a pygame event, if needed.
-
-            Parameters:
-            event : pygame.event
-                The event to process
-            camera : Camera
-                The camera object. Might be needed to convert mouse positions to world coordinates.
-                Use camera.convert_mouse_pos(pygame.mouse.get_pos()) to convert the mouse position to world coordinates.
+        LEFT CLICK -> add sand
+        RIGHT CLICK -> remove sand
         """
         if event.type == pygame.MOUSEBUTTONDOWN :
             if(event.button == 1):

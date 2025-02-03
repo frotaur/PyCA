@@ -205,6 +205,14 @@ class MultiLenia(Automaton):
         return params
     
     def process_event(self, event, camera=None):
+        """
+        CANC    -> resets the automaton
+        N       -> pick new random parameters
+        V       -> vary current parameters slightly
+        Z       -> reset to perlin noise initial state
+        M       -> load next saved parameter set
+        S       -> save current parameters
+        """
         if event.type == pygame.KEYDOWN:
             if(event.key == pygame.K_n):
                 """ New random parameters"""
@@ -222,10 +230,9 @@ class MultiLenia(Automaton):
                         file = os.path.join(self.param_path,self.param_files[self.cur_par])
                         self.cur_par = (self.cur_par+1)%self.num_par
                         self.update_params(torch.load(file, map_location=self.device))
-
                         print('loaded ', os.path.join(self.param_path,file))
             if(event.key == pygame.K_s):
-                # Save the current parameters :
+                # Save the current parameters:
                 para = self.get_params()
                 name = f'save_mu{para["mu"][0][0][0].item():.2f}_si{para["sigma"][0][0][0].item():.2f}_be{para["beta"][0,0,0,0].item():.2f}'
                 name = os.path.join(self.param_path,name+'.pt')

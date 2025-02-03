@@ -112,6 +112,10 @@ class Baricelli1D(Automaton):
         # self.world[self.w//2+2]=-torch.randint(1,self.speciesnum+1,(1,)).item()
 
     def process_event(self, event, camera=None):
+        """
+        CANC -> resets the automaton
+        DOWN -> makes one step
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
@@ -247,6 +251,10 @@ class Baricelli2D(Automaton):
         # self.world[self.w//2+2]=-2
 
     def process_event(self, event, camera=None):
+        """
+        CANC -> resets the automaton
+        DOWN -> makes one step
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata

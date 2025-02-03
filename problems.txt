@@ -1,0 +1,2 @@
+- Recording doesn't work. VideoWriter is not initialized.
+- NCA doesn't work.

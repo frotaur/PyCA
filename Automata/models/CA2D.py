@@ -6,7 +6,7 @@ import colorsys
 
 class CA2D(Automaton):
     """
-        2D outer holistic cellular automaton, with two states.
+    2D outer holistic cellular automaton, with two states.
     """
 
     def __init__(self, size, s_num='23', b_num='3', random=False, device= 'cpu'):
@@ -77,6 +77,13 @@ class CA2D(Automaton):
         self._worldmap = torch.clamp(self.world[None,:,:].expand(3,-1,-1).to(dtype=torch.float) + echo,min=0,max=1)
         
     def process_event(self, event, camera=None):
+        """
+        CANC -> resets the automaton
+        N -> pick a new random rule
+        C -> change the highlight color
+        UP -> increase the decay speed
+        DOWN -> decrease the decay speed
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 self.reset() 

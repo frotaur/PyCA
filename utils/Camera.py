@@ -15,28 +15,45 @@ class Camera:
         """
 
         self.position = pygame.Vector2(width/2,height/2) # Camera position
-        self.zoom = 1.0 # Current zoom value
+        self.zoom = 2.0 # Current zoom value
         self.drag_start = None # Position of the mouse when dragging
         self.size = pygame.Rect(0,0,width,height) # Size of the camera
         self.updateFov() # Update the field of view
+    
+    def resize(self, width, height):
+        """
+            Resize the camera
+        """
+        self.size = pygame.Rect(0,0,width, height)
+        self.updateFov()
 
-    def handle_event(self, event):
+    def handle_event(self, event, constrain=False):
         """
             Handles the camera events, such as zooming and dragging. 
             Call it from the main pygame loop, passing the event.
         """
-        if event.type == pygame.MOUSEBUTTONDOWN and (pygame.key.get_mods() & pygame.KMOD_CTRL) :
-            if event.button == 4 :  # Scroll wheel up
+        if event.type == pygame.MOUSEBUTTONDOWN and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+            if event.button == 4:  # Scroll wheel up
+                old_zoom = self.zoom
                 self.zoom *= 1.1
+                # Adjust position to keep mouse point fixed
+                mouse_pos = pygame.mouse.get_pos()
+                self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
+                self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
             elif event.button == 5:  # Scroll wheel down
+                old_zoom = self.zoom
                 self.zoom /= 1.1
+                # Adjust position to keep mouse point fixed
+                mouse_pos = pygame.mouse.get_pos()
+                self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
+                self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
             elif event.button == 1:  # Left mouse button
                 self.drag_start = pygame.mouse.get_pos()
 
-            if(self.zoom<1):
-                self.zoom=1.
-            elif(self.zoom>20):
-                self.zoom=20
+            if self.zoom < 1:
+                self.zoom = 1.
+            elif self.zoom > 20:
+                self.zoom = 20
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left mouse button
@@ -50,7 +67,7 @@ class Camera:
                 self.drag_start = event.pos
             
 
-        self.constrainCam()
+        if constrain: self.constrainCam()
         self.updateFov()
 
     def constrainCam(self):

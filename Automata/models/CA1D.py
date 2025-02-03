@@ -39,6 +39,10 @@ class CA1D(Automaton):
         self.right_pressed=False
 
     def process_event(self, event, camera=None):
+        """
+        CANC -> resets the automaton
+        N -> pick a new random rule
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 self.reset(random=self.random) 
@@ -149,6 +153,10 @@ class GeneralCA1D(Automaton):
         self.reset(random=self.random)
 
     def process_event(self, event, camera=None):
+        """
+        CANC -> resets the automaton
+        N -> pick a new random rule
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata

@@ -9,12 +9,28 @@ from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, \
 Baricelli2D, ReactionDiffusion, LGCA, FallingSand, NCA, MultiLenia
 from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
 
-from utils.utils import launch_video, add_frame, save_image
-pygame.init()
-W,H = 300, 300  # Width and height of the window
-fps = 400 # Visualization (target) frames per second
+from utils.utils import launch_video, add_frame, save_image, blit_text
+os.environ["SDL_VIDEO_WINDOW_POS"] = "0, 0"
 
-screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
+pygame.init()
+
+# 16:9
+# W, H = 1920, 1080 # Width and height of the window
+# W, H = 1280, 720
+# W, H = 640, 360 
+
+# 1:1
+# W, H = 1000, 1000 # Width and height of the window
+# W, H = 600, 600
+sW, sH = 1080, 1080
+W, H = 400, 400
+
+text_size = int(sW/40)
+fps = 400 # Visualization (target) frames per second
+font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
+
+
+screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
 clock = pygame.time.Clock() 
 running = True
 camera = Camera(W,H)
@@ -22,9 +38,9 @@ camera = Camera(W,H)
 # Define here the automaton. Should be a subclass of Automaton, and implement 'draw()' and 'step()'.
 # draw() should update the (3,H,W) tensor self._worldmap, for the visualization
 #################   MULTICOLOR OUTER TOTALISTIC   ##################
-# r = 3
-# k = 3
-# random = True
+r = 3
+k = 3
+random = True
 
 # auto = GeneralCA1D((H,W),wolfram_num=1203,r=r,k=k,random=random) 
 ################################################################
@@ -44,7 +60,7 @@ camera = Camera(W,H)
 ################################################################
 
 #################   CA2D   #################################
-auto = CA2D((H,W),b_num='3',s_num='23',random=True,device='cuda')
+# auto = CA2D((H,W),b_num='3',s_num='23',random=True,device='cuda')
 ################################################################
 
 
@@ -55,7 +71,7 @@ auto = CA2D((H,W),b_num='3',s_num='23',random=True,device='cuda')
 ################################################################
 
 #################   LGCA   #################################
-# auto = LGCA((H,W), device='cuda')
+auto = LGCA((H,W), device='cuda')
 ################################################################
 
 #################   Falling Sand   #################################
@@ -75,10 +91,13 @@ stopped=True
 recording=False
 launch_vid=True
 writer=None
+display_help=False
 
 while running:
-    # poll for events
-    # pygame.QUIT event means the user clicked X to close your window
+
+    current_W, current_H = screen.get_size()
+
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -99,9 +118,14 @@ while running:
                 save_image(auto.worldmap)
             if(event.key == pygame.K_s):
                 auto.step()
-    
-        auto.process_event(event,camera) # Process the event in the automaton
+            if (event.key == pygame.K_h):
+                display_help = not display_help
 
+        if event.type == pygame.VIDEORESIZE:
+            # screen = pygame.display.set_mode((event.w, event.h), flags=pygame.RESIZABLE)
+            camera.resize(event.w,event.h)
+        
+        auto.process_event(event,camera) # Process the event in the automaton
 
     if(not stopped):
         auto.step() # step the automaton
@@ -118,6 +142,7 @@ while running:
             writer = launch_video((H,W),fps,'H264')
         add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
 
+
     # Clear the screen
     screen.fill((0, 0, 0))
 
@@ -125,13 +150,17 @@ while running:
     zoomed_surface = camera.apply(surface)
 
     screen.blit(zoomed_surface, (0,0))
-
+    
     # blit a red circle down to the left when recording
     if(recording):
         pygame.draw.circle(screen, (255,0,0), (15, H-15), 5)
 
-    # if hasattr(auto, 'brush_size'):
-    #     pygame.draw.circle(screen, (128,50,50,50), camera.convert_mouse_pos(pygame.mouse.get_pos()), auto.brush_size)
+    if display_help: 
+        description = font.render(auto.__doc__.strip(), 1, (255,255,255))
+        help_text = font.render(auto.get_help(), 1, (255,255,255))
+        blit_text(screen, auto.__doc__.strip(), "up_sx", font, (255,255,255))
+        blit_text(screen, auto.get_help(), "below_sx", font, (255,255,255))
+
     # Update the screen
     pygame.display.flip()
 
