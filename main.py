@@ -9,23 +9,24 @@ from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, \
 Baricelli2D, ReactionDiffusion, LGCA, FallingSand, NCA, MultiLenia
 from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
 
-from utils.utils import launch_video, add_frame, save_image, blit_text
-os.environ["SDL_VIDEO_WINDOW_POS"] = "0, 0"
+from utils.utils import launch_video, add_frame, save_image
+from interface.text import TextBlock, render_text_blocks, load_std_help
+
+
+
+if os.name == 'posix':  # Check if OS is Linux/Unix
+    print("Setting window position to 0, 0")
+    os.environ["SDL_VIDEO_WINDOW_POS"] = "0, 0"
 
 pygame.init()
 
-# 16:9
-# W, H = 1920, 1080 # Width and height of the window
-# W, H = 1280, 720
-# W, H = 640, 360 
+# Screen size
+sW, sH = 1920, 1080
 
-# 1:1
-# W, H = 1000, 1000 # Width and height of the window
-# W, H = 600, 600
-sW, sH = 1080, 1080
-W, H = 200, 200
+# Automaton world size 
+W, H = 400, 400
 
-text_size = int(sW/40)
+text_size = int(sH/40)
 fps = 400 # Visualization (target) frames per second
 font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
 
@@ -34,6 +35,9 @@ screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
 clock = pygame.time.Clock() 
 running = True
 camera = Camera(W,H)
+camera.resize(sW,sH)
+zoom = min(sW,sH)/min(W,H)
+camera.zoom = zoom
 
 # Define here the automaton. Should be a subclass of Automaton, and implement 'draw()' and 'step()'.
 # draw() should update the (3,H,W) tensor self._worldmap, for the visualization
@@ -90,13 +94,25 @@ auto = LGCA((H,W), device='cuda')
 stopped=True
 recording=False
 launch_vid=True
+display_help=True
 writer=None
-display_help=False
+
+description, help_text = auto.get_help()
+std_help = load_std_help()
+text_blocks = [
+    TextBlock(description, "up_sx", (74, 101, 176), font),
+    TextBlock("\n", "up_sx", (230, 230, 230), font)
+]
+for section in std_help['sections']:
+    text_blocks.append(TextBlock(section["title"], "up_sx", (230, 89, 89), font))
+    for command, description in section["commands"].items():
+        text_blocks.append(TextBlock(f"{command} -> {description}", "up_sx", (230, 230, 230), font))
+    text_blocks.append(TextBlock("\n", "up_sx", (230, 230, 230), font))
+text_blocks.append(TextBlock("Automaton controls", "below_sx", (230, 89, 89), font))
+text_blocks.append(TextBlock(help_text, "below_sx", (230, 230, 230), font))
+
 
 while running:
-
-    current_W, current_H = screen.get_size()
-
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -122,44 +138,34 @@ while running:
                 display_help = not display_help
 
         if event.type == pygame.VIDEORESIZE:
-            # screen = pygame.display.set_mode((event.w, event.h), flags=pygame.RESIZABLE)
-            camera.resize(event.w,event.h)
-        
+            camera.resize(event.w, event.h)
+            
         auto.process_event(event,camera) # Process the event in the automaton
 
     if(not stopped):
         auto.step() # step the automaton
     
     auto.draw() # draw the worldstate
-        
     world_state = auto.worldmap
-
     surface = pygame.surfarray.make_surface(world_state)
-
-    if(recording):
-        if(launch_vid):# If the video is not launched, we create it
-            launch_vid = False
-            writer = launch_video((H,W),fps,'H264')
-        add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
-
-
+    
     # Clear the screen
     screen.fill((0, 0, 0))
 
     # Draw the scaled surface on the window
     zoomed_surface = camera.apply(surface)
-
     screen.blit(zoomed_surface, (0,0))
-    
-    # blit a red circle down to the left when recording
-    if(recording):
-        pygame.draw.circle(screen, (255,0,0), (15, H-15), 5)
 
-    if display_help: 
-        description = font.render(auto.__doc__.strip(), 1, (255,255,255))
-        help_text = font.render(auto.get_help(), 1, (255,255,255))
-        blit_text(screen, auto.__doc__.strip(), "up_sx", font, (255,255,255))
-        blit_text(screen, auto.get_help(), "below_sx", font, (255,255,255))
+    if (recording):
+        if(launch_vid):# If the video is not launched, we create it
+            launch_vid = False
+            writer = launch_video((H,W),fps,'H264')
+        add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
+        pygame.draw.circle(screen, (255,0,0), (15, H-15), 5)
+    
+    if (display_help):
+        render_text_blocks(screen, [TextBlock(f"FPS: {int(clock.get_fps())}", "up_dx", (255, 89, 89), font)])
+        render_text_blocks(screen, text_blocks)
 
     # Update the screen
     pygame.display.flip()
