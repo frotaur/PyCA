@@ -137,6 +137,7 @@ while running:
             if (event.key == pygame.K_h):
                 display_help = not display_help
             if (event.key == pygame.K_c):
+                camera = Camera(W,H)
                 camera.resize(sW,sH)
                 zoom = min(sW,sH)/min(W,H)
                 camera.zoom = zoom
