@@ -136,6 +136,10 @@ while running:
                 auto.step()
             if (event.key == pygame.K_h):
                 display_help = not display_help
+            if (event.key == pygame.K_c):
+                camera.resize(sW,sH)
+                zoom = min(sW,sH)/min(W,H)
+                camera.zoom = zoom
 
         if event.type == pygame.VIDEORESIZE:
             camera.resize(event.w, event.h)
