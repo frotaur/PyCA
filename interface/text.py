@@ -4,7 +4,7 @@ import json
 class TextBlock:
     def __init__(self, text, position, color, font):
         self.text = text
-        self.position = position  # "up_sx", "below_sx", etc.
+        self.position = position  # "up_sx", "below_sx", "up_dx", "below_dx"
         self.color = color
         self.font = font
         self.y_offset = 0  # Will be calculated during layout
@@ -45,6 +45,7 @@ def render_text_blocks(screen, blocks):
     # Initialize position trackers
     up_sx_y = 10
     up_dx_y = 10
+    below_dx_y = screen.get_height() - 100  # Initial position for below_dx
     
     # First calculate total height needed for below_sx blocks
     total_below_height = 0
@@ -70,6 +71,10 @@ def render_text_blocks(screen, blocks):
             block.y_offset = up_dx_y
             height = blit_text(screen, block.text, block.position, block.font, block.color, y_offset=up_dx_y)
             up_dx_y += height + 5
+        elif block.position == "below_dx":
+            block.y_offset = below_dx_y
+            height = blit_text(screen, block.text, block.position, block.font, block.color, y_offset=below_dx_y)
+            below_dx_y += height + 5
 
 def blit_text(screen, text, position, font, color, y_offset=None):
     if position == "up_sx":
@@ -83,6 +88,10 @@ def blit_text(screen, text, position, font, color, y_offset=None):
     elif position == "up_dx":
         x = screen.get_width() - 100
         y = y_offset if y_offset is not None else 10
+        max_width = 90
+    elif position == "below_dx":
+        x = screen.get_width() - 100
+        y = y_offset if y_offset is not None else (screen.get_height() - 100)
         max_width = 90
 
     # Split text into lines first (preserve explicit line breaks)
@@ -134,8 +143,7 @@ def blit_text(screen, text, position, font, color, y_offset=None):
         max_line_width + (padding * 2),
         total_height + (padding * 2)
     )
-    pygame.draw.rect(screen, (0, 0, 0), background_rect)  # Black background
-    pygame.draw.rect(screen, (50, 50, 50), background_rect, 1)  # Gray border
+    pygame.draw.rect(screen, (0, 0, 0), background_rect)  # Black background only
     
     # Render all lines
     for i, line in enumerate(rendered_lines):

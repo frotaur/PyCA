@@ -57,6 +57,6 @@ class Automaton:
         pass
     
     def get_help(self):
-        return self.__doc__.strip(),self.process_event.__doc__
+        return self.__doc__.strip(), self.process_event.__doc__.strip()
 
 

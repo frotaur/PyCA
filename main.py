@@ -167,6 +167,7 @@ while running:
         render_text_blocks(screen, [TextBlock(f"FPS: {int(clock.get_fps())}", "up_dx", (255, 89, 89), font)])
         render_text_blocks(screen, text_blocks)
 
+    render_text_blocks(screen, [TextBlock(f"H for help", "below_dx", (89, 89, 89), font)])
     # Update the screen
     pygame.display.flip()
 

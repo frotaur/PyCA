@@ -4,8 +4,8 @@ PROBLEMS:
 
 
 TODO: 
-- Help on camera controls
-- Help on default controls
+X Help on camera controls
+X Help on default controls
 X Solid background on text 
 X FPS counter
 - h for help always
