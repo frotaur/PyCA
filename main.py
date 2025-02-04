@@ -23,7 +23,7 @@ pygame.init()
 # W, H = 1000, 1000 # Width and height of the window
 # W, H = 600, 600
 sW, sH = 1080, 1080
-W, H = 400, 400
+W, H = 200, 200
 
 text_size = int(sW/40)
 fps = 400 # Visualization (target) frames per second

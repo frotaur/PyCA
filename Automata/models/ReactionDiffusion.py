@@ -157,7 +157,6 @@ class ReactionDiffusion(Automaton):
     
     def process_event(self, event, camera=None):
         """
-            Adds interactions : 
             - Left click and drag to add selected chemical
             - Right click and drag to remove selected chemical
             - Scroll wheel to change chemical
@@ -278,7 +277,12 @@ class GrayScott(ReactionDiffusion):
 
 
     def process_event(self, event, camera=None):
-        # Process common diffusion models events
+        """
+            - Left click and drag to add selected chemical
+            - Right click and drag to remove selected chemical
+            - Scroll wheel to change chemical
+            - Delete to reset the state to homogeneous
+        """
         super().process_event(event, camera)
 
         if event.type == pygame.KEYDOWN:
@@ -342,7 +346,12 @@ class BelousovZhabotinsky(ReactionDiffusion):
 
 
     def process_event(self, event, camera=None):
-        # Process common diffusion models events
+        """
+            - Left click and drag to add selected chemical
+            - Right click and drag to remove selected chemical
+            - Scroll wheel to change chemical
+            - Delete to reset the state to homogeneous
+        """
         super().process_event(event, camera)
 
         if event.type == pygame.KEYDOWN:
@@ -398,7 +407,12 @@ class Brusselator(ReactionDiffusion):
         self.renormalize = torch.ones((2),dtype=torch.float,device=device) # (num_reagents,)
 
     def process_event(self, event, camera=None):
-        # Process common diffusion models events
+        """
+            - Left click and drag to add selected chemical
+            - Right click and drag to remove selected chemical
+            - Scroll wheel to change chemical
+            - Delete to reset the state to homogeneous
+        """
         super().process_event(event, camera)
 
         if event.type == pygame.KEYDOWN:
