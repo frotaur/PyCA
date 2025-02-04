@@ -38,13 +38,15 @@ device = 'cuda'
 
 fps = 400 # Visualization (target) frames per second
 text_size = int(sH/40)
+title_size = int(text_size*1.5)
 font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
+font_title = pygame.font.Font("public/fonts/AldotheApache.ttf", size=title_size)
 screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
 clock = pygame.time.Clock() 
 running = True
 camera = Camera(W,H)
 camera.resize(sW,sH)
-zoom = min(sW,sH)/min(W,H)
+zoom = min(sW/W,sH/H)
 camera.zoom = zoom
 
 # Booleans for the main loop
@@ -77,9 +79,9 @@ auto = automaton_options[initial_automaton](H, W)
 description, help_text = auto.get_help()
 std_help = load_std_help()
 
-def make_text_blocks(description, help_text, std_help, font):
+def make_text_blocks(description, help_text, std_help, font, font_title):
     text_blocks = [
-        TextBlock(description, "up_sx", (74, 101, 176), font),
+        TextBlock(description, "up_sx", (74, 101, 176), font_title),
         TextBlock("\n", "up_sx", (230, 230, 230), font)
     ]
     for section in std_help['sections']:
@@ -90,7 +92,7 @@ def make_text_blocks(description, help_text, std_help, font):
     text_blocks.append(TextBlock("Automaton controls", "below_sx", (230, 89, 89), font))
     text_blocks.append(TextBlock(help_text, "below_sx", (230, 230, 230), font))
     return text_blocks
-text_blocks = make_text_blocks(description, help_text, std_help, font)
+text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
 
 dropdown = DropdownMenu(
     screen=screen,
@@ -153,7 +155,7 @@ while running:
                 current_sW, current_sH = screen.get_size()
                 camera = Camera(W,H)
                 camera.resize(current_sW,current_sH)
-                zoom = min(current_sW,current_sH)/min(W,H)
+                zoom = min(current_sW/W,current_sH/H)
                 camera.zoom = zoom
 
         if event.type == pygame.VIDEORESIZE:
@@ -163,7 +165,8 @@ while running:
             h_input.update_position()
             text_size = int(event.h/45)
             font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
-            text_blocks = make_text_blocks(description, help_text, std_help, font)
+            font_title = pygame.font.Font("public/fonts/AldotheApache.ttf", size=title_size)
+            text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
         
         auto.process_event(event,camera) # Process the event in the automaton
 
@@ -174,7 +177,7 @@ while running:
             auto = automaton_options[dropdown.current_option](H, W)
             # Update help text
             description, help_text = auto.get_help()
-            text_blocks = make_text_blocks(description, help_text, std_help, font)
+            text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
 
         # Handle input field events
         if w_input.handle_event(event):
@@ -186,7 +189,7 @@ while running:
                 auto = automaton_options[dropdown.current_option](H, W)
                 camera = Camera(W,H)
                 camera.resize(current_sW,current_sH)
-                zoom = min(current_sW,current_sH)/min(W,H)
+                zoom = min(current_sW/W,current_sH/H)
                 camera.zoom = zoom
 
         if h_input.handle_event(event):
@@ -198,7 +201,7 @@ while running:
                 auto = automaton_options[dropdown.current_option](H, W)
                 camera = Camera(W,H)
                 camera.resize(current_sW,current_sH)
-                zoom = min(current_sW,current_sH)/min(W,H)
+                zoom = min(current_sW/W,current_sH/H)
                 camera.zoom = zoom
 
     if(not stopped):

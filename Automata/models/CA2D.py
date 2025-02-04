@@ -61,7 +61,7 @@ class CA2D(Automaton):
         """
             Resets the automaton to the initial state.
         """
-        self._worldmap = torch.zeros((3,self.h,self.w))
+        self._worldmap = torch.zeros((3,self.h,self.w)).to(self.device)
 
         if(self.random):
             self.world = self.get_init_mat(0.5)
@@ -73,8 +73,8 @@ class CA2D(Automaton):
         """
             Updates the worldmap with the current state of the automaton.
         """
-        echo = torch.clamp(self._worldmap-self.decay_speed*self.highlight_color[:,None,None],min=0,max=1)
-        self._worldmap = torch.clamp(self.world[None,:,:].expand(3,-1,-1).to(dtype=torch.float) + echo,min=0,max=1)
+        echo = torch.clamp(self._worldmap-self.decay_speed*self.highlight_color[:,None,None],min=0,max=1).to(self.device)
+        self._worldmap = torch.clamp(self.world[None,:,:].expand(3,-1,-1).to(dtype=torch.float) + echo,min=0,max=1).to(self.device)
         
     def process_event(self, event, camera=None):
         """
