@@ -80,7 +80,7 @@ class CA2D(Automaton):
         """
         CANC -> resets the automaton
         N -> pick a new random rule
-        C -> change the highlight color
+        Z -> change the highlight color
         UP -> increase the decay speed
         DOWN -> decrease the decay speed
         """
@@ -93,7 +93,7 @@ class CA2D(Automaton):
                 s_rule = torch.randint(0,2**9,(1,)).item()
                 self.change_num(s_rule,b_rule)
                 print('rule : ', (s_rule,b_rule))
-            if(event.key == pygame.K_c):
+            if(event.key == pygame.K_z):
                 self.change_highlight_color()
             if(event.key == pygame.K_UP):
                 self.decay_speed = max(self.decay_speed-0.03,0.001)
