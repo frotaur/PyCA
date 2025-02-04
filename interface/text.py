@@ -9,6 +9,109 @@ class TextBlock:
         self.font = font
         self.y_offset = 0  # Will be calculated during layout
 
+class DropdownMenu:
+    def __init__(self, screen, width, height, font, options, default_option=None, margin=30):
+        self.screen = screen
+        self.width = width
+        self.height = height
+        self.margin = margin
+        self.font = font
+        self.options = options
+        self.option_list = list(options.keys())
+        self.active = False
+        self.current_option = default_option if default_option else self.option_list[0]
+        self.hover_index = -1
+        self.label = "Select automaton"
+        self.selected_color = (230, 230, 230)  # White color for selected option
+        self.normal_color = (50, 50, 50)       # Normal background color
+        self.hover_color = (70, 70, 70)        # Hover background color
+        
+        # Calculate position based on screen size
+        self.update_position()
+        
+    def update_position(self):
+        screen_width, screen_height = self.screen.get_size()
+        # Position at bottom right with margin
+        x = screen_width - self.width - self.margin
+        y = screen_height - self.height - self.margin
+        
+        # Update main rect
+        self.rect = pygame.Rect(x, y, self.width, self.height)
+        
+        # Update option rects
+        self.option_rects = []
+        for i in range(len(self.option_list)):
+            # Options appear above the main button
+            option_rect = pygame.Rect(x, y - (len(self.option_list) - i) * self.height, 
+                                    self.width, self.height)
+            self.option_rects.append(option_rect)
+    
+    def draw(self, screen):
+        # Draw label
+        label_surface = self.font.render(self.label, True, (230, 230, 230))
+        label_rect = label_surface.get_rect(bottomright=(self.rect.right, self.rect.top - 5))
+        # Draw label background
+        padding = 5
+        background_rect = pygame.Rect(
+            label_rect.x - padding,
+            label_rect.y - padding,
+            label_rect.width + (padding * 2),
+            label_rect.height + (padding * 2)
+        )
+        pygame.draw.rect(screen, (0, 0, 0), background_rect)
+        screen.blit(label_surface, label_rect)
+        
+        # Draw main button with selected color
+        pygame.draw.rect(screen, self.selected_color, self.rect)
+        pygame.draw.rect(screen, (100, 100, 100), self.rect, 2)
+        
+        # Draw current option in black (for contrast with white background)
+        text_surface = self.font.render(self.current_option, True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        screen.blit(text_surface, text_rect)
+        
+        # Draw dropdown if active
+        if self.active:
+            for i, (option, rect) in enumerate(zip(self.option_list, self.option_rects)):
+                # Set color based on hover and whether option is selected
+                if i == self.hover_index:
+                    color = self.hover_color
+                elif option == self.current_option:
+                    color = self.selected_color
+                else:
+                    color = self.normal_color
+                    
+                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, (100, 100, 100), rect, 2)
+                
+                # Use black text for selected option, white for others
+                text_color = (0, 0, 0) if option == self.current_option else (230, 230, 230)
+                text_surface = self.font.render(option, True, text_color)
+                text_rect = text_surface.get_rect(center=rect.center)
+                screen.blit(text_surface, text_rect)
+    
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click
+                if self.rect.collidepoint(event.pos):
+                    self.active = not self.active
+                elif self.active:
+                    for i, rect in enumerate(self.option_rects):
+                        if rect.collidepoint(event.pos):
+                            self.current_option = self.option_list[i]  # Use option_list instead of options
+                            self.active = False
+                            return True  # Option was selected
+                    self.active = False
+        
+        elif event.type == pygame.MOUSEMOTION and self.active:
+            self.hover_index = -1
+            for i, rect in enumerate(self.option_rects):
+                if rect.collidepoint(event.pos):
+                    self.hover_index = i
+                    break
+        
+        return False  # No option was selected
+
 def calculate_wrapped_height(text, font, screen_width, position):
     # Calculate max width based on position
     if position in ["up_sx", "below_sx"]:
@@ -156,3 +259,92 @@ def blit_text(screen, text, position, font, color, y_offset=None):
 def load_std_help() :
     with open('interface/std_help.json','r') as f:
         return json.load(f)
+
+class InputField:
+    def __init__(self, screen, width, height, font, label, initial_value, margin=30, index=0):
+        self.screen = screen
+        self.width = width
+        self.height = height
+        self.font = font
+        self.text = str(initial_value)
+        self.stored_value = initial_value
+        self.label = label
+        self.active = False
+        self.color = (50, 50, 50)
+        self.margin = margin
+        self.label_color = (230, 230, 230)
+        self.index = index
+        self.update_position()
+    
+    def update_position(self):
+        screen_width = self.screen.get_width()
+        # Position at top right with margin, stacked vertically
+        x = screen_width - self.width - self.margin - (self.index * (self.width + 20))  # Stack horizontally from right
+        y = 50  # Fixed vertical position below FPS text
+        self.rect = pygame.Rect(x, y, self.width, self.height)
+        
+    def draw(self):
+        # Draw label
+        label_surface = self.font.render(self.label, True, self.label_color)
+        label_rect = label_surface.get_rect(bottomright=(self.rect.right, self.rect.top - 5))
+        # Draw label background
+        padding = 5
+        background_rect = pygame.Rect(
+            label_rect.x - padding,
+            label_rect.y - padding,
+            label_rect.width + (padding * 2),
+            label_rect.height + (padding * 2)
+        )
+        pygame.draw.rect(self.screen, (0, 0, 0), background_rect)
+        self.screen.blit(label_surface, label_rect)
+        
+        # Draw input box
+        color = (100, 100, 100) if self.active else (50, 50, 50)
+        pygame.draw.rect(self.screen, color, self.rect)
+        pygame.draw.rect(self.screen, (100, 100, 100), self.rect, 2)
+        
+        # Draw text
+        text_surface = self.font.render(self.text, True, (230, 230, 230))
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        self.screen.blit(text_surface, text_rect)
+    
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            was_active = self.active
+            # If clicking on the field
+            if self.rect.collidepoint(event.pos):
+                if not self.active:  # Only clear if newly activated
+                    self.text = ""
+                self.active = True
+            else:
+                self.active = False
+                if was_active:  # If we're clicking away from an active field
+                    new_value = self.get_value()
+                    if new_value and new_value > 0:
+                        self.stored_value = new_value
+                        return True  # Signal that value has changed
+                    else:
+                        self.text = str(self.stored_value)  # Restore previous value if invalid
+        
+        if event.type == pygame.KEYDOWN and self.active:
+            if event.key == pygame.K_RETURN:
+                new_value = self.get_value()
+                if new_value and new_value > 0:
+                    self.stored_value = new_value
+                else:
+                    self.text = str(self.stored_value)  # Restore previous value if invalid
+                self.active = False
+                return True
+            elif event.key == pygame.K_BACKSPACE:
+                self.text = self.text[:-1]
+            else:
+                # Only allow numbers
+                if event.unicode.isnumeric():
+                    self.text += event.unicode
+        return False
+    
+    def get_value(self):
+        try:
+            return int(self.text)
+        except ValueError:
+            return None

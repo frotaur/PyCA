@@ -18,7 +18,7 @@ def launch_video(size,fps,fourcc='avc1'):
     vid_loc = f'Videos/Vid_{numvids}.mp4'
     return cv2.VideoWriter(vid_loc, fourcc, fps, (size[1], size[0]))
 
-def add_frame(writer,worldmap):
+def add_frame(writer, worldmap):
     frame = worldmap.transpose(1,0,2) # (H,W,3)
     # tempB = np.copy(frame[:,:,2])
     # frame[:,:,2]=frame[:,:,0]
