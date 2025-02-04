@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cellular Automata Stream</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: black;
+      }
+      #video-feed {
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain;
+        user-select: none;  /* Prevent selection */
+        -webkit-user-drag: none;  /* Prevent dragging in webkit browsers */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+    </style>
+    <script>
+      window.onload = function() {
+        // Get viewport dimensions
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        // Send to server
+        fetch(`/set_viewport_size?width=${width}&height=${height}`)
+          .then(response => {
+            if (response.ok) {
+              // After viewport is set, load the video feed
+              const video = document.getElementById('video-feed');
+              video.src = "{{ url_for('video_feed') }}";
+            }
+          });
+      }
+
+      // Update viewport size when window is resized
+      window.onresize = function() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        fetch(`/set_viewport_size?width=${width}&height=${height}`);
+      }
+
+      // Add keyboard event listener for all controls
+      document.addEventListener('keydown', function(event) {
+        event.preventDefault();  // Prevent default browser actions
+        
+        let key = null;
+        switch(event.code) {
+          case 'Space':
+            key = 'space';
+            break;
+          case 'KeyQ':
+            key = 'q';
+            break;
+          case 'KeyR':
+            key = 'r';
+            break;
+          case 'KeyP':
+            key = 'p';
+            break;
+          case 'KeyS':
+            key = 's';
+            break;
+          case 'KeyH':
+            key = 'h';
+            break;
+          case 'KeyC':
+            key = 'c';
+            break;
+        }
+        
+        if (key) {
+          fetch(`/keypress?key=${key}`);
+        }
+      });
+
+      // Track if Ctrl is pressed
+      let ctrlPressed = false;
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Control') ctrlPressed = true;
+      });
+      document.addEventListener('keyup', function(e) {
+        if (e.key === 'Control') ctrlPressed = false;
+      });
+
+      // Add mouse event listeners
+      const videoFeed = document.getElementById('video-feed');
+      
+      videoFeed.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        if (ctrlPressed) {
+          const rect = videoFeed.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          fetch(`/mouse_event?type=wheel&x=${x}&y=${y}&delta=${e.deltaY}`);
+        }
+      });
+
+      videoFeed.addEventListener('mousedown', function(e) {
+        if (ctrlPressed && e.button === 0) {  // Left click
+          const rect = videoFeed.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          fetch(`/mouse_event?type=mousedown&x=${x}&y=${y}`);
+        }
+      });
+
+      videoFeed.addEventListener('mousemove', function(e) {
+        if (ctrlPressed && e.buttons === 1) {  // Left button pressed while moving
+          const rect = videoFeed.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          fetch(`/mouse_event?type=mousemove&x=${x}&y=${y}`);
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <img id="video-feed" 
+         draggable="false"  <!-- Prevent HTML5 drag -->
+         oncontextmenu="return false;"  <!-- Prevent right-click menu -->
+         src="">
+  </body>
+</html>
