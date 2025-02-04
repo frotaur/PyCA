@@ -4,10 +4,14 @@ PROBLEMS:
 
 
 TODO: 
+- Model selection dropdown
+
+
+DONE: 
 X Help on camera controls
 X Help on default controls
 X Solid background on text 
 X FPS counter
 X h for help always
 X help shown as default
-- reset camera on resize with maxzoom for window size
+X reset camera on resize with maxzoom for window size

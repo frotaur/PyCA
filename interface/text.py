@@ -9,6 +9,97 @@ class TextBlock:
         self.font = font
         self.y_offset = 0  # Will be calculated during layout
 
+class DropdownMenu:
+    def __init__(self, screen, width, height, font, options, default_option=None, margin=30):
+        self.screen = screen
+        self.width = width
+        self.height = height
+        self.margin = margin
+        self.font = font
+        self.options = options
+        self.option_list = list(options.keys())
+        self.active = False
+        self.current_option = default_option if default_option else self.option_list[0]
+        self.hover_index = -1
+        self.label = "Select automaton"
+        
+        # Calculate position based on screen size
+        self.update_position()
+        
+    def update_position(self):
+        screen_width, screen_height = self.screen.get_size()
+        # Position at bottom right with margin
+        x = screen_width - self.width - self.margin
+        y = screen_height - self.height - self.margin
+        
+        # Update main rect
+        self.rect = pygame.Rect(x, y, self.width, self.height)
+        
+        # Update option rects
+        self.option_rects = []
+        for i in range(len(self.option_list)):
+            # Options appear above the main button
+            option_rect = pygame.Rect(x, y - (len(self.option_list) - i) * self.height, 
+                                    self.width, self.height)
+            self.option_rects.append(option_rect)
+    
+    def draw(self, screen):
+        # Draw label
+        label_surface = self.font.render(self.label, True, (230, 230, 230))
+        label_rect = label_surface.get_rect(bottomright=(self.rect.right, self.rect.top - 5))
+        # Draw label background
+        padding = 5
+        background_rect = pygame.Rect(
+            label_rect.x - padding,
+            label_rect.y - padding,
+            label_rect.width + (padding * 2),
+            label_rect.height + (padding * 2)
+        )
+        pygame.draw.rect(screen, (0, 0, 0), background_rect)
+        screen.blit(label_surface, label_rect)
+        
+        # Draw main button
+        pygame.draw.rect(screen, (50, 50, 50), self.rect)
+        pygame.draw.rect(screen, (100, 100, 100), self.rect, 2)
+        
+        # Draw current option
+        text_surface = self.font.render(self.current_option, True, (230, 230, 230))
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        screen.blit(text_surface, text_rect)
+        
+        # Draw dropdown if active
+        if self.active:
+            for i, (option, rect) in enumerate(zip(self.option_list, self.option_rects)):
+                color = (70, 70, 70) if i == self.hover_index else (50, 50, 50)
+                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, (100, 100, 100), rect, 2)
+                
+                text_surface = self.font.render(option, True, (230, 230, 230))
+                text_rect = text_surface.get_rect(center=rect.center)
+                screen.blit(text_surface, text_rect)
+    
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click
+                if self.rect.collidepoint(event.pos):
+                    self.active = not self.active
+                elif self.active:
+                    for i, rect in enumerate(self.option_rects):
+                        if rect.collidepoint(event.pos):
+                            self.current_option = self.option_list[i]  # Use option_list instead of options
+                            self.active = False
+                            return True  # Option was selected
+                    self.active = False
+        
+        elif event.type == pygame.MOUSEMOTION and self.active:
+            self.hover_index = -1
+            for i, rect in enumerate(self.option_rects):
+                if rect.collidepoint(event.pos):
+                    self.hover_index = i
+                    break
+        
+        return False  # No option was selected
+
 def calculate_wrapped_height(text, font, screen_width, position):
     # Calculate max width based on position
     if position in ["up_sx", "below_sx"]:

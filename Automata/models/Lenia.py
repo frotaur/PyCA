@@ -6,7 +6,8 @@ import torch.nn.functional as F
 class MultiLenia(Automaton):
     """
         Generalized Lenia-like automaton.
-
+    """
+    """
         Args :
         size : tuple of ints, size of the automaton
         dt : time-step used when computing the evolution of the automaton
@@ -219,7 +220,7 @@ class MultiLenia(Automaton):
                 self.update_params(self.gen_params(self.device))
             if(event.key == pygame.K_v):
                 """ Variate around parameters"""
-                self.around_params()
+                self.around_params(self.device)
             if(event.key == pygame.K_z):
                 self.set_init_perlin()
                 n_steps=0
