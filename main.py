@@ -1,4 +1,4 @@
-import pygame, os
+import pygame, os, torch
 from utils.Camera import Camera
 from Automata.models import (
     CA1D, 
@@ -51,24 +51,25 @@ launch_vid=True
 display_help=True
 writer=None
 
-# Create dropdown menu for automaton selection
+# Define automaton classes without instantiating
 automaton_options = {
-    "CA2D":         CA2D((H,W),b_num='3',s_num='23',random=True,device='cuda'),
-    "CA1D":         CA1D((H,W),wolfram_num=90,random=True),
-    "GeneralCA1D":  GeneralCA1D((H,W),wolfram_num=1203,r=3,k=3,random=True),
-    "LGCA":         LGCA((H,W), device='cuda'),
-    "Gray-Scott":   GrayScott((H,W),device='cuda'),
-    "Belousov-Zhabotinsky": BelousovZhabotinsky((H,W),device='cuda'),
-    "Brusselator":  Brusselator((H,W),device='cuda'),
-    "Falling Sand": FallingSand((H,W)),
-    "Baricelli 2D": Baricelli2D((H,W),n_species=7,reprod_collision=True,device='cuda'),
-    "Baricelli 1D": Baricelli1D((H,W),n_species=8,reprod_collision=True),
-    "MultiLenia":   MultiLenia((H,W),param_path='LeniaParams',device='cuda'),
-    # "Neural CA": NCA((H,W), model_path='NCA_train/trained_model/latestNCA.pt',device='cuda')
+    "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device='cuda'),
+    "CA1D":         lambda h, w: CA1D((h,w), wolfram_num=90, random=True),
+    "GeneralCA1D":  lambda h, w: GeneralCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
+    "LGCA":         lambda h, w: LGCA((h,w), device='cuda'),
+    "Gray-Scott":   lambda h, w: GrayScott((h,w), device='cuda'),
+    "Belousov-Zhabotinsky": lambda h, w: BelousovZhabotinsky((h,w), device='cuda'),
+    "Brusselator":  lambda h, w: Brusselator((h,w), device='cuda'),
+    "Falling Sand": lambda h, w: FallingSand((h,w)),
+    "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device='cuda'),
+    "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
+    "MultiLenia":   lambda h, w: MultiLenia((h,w), param_path='LeniaParams', device='cuda'),
+    # "Neural CA":  lambda h, w: NCA((h,w), model_path='NCA_train/trained_model/latestNCA.pt', device='cuda')
 }
 
+# Then when initializing the first automaton:
 initial_automaton = "CA2D"
-auto = automaton_options[initial_automaton]
+auto = automaton_options[initial_automaton](H, W)
 
 description, help_text = auto.get_help()
 std_help = load_std_help()
@@ -165,8 +166,9 @@ while running:
 
         if dropdown.handle_event(event):
             # Handle automaton change
-            print(dropdown.current_option)
-            auto = automaton_options[dropdown.current_option]
+            torch.cuda.empty_cache()
+            torch.cuda.reset_max_memory_allocated()
+            auto = automaton_options[dropdown.current_option](H, W)
             # Update help text
             description, help_text = auto.get_help()
             text_blocks = make_text_blocks(description, help_text, std_help, font)
@@ -177,14 +179,14 @@ while running:
             if new_w and new_w > 0:
                 W = new_w
                 # Recreate automaton with new size
-                auto = automaton_options[dropdown.current_option].__class__((H,W))
+                auto = automaton_options[dropdown.current_option](H, W)
 
         if h_input.handle_event(event):
             new_h = h_input.get_value()
             if new_h and new_h > 0:
                 H = new_h
                 # Recreate automaton with new size
-                auto = automaton_options[dropdown.current_option].__class__((H,W))
+                auto = automaton_options[dropdown.current_option](H, W)
 
     if(not stopped):
         auto.step() # step the automaton
