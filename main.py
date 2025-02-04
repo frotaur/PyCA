@@ -178,15 +178,25 @@ while running:
             new_w = w_input.get_value()
             if new_w and new_w > 0:
                 W = new_w
+                current_sW, current_sH = screen.get_size()
                 # Recreate automaton with new size
                 auto = automaton_options[dropdown.current_option](H, W)
+                camera = Camera(W,H)
+                camera.resize(current_sW,current_sH)
+                zoom = min(current_sW,current_sH)/min(W,H)
+                camera.zoom = zoom
 
         if h_input.handle_event(event):
             new_h = h_input.get_value()
             if new_h and new_h > 0:
                 H = new_h
+                current_sW, current_sH = screen.get_size()
                 # Recreate automaton with new size
                 auto = automaton_options[dropdown.current_option](H, W)
+                camera = Camera(W,H)
+                camera.resize(current_sW,current_sH)
+                zoom = min(current_sW,current_sH)/min(W,H)
+                camera.zoom = zoom
 
     if(not stopped):
         auto.step() # step the automaton

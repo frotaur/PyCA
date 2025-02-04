@@ -267,16 +267,15 @@ class InputField:
         self.height = height
         self.font = font
         self.text = str(initial_value)
+        self.stored_value = initial_value
         self.label = label
         self.active = False
         self.color = (50, 50, 50)
         self.margin = margin
         self.label_color = (230, 230, 230)
-        self.index = index  # Used to stack inputs vertically
-        
-        # Calculate initial position
+        self.index = index
         self.update_position()
-        
+    
     def update_position(self):
         screen_width = self.screen.get_width()
         # Position at top right with margin, stacked vertically
@@ -311,13 +310,29 @@ class InputField:
     
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
+            was_active = self.active
+            # If clicking on the field
             if self.rect.collidepoint(event.pos):
+                if not self.active:  # Only clear if newly activated
+                    self.text = ""
                 self.active = True
             else:
                 self.active = False
+                if was_active:  # If we're clicking away from an active field
+                    new_value = self.get_value()
+                    if new_value and new_value > 0:
+                        self.stored_value = new_value
+                        return True  # Signal that value has changed
+                    else:
+                        self.text = str(self.stored_value)  # Restore previous value if invalid
         
         if event.type == pygame.KEYDOWN and self.active:
             if event.key == pygame.K_RETURN:
+                new_value = self.get_value()
+                if new_value and new_value > 0:
+                    self.stored_value = new_value
+                else:
+                    self.text = str(self.stored_value)  # Restore previous value if invalid
                 self.active = False
                 return True
             elif event.key == pygame.K_BACKSPACE:
