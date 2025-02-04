@@ -1,6 +1,7 @@
 import os, torch, cv2, numpy as np
-from torchenhanced.util import saveTensImage
-
+from showtens import show_image
+import pygame
+import json
 
 def launch_video(size,fps,fourcc='avc1'):
     """
@@ -29,4 +30,5 @@ def save_image(worldmap):
     os.makedirs('Images',exist_ok=True)
     numimgs = len(os.listdir('Images/'))
     img_name = f'img_{numimgs}'
-    saveTensImage(torch.tensor(worldmap).permute(2,1,0),folderpath='Images',name = img_name)
+    show_image(torch.tensor(worldmap).permute(2,1,0),folderpath='Images',name = img_name)
+

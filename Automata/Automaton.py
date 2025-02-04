@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-class Automaton :
+class Automaton:
     """
         Class that internalizes the rules and evolution of 
         a cellular automaton. It has a step function
@@ -55,6 +55,8 @@ class Automaton :
                 Use camera.convert_mouse_pos(pygame.mouse.get_pos()) to convert the mouse position to world coordinates.
         """
         pass
-
+    
+    def get_help(self):
+        return self.__doc__.strip(), self.process_event.__doc__.strip()
 
 

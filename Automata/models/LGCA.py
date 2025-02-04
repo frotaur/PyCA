@@ -45,13 +45,11 @@ class LGCA(Automaton):
 
     def process_event(self, event, camera=None):
         """
-            Adds interactions : 
-            - Left click and drag to add particles
-            - Right click and drag to erase particles
-            - Left click and drag while pressing W : add walls
-            - Right click and drag while pressing W : erase walls
-            - Scroll wheel to change brush size
-            - Delete to reset the particles to homogeneous
+            LEFT CLICK      -> add particles
+            RIGHT CLICK     -> remove particles
+            LEFT CLICK + W  -> add walls
+            RIGHT CLICK + W -> remove walls
+            SCROLL WHEEL    -> change brush size
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:

@@ -69,6 +69,12 @@ class NCA(Automaton):
         self._worldmap = pic # (3,H,W)
     
     def process_event(self, event, camera=None):
+        """
+        DELETE              -> resets the automaton
+        F                   -> randomize parameters
+        LEFT CLICK + DRAG   -> erase cells
+        RIGHT CLICK         -> insert seed at cursor position
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 self.reset()

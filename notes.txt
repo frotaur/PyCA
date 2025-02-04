@@ -1,0 +1,13 @@
+PROBLEMS:
+- Recording doesn't work. VideoWriter is not initialized.
+- NCA doesn't work.
+
+
+TODO: 
+X Help on camera controls
+X Help on default controls
+X Solid background on text 
+X FPS counter
+X h for help always
+X help shown as default
+- reset camera on resize with maxzoom for window size
