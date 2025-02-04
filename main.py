@@ -1,17 +1,24 @@
-"""
-    Contains the main loop, used to run and visualize the automaton dynamics.
-"""
-
-
 import pygame, os
 from utils.Camera import Camera
-from Automata.models import CA1D, GeneralCA1D, CA2D, Baricelli1D, \
-Baricelli2D, ReactionDiffusion, LGCA, FallingSand, NCA, MultiLenia
-from Automata.models.ReactionDiffusion import GrayScott, BelousovZhabotinsky, Brusselator
+from Automata.models import (
+    CA1D, 
+    GeneralCA1D, 
+    CA2D, 
+    Baricelli1D,
+    Baricelli2D, 
+    LGCA, 
+    FallingSand, 
+    MultiLenia,
+    NCA
+)
+from Automata.models.ReactionDiffusion import (
+    GrayScott, 
+    BelousovZhabotinsky, 
+    Brusselator
+)
 
 from utils.utils import launch_video, add_frame, save_image
-from interface.text import TextBlock, render_text_blocks, load_std_help, DropdownMenu
-
+from interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks, load_std_help
 
 
 if os.name == 'posix':  # Check if OS is Linux/Unix
@@ -87,8 +94,31 @@ dropdown = DropdownMenu(
     height=30,
     font=font,
     options=automaton_options,
-    default_option="LGCA",
+    default_option="CA2D",
     margin=20  # Distance from screen edges
+)
+
+# Create input fields for width and height
+w_input = InputField(
+    screen=screen,
+    width=60,
+    height=30,
+    font=font,
+    label="Width",
+    initial_value=W,
+    margin=20,
+    index=0  # First input field
+)
+
+h_input = InputField(
+    screen=screen,
+    width=60,
+    height=30,
+    font=font,
+    label="Height",
+    initial_value=H,
+    margin=20,
+    index=1  # Second input field, will appear below width
 )
 
 while running:
@@ -124,7 +154,9 @@ while running:
 
         if event.type == pygame.VIDEORESIZE:
             camera.resize(event.w, event.h)
-            dropdown.update_position()  # Update dropdown position when screen is resized
+            dropdown.update_position()
+            w_input.update_position()
+            h_input.update_position()
             text_size = int(event.h/45)
             font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
             text_blocks = make_text_blocks(description, help_text, std_help, font)
@@ -138,6 +170,21 @@ while running:
             # Update help text
             description, help_text = auto.get_help()
             text_blocks = make_text_blocks(description, help_text, std_help, font)
+
+        # Handle input field events
+        if w_input.handle_event(event):
+            new_w = w_input.get_value()
+            if new_w and new_w > 0:
+                W = new_w
+                # Recreate automaton with new size
+                auto = automaton_options[dropdown.current_option].__class__((H,W))
+
+        if h_input.handle_event(event):
+            new_h = h_input.get_value()
+            if new_h and new_h > 0:
+                H = new_h
+                # Recreate automaton with new size
+                auto = automaton_options[dropdown.current_option].__class__((H,W))
 
     if(not stopped):
         auto.step() # step the automaton
@@ -156,9 +203,9 @@ while running:
     if (recording):
         if(launch_vid):# If the video is not launched, we create it
             launch_vid = False
-            writer = launch_video((H,W),fps,'H264')
+            writer = launch_video((H,W), fps, 'mp4v')
         add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
-        pygame.draw.circle(screen, (255,0,0), (15, H-15), 5)
+        pygame.draw.circle(screen, (255,0,0), (15,H-15), 5)
     
     if (display_help):
         render_text_blocks(screen, [TextBlock(f"FPS: {int(clock.get_fps())}", "up_dx", (255, 89, 89), font)])
@@ -168,6 +215,10 @@ while running:
 
     # Draw dropdown (before pygame.display.flip())
     dropdown.draw(screen)
+
+    # Draw input fields
+    w_input.draw()
+    h_input.draw()
 
     # Update the screen
     pygame.display.flip()
