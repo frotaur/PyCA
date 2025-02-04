@@ -31,7 +31,10 @@ pygame.init()
 sW, sH = 1280, 720
 
 # Automaton world size 
-W, H = 400, 400
+W, H = 300, 300
+
+# Device to run the automaton
+device = 'cuda'
 
 fps = 400 # Visualization (target) frames per second
 text_size = int(sH/40)

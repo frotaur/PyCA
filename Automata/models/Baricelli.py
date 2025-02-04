@@ -252,16 +252,12 @@ class Baricelli2D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        CANC -> resets the automaton
-        DOWN -> makes one step
+        DELETE -> resets the automaton
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
                 self.reset() 
                 self.draw()
-            if(event.key == pygame.K_DOWN):
-                self.step()
 
     def draw(self):
         """
