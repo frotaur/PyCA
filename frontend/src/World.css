@@ -1,0 +1,37 @@
+:root {
+  --world-size: 100vh;
+}
+
+.world-container {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 2px solid #00ff00;
+    background: black;
+    overflow: hidden;
+}
+
+.world-canvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    touch-action: none; /* Prevents touch scrolling */
+    width: var(--world-size);
+    height: var(--world-size);
+    max-width: 100%;
+    aspect-ratio: 1;
+}
+
+.error-message {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    color: #ff4444;
+    background: rgba(255, 0, 0, 0.1);
+    padding: 0.5rem;
+    margin-top: 1rem;
+    text-align: center;
+    border-radius: 4px;
+}

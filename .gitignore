@@ -8,3 +8,5 @@ Images
 __pycache__
 env
 build
+*/node_modules
+psyca
