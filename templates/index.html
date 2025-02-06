@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Automaton Stream</title>
+    <style>
+
+        .world-container {
+            position: fixed;
+            background: black;
+            overflow: hidden;
+        }
+
+        .world-video {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            width: var(--world-size);
+            height: var(--world-size);
+            /* max-width: 100%; */
+            /* aspect-ratio: 1; */
+        }
+    </style>
+</head>
+<body style="margin: 0; background: black;">
+    <div class="world-container">
+        <img class="world-video" src="{{ url_for('video_feed') }}">
+    </div>
+</body>
+</html>

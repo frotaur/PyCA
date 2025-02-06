@@ -35,9 +35,7 @@ app = Flask(__name__)
 viewport_size = {'width': 1920, 'height': 1080}  # Default size
 
 @app.route("/")
-def index():
-	# return the rendered template
-    
+def index():    
 	return render_template("index.html")
 
 @app.route("/video_feed")

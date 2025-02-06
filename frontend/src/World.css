@@ -1,6 +1,4 @@
-:root {
-  --world-size: 100vh;
-}
+
 
 .world-container {
     position: fixed;
@@ -10,6 +8,10 @@
     border: 2px solid #00ff00;
     background: black;
     overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
 }
 
 .world-canvas {
@@ -21,6 +23,15 @@
     height: var(--world-size);
     max-width: 100%;
     aspect-ratio: 1;
+    border: 1px solid black;
+}
+
+.fps-counter {
+    color: #00ff00;  /* Adding green color to match the container border */
+    padding: 0.5rem;
+    transform: rotate(90deg);
+    transform-origin: left top; /* This helps position the rotated text better */
+    white-space: nowrap; /* Prevents text wrapping */
 }
 
 .error-message {

@@ -1,7 +1,9 @@
 import os, time, json
-from flask import Flask, Response, jsonify
+from flask import Flask, Response, jsonify, make_response, request
 from flask_cors import CORS
 import numpy as np
+import io, zlib, pickle
+import logging
 
 from Automata.models import (
     CA1D, 
@@ -20,8 +22,6 @@ from Automata.models.ReactionDiffusion import (
     Brusselator
 )
 
-# Automaton world size 
-W, H = 30, 30
 # Device to run the automaton
 device = 'cuda'
 
@@ -43,12 +43,14 @@ automaton_options = {
 
 # Then when initializing the first automaton:
 initial_automaton = "CA2D"
+stopped = True
+# Automaton world size 
+W, H = 300, 300
 auto = automaton_options[initial_automaton](H, W)
-auto.step() # step the automaton
-auto.draw() # draw the worldstate
-world_state = auto.worldmap
+
 
 app = Flask(__name__)
+app.logger.setLevel(logging.ERROR)
 CORS(app, 
     origins=["http://localhost:5173"],
     allow_headers=["Content-Type", "Access-Control-Allow-Headers"],
@@ -56,43 +58,54 @@ CORS(app,
     methods=["GET", "POST", "OPTIONS"],
 )   
 
+def compress_array(arr):
+    s = pickle.dumps(arr, protocol=3)
+    e = zlib.compress(s)
+    return e
+
+@app.route("/dimensions", methods=["GET"])
+def dimensions():
+    return jsonify({
+        "height": world_state.shape[0],
+        "width": world_state.shape[1],
+        "channels": world_state.shape[2]
+    })
+
+
 @app.route("/stream")
 def stream():
-    def generate():
-        while True: 
-            auto.step()
-            auto.draw()
-            world_state = auto.worldmap  # Should be (H,W,3) numpy array            
-            if world_state.dtype != np.uint8:
-                world_state = (world_state * 255).astype(np.uint8)
+    global stopped
+    if not (stopped):
+        auto.step()
+    auto.draw()
+    world_state = auto.worldmap  # Should be (H,W,3) numpy array            
+    world_state = world_state.reshape((world_state.shape[0]*world_state.shape[1], 3))
+    data = compress_array(world_state)
+    r = make_response(data)    
+    setattr(r, "mimetype", "application/octet-stream")
+    return r
 
-            # reshape the world state for three.js compatibility
-            
-            height = world_state.shape[0]
-            width = world_state.shape[1]
-            channels = world_state.shape[2]
-            
-            world_state = world_state.reshape((world_state.shape[0]*world_state.shape[1], 3))
-            
-            frame_data = {
-                "frame": world_state.tolist(),
-                "dimensions": {
-                    "height": height,
-                    "width": width,
-                    "channels": channels
-                },
-                "timestamp": time.time()
-            }
-            
-            yield f"data: {json.dumps(frame_data)}\n\n"
+@app.route("/streamstate")
+def stream_state():
+    global stopped
+    return jsonify({"state": stopped})
+
+@app.route("/keypress", methods=["GET"])
+def keypress():
+    global stopped
+    global auto
+    key = request.args.get("key")    
+    if key == "Space":
+        stopped = not stopped
     
-    response = Response(generate(), mimetype='text/event-stream')
-    return response
+    if key == "KeyR":
+        auto.reset()
 
-@app.route("/hello", methods=["GET"])
-def hello():
-    return jsonify({"text": "Hello, World!"})
+    return jsonify({"status": "success", "key": key})
 
 if __name__ == "__main__":
-
+    
+    auto.step() # step the automaton
+    auto.draw() # draw the worldstate
+    world_state = auto.worldmap
     app.run(debug=True, host='0.0.0.0', port=5000)
