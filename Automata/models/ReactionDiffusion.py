@@ -67,7 +67,7 @@ class ReactionDiffusion(Automaton):
             self.resizer = Resize((self.h,self.w),antialias=False)
 
 
-        self.dt = self.dx**2*0.9 # Use diffusion coeffs max 0.25 for stability
+        self.dt = self.dx**2*0.6 # Use diffusion coeffs max 0.25 for stability
 
 
 
@@ -175,27 +175,16 @@ class ReactionDiffusion(Automaton):
                     self.D[self.selected_reagent] = torch.clip(self.D[self.selected_reagent]+0.1,0.1,3.)
                 print('D{} : '.format(self.selected_reagent),self.D[self.selected_reagent])
     
-        if event.type == pygame.MOUSEBUTTONDOWN :
-            if(event.button == 1):
-                self.left_pressed=True
-            if(event.button ==3):
-                self.right_pressed=True
-        if event.type == pygame.MOUSEBUTTONUP:
-            if(event.button==1):
-                self.left_pressed=False
-            elif(event.button==3):
-                self.right_pressed=False
-    
+        mouse = self.get_mouse_state(camera)
+
         if event.type == pygame.MOUSEMOTION:
-            if(self.left_pressed):
-                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                set_mask = self.get_brush_slice(x,y)[None] # (1,H,W)
+            if(mouse.left):
+                set_mask = self.get_brush_slice(mouse.x,mouse.y)[None] # (1,H,W)
                 set_mask = set_mask & self.reagent_mask[:,None,None]
                 # Add particles
-                self.u[set_mask] = .9
-            elif(self.right_pressed):
-                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                set_mask = self.get_brush_slice(x,y)[None] # (1,H,W)
+                self.u[set_mask] = .8
+            elif(mouse.right):
+                set_mask = self.get_brush_slice(mouse.x,mouse.y)[None] # (1,H,W)
                 set_mask = set_mask & self.reagent_mask[:,None,None]
                 # Add particles
                 self.u[set_mask] = 0.
@@ -237,11 +226,11 @@ class ReactionDiffusion(Automaton):
             drawu = self.u[...,None]
         new_world = ((drawu) * self.r_colors[:,None,None]).sum(dim=0)/(drawu.sum(dim=0)+1e-6)*drawu.max(dim=0)[0] # (H,W,3)
 
-        select_size= 4
-        new_world[:select_size,:select_size,:] = self.r_colors[self.selected_reagent] # Draw a square of the selected reagent in the top left corner
+        select_size= 6
+        new_world[:select_size,self.w-select_size:,:] = self.r_colors[self.selected_reagent] # Draw a square of the selected reagent in the top left corner
         # Put a black border around the square
-        new_world[select_size,:select_size+1,:] = 0
-        new_world[:select_size+1,select_size,:] = 0
+        new_world[select_size,self.w-select_size:,:] = 0
+        new_world[:select_size+1,self.w-select_size,:] = 0
 
         if(self.resizer is not None):
             self._worldmap = self.resizer(new_world.permute(2,0,1)) # (3,H,W) resized to match window
@@ -251,7 +240,7 @@ class ReactionDiffusion(Automaton):
 
 class GrayScott(ReactionDiffusion):
     """
-        Gray-Scott model.
+        Reaction Diffusion Gray-Scott model. Selected chemical color displayed on the top left corner.
     """
 
     def __init__(self, size, Da=1.,Db=0.5,f=.06100,k=.06264,device='cpu'):
@@ -343,7 +332,14 @@ class BelousovZhabotinsky(ReactionDiffusion):
         self.u[1:] = self.u[1:] + 0.01*torch.rand_like(self.u[1:])
         self.stepnum=1
 
+        self.renormalize = torch.ones((3),dtype=torch.float,device=device) # (num_reagents,)
 
+    def step(self):
+        """
+            Modified Reaction Diffusion step to add a clipping to prevent runaway
+        """
+        super().step()
+        self.u = torch.clamp(self.u,0.,1.5)
 
     def process_event(self, event, camera=None):
         """
@@ -401,7 +397,7 @@ class Brusselator(ReactionDiffusion):
         self.u = torch.zeros_like(self.u)
         self.u[1] =.1
         self.stepnum=1
-        self.dt=0.5
+        self.dt=0.4
         self.brush_size=10
 
         self.renormalize = torch.ones((2),dtype=torch.float,device=device) # (num_reagents,)
