@@ -1,15 +1,16 @@
 """
     Baricelli automata, both 1D and 2D.
 """
-from Automaton import Automaton
+from ..automaton import Automaton
 import torch
+# from colorsys import hsv_to_rgb
 from matplotlib.colors import hsv_to_rgb
 import pygame
 
 
 class Baricelli1D(Automaton):
     """
-        Baricelli model in 1D. 
+        1D Baricelli cellular automaton. 
     """
 
     def __init__(self, size, n_species : int=6, reprod_collision=False):
@@ -49,17 +50,17 @@ class Baricelli1D(Automaton):
 
         ## Then reproduction
         # No repcol : no reproduction on already lit cells
-        # reprod_attempt = (self.world!=0) & (new_world!=0) # (W,), mask of cells that can attempt reproduction
-        # reprod_parent = new_world[reprod_attempt] # (N,), parent species
+        reprod_attempt = (self.world!=0) & (new_world!=0) # (W,), mask of cells that can attempt reproduction
+        reprod_parent = new_world[reprod_attempt] # (N,), parent species
 
-        # rep_pos= (self.positions[reprod_attempt]+self.world[reprod_attempt]-new_world[reprod_attempt])%self.w # (N,), positions of reproduction
+        rep_pos= (self.positions[reprod_attempt]+self.world[reprod_attempt]-new_world[reprod_attempt])%self.w # (N,), positions of reproduction
 
-        # rep_mask, rep_locs = self._move_collision(rep_pos) 
+        rep_mask, rep_locs = self._move_collision(rep_pos) 
 
-        # reprod_parent = reprod_parent[rep_mask] # (N',), parent species of non-colliding reproducers
+        reprod_parent = reprod_parent[rep_mask] # (N',), parent species of non-colliding reproducers
 
-        # reprod_success =(new_world[rep_locs]==0) | (new_world[rep_locs]==reprod_parent) # (N',) Success mask, if already empty or same species
-        # new_world[rep_locs[reprod_success]] = reprod_parent[reprod_success] # (W,), update the world with successful reproducers        
+        reprod_success =(new_world[rep_locs]==0) | (new_world[rep_locs]==reprod_parent) # (N',) Success mask, if already empty or same species
+        new_world[rep_locs[reprod_success]] = reprod_parent[reprod_success] # (W,), update the world with successful reproducers        
         
         if(self.repcol):
             new_world[rep_locs[~reprod_success]] = 0
@@ -111,13 +112,13 @@ class Baricelli1D(Automaton):
         # self.world[self.w//2+2]=-torch.randint(1,self.speciesnum+1,(1,)).item()
 
     def process_event(self, event, camera=None):
+        """
+        DEL -> resets the automaton
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
                 self.reset() 
                 self.draw()
-            if(event.key == pygame.K_DOWN):
-                self.step()
 
     def draw(self):
         """
@@ -241,18 +242,15 @@ class Baricelli2D(Automaton):
         self.time=0
 
         self.world = torch.randint_like(self.world,-self.speciesnum,self.speciesnum+1)
-        # self.world = torch.zeros_like(self.world)
-        # self.world[self.w//2-5]=1
-        # self.world[self.w//2+2]=-2
 
     def process_event(self, event, camera=None):
+        """
+        DEL -> resets the automaton
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
                 self.reset() 
                 self.draw()
-            if(event.key == pygame.K_DOWN):
-                self.step()
 
     def draw(self):
         """

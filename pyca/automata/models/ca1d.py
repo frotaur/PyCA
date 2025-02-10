@@ -2,7 +2,7 @@
     Variations on the 1D Cellular Automata.
 """
 
-from Automaton import Automaton
+from ..automaton import Automaton
 import colorsys
 import random
 import pygame
@@ -10,9 +10,9 @@ import torch
 
 
 
-class CA1D(Automaton):
+class ElementaryCA(Automaton):
     """
-        Class that implements all 1D Cellular Automata, the "Elementary" cellular automata.
+        1D Elementary Cellular Automata.
     """
 
     def __init__(self, size, wolfram_num : int, random: bool = False):
@@ -42,7 +42,8 @@ class CA1D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-            This method processes the events recorded by pygame.
+        CANC -> resets the automaton
+        N -> pick a new random rule
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
@@ -80,7 +81,7 @@ class CA1D(Automaton):
             elif(self.right_pressed):
                 x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
                 # Add interactions when dragging with right-click
-    
+
     def convert_wolfram_num(self,wolfram_num : int):
         """
             Converts a wolfram number to a rule tensor.
@@ -135,7 +136,7 @@ class CA1D(Automaton):
         self.time+=1
 
 
-class GeneralCA1D(Automaton):
+class TotalisticCA1D(Automaton):
     """
         General TOTALISTIC 1D Cellular Automaton, supports arbitrary neighborhoods and states.
         Totalistic means that the output state of a cell depends only on the sum of the states of the neighborhood.
@@ -166,9 +167,12 @@ class GeneralCA1D(Automaton):
         self.reset(random=self.random)
 
     def process_event(self, event, camera=None):
+        """
+        DELETE -> resets the automaton
+        N -> pick a new random rule
+        """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
                 self.reset(random=self.random) 
                 self.draw()
             if(event.key == pygame.K_n):

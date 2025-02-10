@@ -1,5 +1,9 @@
+easydict
+matplotlib
 numpy
-opencv_python
 pygame
+pyperlin
+showtens
 torch
 torchenhanced
+torchvision

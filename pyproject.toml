@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyca"
+version = "0.1.0"
+authors = [
+    { name = "Vassilis Papadopoulos", email = "vassilis.physics@gmail.com" },
+    { name = "Marco Tuccio", email = "marco.tuccio95@gmail.com"}
+]
+description = "PyCA, a small python package to facilitate implementing artificial life worlds with pytorch."
+readme = "README.md"
+requires-python = ">=3.11"
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["pyca"]
+include = ["pyca/interface/files/*"]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
+nca = ["train_nca/extra_requirements.txt"]
