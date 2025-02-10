@@ -1,8 +1,11 @@
-import pygame, os
+import pygame, os, json
 from torch.cuda import empty_cache, reset_max_memory_allocated
-from utils.Camera import Camera
+from importlib.resources import files
 
-from Automata.models import (
+
+from pyca.interface import Camera
+
+from pyca.automata import (
     ElementaryCA, 
     TotalisticCA1D, 
     CA2D, 
@@ -11,23 +14,26 @@ from Automata.models import (
     LGCA, 
     FallingSand, 
     MultiLenia,
-    NCA
-)
-from Automata.models.ReactionDiffusion import (
+    NCA,
     GrayScott, 
     BelousovZhabotinsky, 
     Brusselator
 )
 
-from utils.utils import launch_video, add_frame, print_screen
-from interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks, load_std_help
+from pyca.interface import launch_video, add_frame, print_screen
+from pyca.interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks
 
 if os.name == 'posix':  # Check if OS is Linux/Unix
     print("Setting window position to 0, 0")
     os.environ["SDL_VIDEO_WINDOW_POS"] = "0, 0"
 
-pygame.init()
+font_path = str(files('pyca.interface.files').joinpath('AldotheApache.ttf'))
+std_help = None
 
+with open(str(files('pyca.interface.files').joinpath('std_help.json')), 'r') as f:
+    std_help = json.load(f)
+
+pygame.init()
 def gameloop(screen: tuple[int], world: tuple[int], device: str):
     # Replace the static sW, sH definition with:
     sW, sH = screen
@@ -43,8 +49,8 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
 
     text_size = int(sH/40)
     title_size = int(text_size*1.5)
-    font = pygame.font.Font("utils/fonts/AldotheApache.ttf", size=text_size)
-    font_title = pygame.font.Font("utils/fonts/AldotheApache.ttf", size=title_size)
+    font = pygame.font.Font(font_path, size=text_size)
+    font_title = pygame.font.Font(font_path, size=title_size)
     screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
     clock = pygame.time.Clock() 
     running = True
@@ -81,7 +87,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     auto = automaton_options[initial_automaton](H, W)
 
     description, help_text = auto.get_help()
-    std_help = load_std_help()
 
     def make_text_blocks(description, help_text, std_help, font, font_title):
         text_blocks = [

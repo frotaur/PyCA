@@ -1,41 +1,38 @@
 # Skeleton for 1D CA, and more general cellular automata
 
 This little project contains the necessary tools to easily implement and Visualize cellular automata, using python and pygame.
-## How to use, quick
-You need python 3.9 or later.
-First install the dependencies with `pip install -r requirements.txt` or `pip3 install -r requirements.txt`. 
-Run `python main.py` or `python3 main.py` and a window should open, displaying a 1D CA.
+## Installation
+You need python 3.11 or later (ideally, might work with earlier versions).
 
-CAUTION ! : if using a windows PC, and you have a NVIDIA GPU, before running `pip install -r requirements.txt`, run `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121` (or whatever is appropriate for your case, check pytorch's website). If you don't do this, python will install torch WITHOUT CUDA, and you won't be able to run your CA's on the GPU, making them much slower !
-### Keyboard and mouse controls
-- Camera
-    - You can Zoom in and out by CTRL+mousewheel
-    - You can move the camera around when zoom by holding CTRL and dragging with left click
-
-- Keyboard commands
-    - 'r' : start/stop recording. A red circle with appear, showing it is recording. Press 'R' again to stop. Video will be saved in  `./Videos/`
-    - 'p' : save a picture of the current world. Saved in './Images'
-    - 'spacebar' : start/stop automaton evolution.
-    - 'q' : quits the program
-    - 'DEL' : Resets the configuration
-    - 'n' : Switch to a new rule
+<font color="red"> FOR WINDOWS PC WITH GPUS :  If you are running windows, and have a NVIDIA GPU, please run the following command before proceeding : `pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126`. If something doesn't work afterwards, visit https://pytorch.org/ and choose an earlier version.  Linux and Max users can safely skip this step.</font>
 
 
+Install the pyca package by running `pip install -e .` from the projects directory (i.e., the same directory as `README.md`). You are all set!
 
-## Main
-Main.py is in charge of displaying the CA dynamics, and interacting with them. The code is commented, so I suggest to take a look to see how it can be modified.
-To play around with the default 1D CA, you can change the initial rule by modifying the 'wolfram_num' parameter to be any integer between 0 and 255. (see `auto = CA1D((H,W), wolfram_num=15, init_state=init_state)`).
+## Run the implemented automatons
+To run the main user interface that allows you to interact with the implementend automata you run the script 'simulate.py'.
 
-To customize `main.py` :
-- You can change the automaton to be some other version you implemented by setting the variable `auto`. See '`Automaton.py`' section for more info on implementing your own.
-- You can change the possible interactions by modifying the code inside `for event in pygame.event.get():`.
-    - Add other keyboard interactions by adding somethine inside the `if event.type == pygame.KEYDOWN :` context. The code inside ``` if(event.key == pygame.K_y): ``` will execute whenever you press the key 'y'.
-    - There are prepared context that activate whenever the left/right mouse are clicked, and whenever we drag with this click. This can be used to draw inside the cellular automaton, for example.
+The basic command is : `simulate.py [-h] [-s SCREEN SCREEN] [-w WORLD WORLD] [-d DEVICE]`
+Options are as follows : 
 
-Best way to understand how they work is to simply take a look at the code.
+```options:
+  -s SCREEN SCREEN, --screen SCREEN SCREEN
+                        Screen dimensions as width height (default: 1280 720)
+  -w WORLD WORLD, --world WORLD WORLD
+                        World dimensions as width height (default: 200 200)
+  -d DEVICE, --device DEVICE
+                        Device to run on: "cuda" or "cpu" or "mps" (default: cuda)
+```
+The only really important parameter is `-d DEVICE`, as the others can be changed in-simulation.
+
+If you have a NVIDIA GPU, you should run it with `-d cuda`. If you have no GPU, you can run with `-d cpu`, it will be a little bit slower, so stick with small worlds. With a mac, you can try `-d mps`, which will be faster but pytorch is notoriously unreliable with mps, so some things might work differently (.e.g, for Lenia).
+
+The 'screen ' parameter  determines the screen size of the window. The default parameter should be fine, but you can make it bigger if you want it to fill your screen. You can also directly modify the defaults in `simulate.py`.
+
+The 'world' parameter determines the size of the simulated world. This can also be changed directly in the GUI, so mostly you won't need to change this parameter, except maybe the default value (again, in `simulate.py`) if you find yourself changing it every time.
 
 ## Automaton
-Inside `Automaton.py`, you will find two classes, `Automaton` and `CA1D`, which is a sub-class of `Automaton`. The docstring are quite extensive, so the code should be understandable from those only. To summarize :
+Inside `pyca/automaton.py`, you will find 'Automaton', the base class for all artificial life models you will implement.The docstring are quite extensive, so the code should be understandable from those only. To summarize :
 
 - Automaton
     - Base class for any Cellular Automaton 
@@ -48,19 +45,3 @@ Inside `Automaton.py`, you will find two classes, `Automaton` and `CA1D`, which 
     - The methods that should be overriden are the following : 
         - `self.draw()` : This method should update `self._worldmap`to correctly represent the current state of the world.
         - `self.step()` : This method, when called, should step the automaton once. The way the automaton state is represented internally is totally free.
-
-- `CA1D`
-    - This is an example representation of the Elementary Cellular automata of Wolfram. You initialize it with the size of the world, the wolfram number for the rule you want to simulate, and an optional initial state of the world (tensor (W,)).
-    - Take a look at the implementation. Ideally, you want to avoid for-loops in space for cellular automata, to exploit to the maximum the parallelizability to run them fast on GPUs
-    - In this case, the bottleneck is by far the Pygame visualization. If you rune the automaton in a separate script, not showing on screen and not calling 'draw()', it will be much faster.
-
-
-## Alternatives
-
-This skeleton code is very useful to design 2D CAs, and get an immediate and easy visualization. However, the two most important drawbacks are that pygame is very slow; you will not be able to simulate and view CAs faster than ~100 fps. Second drawback is that it is limited to 2D.
-
-Other popular alternatives to make and view CAs are with game Engines, in particular Unity or Godot. The visualization capabilities are very advanced, and it is much easier to make 'good-looking' videos, but there is a trade-off in that it is much harder to implement the CA dynamics in parallel. This is done using Shaders/Compute Shaders, which are simply programs meant to run on Graphics Card, in a highly parallelized way. 
-
-Since shaders were initially developed for Video Game Graphics, there is a long list of convetions which are adapted for this job. So the learning curve to start coding shaders is steeper and less intuitive than doing them in numpy, even though in the end the code is approximately the same.
-
-Another option is WebGL, which is again some sort of shader language, but which can be exectued in the browser. It has the nice side effect that it allows one to very easily make a web-app of the automaton, which is nice for distribution. Take a look also at the [SwissGL library](https://github.com/google/swissgl), which is a way to simplify the WebGL code and essentially avoid a lot of boilerplate. 
