@@ -23,7 +23,7 @@ DEVICE = 'cuda' # Device to run the model on
 
 MODEL_SAVE_LOC = Path(__file__).parent.parent / 'saved_models'
 TRAIN_SAVE_LOC = Path(__file__).parent / 'nca_train_state'
-IMG_PATH = Path(Path(__file__).parent / IMG_PATH)
+IMG_PATH = Path(__file__).parent / IMG_PATH
 target = prepare_img(IMG_PATH,tarsize=TARGET_SIZE, pad=8) # Resizes image and adds padding
 
 model = NCAModule(n_states=16,n_hidden=128)
