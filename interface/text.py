@@ -2,12 +2,12 @@ import pygame
 import json
 
 class TextBlock:
-    def __init__(self, text, position, color, font):
+    def __init__(self, text, position, color, font, y_offset = 0):
         self.text = text
         self.position = position  # "up_sx", "below_sx", "up_dx", "below_dx"
         self.color = color
         self.font = font
-        self.y_offset = 0  # Will be calculated during layout
+        self.y_offset = y_offset  # Will be calculated during layout
 
 class DropdownMenu:
     def __init__(self, screen, width, height, font, options, default_option=None, margin=30):
@@ -28,6 +28,7 @@ class DropdownMenu:
         
         # Calculate position based on screen size
         self.update_position()
+        self.resize(width, height, margin)  # Use new resize method for initialization
         
     def update_position(self):
         screen_width, screen_height = self.screen.get_size()
@@ -112,6 +113,14 @@ class DropdownMenu:
         
         return False  # No option was selected
 
+    def resize(self, width, height, margin, font=None):
+        self.width = width
+        self.height = height
+        self.margin = margin
+        if font is not None:
+            self.font = font
+        self.update_position()
+
 def calculate_wrapped_height(text, font, screen_width, position):
     # Calculate max width based on position
     if position in ["up_sx", "below_sx"]:
@@ -148,7 +157,7 @@ def render_text_blocks(screen, blocks):
     # Initialize position trackers
     up_sx_y = 10
     up_dx_y = 10
-    below_dx_y = screen.get_height() - 100  # Initial position for below_dx
+    below_dx_y = screen.get_height() - 120  # Initial position for below_dx
     
     # First calculate total height needed for below_sx blocks
     total_below_height = 0
@@ -275,12 +284,13 @@ class InputField:
         self.label_color = (230, 230, 230)
         self.index = index
         self.update_position()
+        self.resize(width, height, margin)  # Use new resize method for initialization
     
     def update_position(self):
         screen_width = self.screen.get_width()
         # Position at top right with margin, stacked vertically
         x = screen_width - self.width - self.margin - (self.index * (self.width + 20))  # Stack horizontally from right
-        y = 50  # Fixed vertical position below FPS text
+        y = 70  # Fixed vertical position below FPS text
         self.rect = pygame.Rect(x, y, self.width, self.height)
         
     def draw(self):
@@ -348,3 +358,11 @@ class InputField:
             return int(self.text)
         except ValueError:
             return None
+
+    def resize(self, width, height, margin, font=None):
+        self.width = width
+        self.height = height
+        self.margin = margin
+        if font is not None:
+            self.font = font
+        self.update_position()

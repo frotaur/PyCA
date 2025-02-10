@@ -305,6 +305,7 @@ class MultiLenia(Automaton):
                     self.cur_par = (self.cur_par+1)%self.num_par
                     new_params = LeniaParams(from_file=file)
                     self.update_params(new_params)
+                    self.set_init_perlin()
                 else:
                     print('No saved parameters')
             if(event.key == pygame.K_s):

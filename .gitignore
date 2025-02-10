@@ -1,3 +1,8 @@
+.web
+assets/external/
+*.db
+__pycache__/
+*.py[cod]
 .DS_Store
 Videos
 __pycache__
@@ -6,3 +11,8 @@ runs
 Images
 __pycache__
 NCA_train/nca_train_state
+env
+build
+*/node_modules
+psyca
+.vscode

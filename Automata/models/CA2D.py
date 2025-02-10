@@ -75,16 +75,16 @@ class CA2D(Automaton):
         """
             Updates the worldmap with the current state of the automaton.
         """
-        echo = torch.clamp(self._worldmap-self.decay_speed*self.highlight_color[:,None,None],min=0,max=1)
-        self._worldmap = torch.clamp(self.world[None,:,:].expand(3,-1,-1).to(dtype=torch.float) + echo,min=0,max=1)
+        echo = torch.clamp(self._worldmap-self.decay_speed*self.highlight_color[:,None,None],min=0,max=1).to(self.device)
+        self._worldmap = torch.clamp(self.world[None,:,:].expand(3,-1,-1).to(dtype=torch.float) + echo,min=0,max=1).to(self.device)
         
     def process_event(self, event, camera=None):
         """
         CANC -> resets the automaton
         N -> pick a new random rule
-        C -> change the highlight color
-        UP -> increase highlight persistence
-        DOWN -> decrease highlight persistence
+        Z -> change the highlight color
+        UP -> longer-lasting highlights
+        DOWN -> shorter-lasting highlights
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
@@ -95,7 +95,7 @@ class CA2D(Automaton):
                 s_rule = torch.randint(0,2**9,(1,)).item()
                 self.change_num(s_rule,b_rule)
                 print('rule : ', (s_rule,b_rule))
-            if(event.key == pygame.K_c):
+            if(event.key == pygame.K_z):
                 self.change_highlight_color()
             if(event.key == pygame.K_UP):
                 self.decay_speed = max(self.decay_speed-0.1*self.decay_speed,0.005)
