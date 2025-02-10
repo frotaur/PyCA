@@ -1,8 +1,8 @@
 import pygame, os, torch
 from utils.Camera import Camera
 from Automata.models import (
-    CA1D, 
-    GeneralCA1D, 
+    ElementaryCA, 
+    TotalisticCA1D, 
     CA2D, 
     Baricelli1D,
     Baricelli2D, 
@@ -58,8 +58,8 @@ writer=None
 # Define automaton classes without instantiating
 automaton_options = {
     "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device='cuda'),
-    "CA1D":         lambda h, w: CA1D((h,w), wolfram_num=90, random=True),
-    "GeneralCA1D":  lambda h, w: GeneralCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
+    "CA1D":         lambda h, w: ElementaryCA((h,w), wolfram_num=90, random=True),
+    "GeneralCA1D":  lambda h, w: TotalisticCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
     "LGCA":         lambda h, w: LGCA((h,w), device='cuda'),
     "Gray-Scott":   lambda h, w: GrayScott((h,w), device='cuda'),
     "Belousov-Zhabotinsky": lambda h, w: BelousovZhabotinsky((h,w), device='cuda'),
@@ -68,7 +68,7 @@ automaton_options = {
     "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device='cuda'),
     "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
     "MultiLenia":   lambda h, w: MultiLenia((h,w),dt=0.1, param_path='LeniaCool', device='cuda'),
-    # "Neural CA":  lambda h, w: NCA((h,w), model_path='NCA_train/trained_model/latestNCA.pt', device='cuda')
+    "Neural CA":  lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/latestbetta.pt', device='cuda')
 }
 
 # Then when initializing the first automaton:

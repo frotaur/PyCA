@@ -7,7 +7,7 @@ from easydict import EasyDict
 
 class LGCA(Automaton):
     """
-        Simple FHP lattice gas cellular automaton, with support for boundaries
+        Lattice Gas Cellular Automaton. Simulates a gas by particles moving and colliding on a square grid.
     """
 
     def __init__(self, size, device='cpu'):
@@ -44,6 +44,7 @@ class LGCA(Automaton):
         self.Y, self.X = torch.meshgrid(torch.arange(0, self.h, device=self.device), torch.arange(0, self.w, device=self.device), indexing='ij')
 
         self.m_pos = EasyDict(x=0,y=0)
+        
     def process_event(self, event, camera=None):
         """
             LEFT CLICK      -> add particles
