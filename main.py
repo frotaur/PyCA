@@ -43,7 +43,7 @@ W, H = 300, 300
 # Device to run the automaton
 device = 'cuda'
 
-fps = 400 # Visualization (target) frames per second
+fps = 60 # Visualization (target) frames per second
 text_size = int(sH/40)
 title_size = int(text_size*1.5)
 font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
@@ -108,10 +108,10 @@ dropdown = DropdownMenu(
     font=font,
     options=automaton_options,
     default_option="CA2D",
-    margin=20  # Distance from screen edges
+    margin=30  # Distance from screen edges
 )
 
-# Create input fields for width and height
+# Create input fields for width, height, and FPS
 w_input = InputField(
     screen=screen,
     width=60,
@@ -119,7 +119,7 @@ w_input = InputField(
     font=font,
     label="Width",
     initial_value=W,
-    margin=20,
+    margin=30,
     index=0  # First input field
 )
 
@@ -130,13 +130,24 @@ h_input = InputField(
     font=font,
     label="Height",
     initial_value=H,
-    margin=20,
-    index=1  # Second input field, will appear below width
+    margin=30,
+    index=1  # Second input field
+)
+
+fps_input = InputField(
+    screen=screen,
+    width=60,
+    height=30,
+    font=font,
+    label="FPS",
+    initial_value=fps,
+    margin=30,
+    index=2  # Third input field
 )
 
 
 while running:
-    
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -171,6 +182,7 @@ while running:
             dropdown.update_position()
             w_input.update_position()
             h_input.update_position()
+            fps_input.update_position()
             text_size = int(event.h/45)
             font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
             font_title = pygame.font.Font("public/fonts/AldotheApache.ttf", size=title_size)
@@ -212,6 +224,11 @@ while running:
                 zoom = min(current_sW/W,current_sH/H)
                 camera.zoom = zoom
 
+        if fps_input.handle_event(event):
+            new_fps = fps_input.get_value()
+            if new_fps and new_fps > 0:
+                fps = new_fps
+
     if(not stopped):
         auto.step() # step the automaton
     
@@ -245,6 +262,7 @@ while running:
     # Draw input fields
     w_input.draw()
     h_input.draw()
+    fps_input.draw()
 
     # Update the screen
     pygame.display.flip()
