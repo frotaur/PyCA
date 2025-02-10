@@ -6,7 +6,9 @@ import colorsys
 
 class CA2D(Automaton):
     """
-    2D outer holistic cellular automaton, with two states.
+    2D Cellular Automaton, with outer-holistic rules and binary values.
+    The state of a pixel in the next generation depends on its own state and 
+    the sum of the values of its neighbors.
     """
 
     def __init__(self, size, s_num='23', b_num='3', random=False, device= 'cpu'):
@@ -61,7 +63,7 @@ class CA2D(Automaton):
         """
             Resets the automaton to the initial state.
         """
-        self._worldmap = torch.zeros((3,self.h,self.w))
+        self._worldmap = torch.zeros((3,self.h,self.w),device=self.device)
 
         if(self.random):
             self.world = self.get_init_mat(0.5)
@@ -81,8 +83,8 @@ class CA2D(Automaton):
         CANC -> resets the automaton
         N -> pick a new random rule
         C -> change the highlight color
-        UP -> increase the decay speed
-        DOWN -> decrease the decay speed
+        UP -> increase highlight persistence
+        DOWN -> decrease highlight persistence
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
@@ -96,10 +98,10 @@ class CA2D(Automaton):
             if(event.key == pygame.K_c):
                 self.change_highlight_color()
             if(event.key == pygame.K_UP):
-                self.decay_speed = max(self.decay_speed-0.03,0.001)
+                self.decay_speed = max(self.decay_speed-0.1*self.decay_speed,0.005)
             if(event.key == pygame.K_DOWN):
-                self.decay_speed = min(0.03+self.decay_speed,3)
-            print('decay speed : ', self.decay_speed)
+                self.decay_speed = min(0.1*self.decay_speed+self.decay_speed,3)
+            # print('decay speed : ', self.decay_speed)
 
     def change_num(self,s_num : int, b_num : int):
         """

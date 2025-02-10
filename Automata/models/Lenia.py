@@ -1,288 +1,313 @@
+import torch,torch.nn,torch.nn.functional as F
+import numpy as np
+from ..utils.noise_gen import perlin,perlin_fractal
+from ..utils import LeniaParams
+from showtens import show_image
 from ..Automaton import Automaton
-import torch, math, pygame, os, random
-from pyperlin import FractalPerlin2D
-import torch.nn.functional as F
+import pygame,os, random
 
 class MultiLenia(Automaton):
     """
-        Generalized Lenia-like automaton.
+        Multi-channel lenia automaton. A multi-colored GoL-inspired continuous automaton. Introduced by Bert Chan.
     """
-    """
-        Args :
-        size : tuple of ints, size of the automaton
-        dt : time-step used when computing the evolution of the automaton
-        params : dict of tensors containing the parameters.
-        param_path : path to folder containing saved parameters
-        state_init : initial state, shape (3,H,W)
-        device : str, device 
-    """
-    
-    def __init__(self, size, dt=0.1, params=None, param_path=None, state_init = None,  device='cpu' ):
-        super().__init__(size)
+    def __init__(self, size, dt, num_channels=3, params: LeniaParams | dict=None, param_path=None, device='cpu' ):
+        """
+            Initializes automaton.  
 
-        self.dt = dt
-        self.device=device   
+            Args :
+                size : (H,W) of ints, size of the automaton and number of batches
+                dt : time-step used when computing the evolution of the automaton
+                num_channels : int, number of channels (C) in the automaton
+                params : LeniaParams class, or dict of parameters containing the following
+                    keys-values : 
+                    'k_size' : odd int, size of kernel used for computations
+                    'mu' : (1,C,C) tensor, mean of growth functions
+                    'sigma' : (1,C,C) tensor, standard deviation of the growth functions
+                    'beta' :  (1,C,C, # of rings) float, max of the kernel rings 
+                    'mu_k' : (1,C,C, # of rings) [0,1.], location of the kernel rings
+                    'sigma_k' : (1,C,C, # of rings) float, standard deviation of the kernel rings
+                    'weights' : (1,C,C) float, weights for the growth weighted sum
+                param_path : path to folder containing saved parameters
+                device : str, device 
+        """
+        super().__init__(size=size)
+
+        self.batch= 1
+        self.C = num_channels
+        self.device=device
 
         if(params is None):
-            self.k_size=25
-            params = self.gen_params(device)
-        
-        self.update_params(params)
-
-        self.state = torch.rand((3,self.h,self.w),device=device) # State of the world
-
-        if(state_init is None):
-            self.set_init_perlin()
+            self.params = LeniaParams(batch_size=self.batch, k_size=25,channels=self.C, device=device)
+        elif(isinstance(params,dict)):
+            self.params = LeniaParams(param_dict=params, device=device)
         else:
-            self.state = state_init.to(self.device)
+            self.params = params.to(device)
+        
+        self.k_size = self.params['k_size'] # kernel sizes
+        self.state = torch.rand(self.batch,self.C,self.h,self.w,device=device)
+
+        self.set_init_fractal() # Fractal perlin init
+
+        self.dt = dt
+
+        self.kernel = torch.zeros((self.k_size,self.k_size),device=device)
+        self.fft_kernel = torch.zeros((self.batch,self.C,self.C,self.h,self.w),device=device)
+        self.normal_weights = torch.zeros((self.batch,self.C,self.C),device=device)
+        self.update_params(self.params)
 
 
-
-        self.param_path = param_path
-
-        if (param_path is not None):
-            os.makedirs(param_path,exist_ok=True)
-            self.param_files = [file for file in os.listdir(self.param_path) if file.endswith('.pt')]
+        self.saved_param_path = param_path
+        if(self.saved_param_path is not None):
+            self.param_files = [file for file in os.listdir(self.saved_param_path) if file.endswith('.pt')]
             self.num_par = len(self.param_files)
             if(self.num_par>0):
                 self.cur_par = random.randint(0,self.num_par-1)
+            else:
+                self.cur_par = None
 
-    def norm_weights(self):
-        # Normalizing the weights
-        N = self.weights.sum(dim=0, keepdim = True)
-        self.weights = torch.where(N > 1.e-6, self.weights/N, 0)
+        self.to_save_param_path = 'SavedParameters/Lenia'
+
+    def to(self,device):
+        self.params.to(device)
+        self.kernel = self.kernel.to(device)
+        self.normal_weights = self.normal_weights.to(device)
     
-    def update_params(self, params):
+    def update_params(self, params, k_size_override = None):
         """
-            Updates the parameters of the automaton.
-        """
-        # Add kernel size
-        self.k_size = params['k_size'] # kernel sizes (same for all)
-        self.mu=  params['mu'] # mean of the growth functions (3,3)
-        self.sigma=  params['sigma'] # standard deviation of the growths functions (3,3)
-        self.beta= params['beta'] # max of the kernel rings (3,3,# of rings)
-        self.mu_k= params['mu_k']# mean of the kernel gaussians (3,3,# of rings)
-        self.sigma_k= params['sigma_k']# standard deviation of the kernel gaussians (3,3,# of rings)
-        self.weights= params['weights'] # weigths for the growth weighted sum (3,3)
+            Updates some or all parameters of the automaton. 
+            Changes batch size to match the one of provided params (take mu as reference)
 
+            Args:
+                params : LeniaParams or dict, prefer the former
+        """
+        if(isinstance(params,LeniaParams)):
+            params = params.param_dict
+
+        new_dict ={}
+        for key in self.params.param_dict.keys():
+            new_dict[key] = params.get(key,self.params[key])
+
+        if(k_size_override is not None):
+            self.k_size = k_size_override
+            if(self.k_size%2==0):
+                self.k_size += 1
+                print(f'Increased even kernel size to {self.k_size} to be odd')
+            new_dict['k_size'] = self.k_size
+        self.params = LeniaParams(param_dict=new_dict, device=self.device)
+
+        self.to(self.device)
         self.norm_weights()
 
-        self.kernel = self.gen_kernel() # (3,3,h, w)
+        self.batch = self.params.batch_size # update batch size
+        self.kernel = self.compute_kernel() # (B,C,C,k_size,k_size)
+        self.fft_kernel = self.kernel_to_fft(self.kernel) # (B,C,C,h,w)
 
-
-    def get_params(self):
+    
+    def norm_weights(self):
         """
-            Get the parameter dictionary which defines the automaton
+            Normalizes the relative weight sum of the growth functions
+            (A_j(t+dt) = A_j(t) + dt G_{ij}w_ij), here we enforce sum_i w_ij = 1
         """
-        # Add output of kernel size
-        params = dict(k_size = self.k_size, mu = self.mu, sigma = self.sigma, beta = self.beta,
-                       mu_k = self.mu_k, sigma_k = self.sigma_k, weights = self.weights)
-        
-        return params
+        # Normalizing the weights
+        N = self.params.weights.sum(dim=1, keepdim = True) # (B,1,C)
+        self.normal_weights = torch.where(N > 1.e-6, self.params.weights/N, 0)
 
+    def get_params(self) -> LeniaParams:
+        """
+            Get the LeniaParams which defines the automaton
+        """
+        return self.params
 
+    def set_init_fractal(self):
+        """
+            Sets the initial state of the automaton using fractal perlin noise.
+            Max wavelength is k_size*1.5, chosen a bit randomly
+        """
+        self.state = perlin_fractal((self.batch,self.h,self.w),int(self.k_size*1.5),
+                                    device=self.device,black_prop=0.25,num_channels=self.C,persistence=0.4) 
+    
     def set_init_perlin(self,wavelength=None):
+        """
+            Sets initial state using one-wavelength perlin noise.
+            Default wavelength is 2*K_size
+        """
         if(not wavelength):
             wavelength = self.k_size
-        self.state = perlin((1,self.h,self.w),[wavelength]*2,device=self.device,black_prop=0.25)[0]
+        self.state = perlin((self.batch,self.h,self.w),[wavelength]*2,
+                            device=self.device,num_channels=self.C,black_prop=0.25)
     
-    def _kernel_slice(self, r): # r : (k_size,k_size)
-        """ 
-            Helper function.
-            Given a distance tensor r, computes the kernel of the automaton.
+    def set_init_circle(self,fractal=False, radius=None):
+        if(radius is None):
+            radius = self.k_size*3
+        if(fractal):
+            self.state = perlin_fractal((self.batch,self.h,self.w),int(self.k_size*1.5),
+                                    device=self.device,black_prop=0.25,num_channels=self.C,persistence=0.4)
+        else:
+            self.state = perlin((self.batch,self.h,self.w),[self.k_size]*2,
+                            device=self.device,num_channels=self.C,black_prop=0.25)
+        X,Y = torch.meshgrid(torch.linspace(-self.h//2,self.h//2,self.h,device=self.device),torch.linspace(-self.w//2,self.w//2,self.w,device=self.device))
+        R = torch.sqrt(X**2+Y**2)
+        self.state = torch.where(R<radius,self.state,torch.zeros_like(self.state,device=self.device))
+
+    def kernel_slice(self, r):
+        """
+            Given a distance matrix r, computes the kernel of the automaton.
+            In other words, compute the kernel 'cross-section' since we always assume
+            rotationally symmetric kernel
 
             Args :
-            r : (k_size,k_size), value of the radius for each location around the center of the kernel
+            r : (k_size,k_size), value of the radius for each pixel of the kernel
         """
-        r = r[None, None, None] #(1, 1, 1, k_size, k_size)
-        r = r.expand(3,3,self.mu_k[0][0].size()[0],-1,-1) #(3,3,#of rings,k_size,k_size)
+        # Expand radius to match expected kernel shape
+        r = r[None, None, None,None] #(1,1, 1, 1, k_size, k_size)
+        r = r.expand(self.batch,self.C,self.C,self.params.mu_k.shape[3],-1,-1) #(B,C,C,#of rings,k_size,k_size)
 
-        mu_k = self.mu_k[:,:,:, None, None]
-        sigma_k = self.sigma_k[:,:,:, None, None]
+        mu_k = self.params.mu_k[..., None, None] # (B,C,C,#of rings,1,1)
+        sigma_k = self.params.sigma_k[..., None, None]# (B,C,C,#of rings,1,1)
 
-        # K = torch.exp(-((r-mu_k)/2)**2/sigma_k) #(3,3,#of rings,k_size,k_size)
-        K = torch.exp(-((r-mu_k)/sigma_k)**2/2) 
+        K = torch.exp(-((r-mu_k)/sigma_k)**2/2) #(B,C,C,#of rings,k_size,k_size)
         #print(K.shape)
 
-        beta = self.beta[:,:,:, None, None]
-
-        K = torch.sum(beta*K, dim = 2)
+        beta = self.params.beta[..., None, None] # (B,C,C,#of rings,1,1)
+        K = torch.sum(beta*K, dim = 3) #
 
         
-        return K #(3,3,k_size, k_size)
-    
-    def gen_kernel(self):
-        """
-            Generates the kernel with currents parameters and returns it.
+        return K #(B,C,C,k_size, k_size)
 
-            Returns :
-            (3,3,k,k) tensor, the multi channel lenia kernel
+
+    def compute_kernel(self):
         """
-        xyrange = torch.arange(-1, 1+0.00001, 2/(self.k_size-1)).to(self.device)
-        X,Y = torch.meshgrid(xyrange, xyrange,indexing='ij')
+            Computes the kernel given the current parameters.
+        """
+        xyrange = torch.linspace(-1, 1, self.params.k_size).to(self.device)
+
+        X,Y = torch.meshgrid(xyrange, xyrange,indexing='xy') # (k_size,k_size),  axis directions is x increasing to the right, y increasing to the bottom
         r = torch.sqrt(X**2+Y**2)
 
-        K = self._kernel_slice(r) #(3,3,k_size,k_size)
+        K = self.kernel_slice(r) #(B,C,C,k_size,k_size)
 
-        # Normalize the kernel
-        summed = torch.sum(K, dim = (2,3), keepdim=True) #(3,3,1,1)
+        # Normalize the kernel, s.t. integral(K) = 1
+        summed = torch.sum(K, dim = (-1,-2), keepdim=True) #(B,C,C,1,1)
 
         # Avoid divisions by 0
         summed = torch.where(summed<1e-6,1,summed)
         K /= summed
 
-        return K #(3,3,k,k)
+        return K #(B,C,C,k_size,k_size)
     
-    def growth(self, u): 
+    def kernel_to_fft(self, K):
+        # Pad kernel to match image size
+        # For some reason, pad is left;right, top;bottom, (so W,H)
+        K = F.pad(K, [0,(self.w-self.params.k_size)] + [0,(self.h-self.params.k_size)]) # (B,C,C,h,w)
+
+        # Center the kernel on the top left corner for fft
+        K = K.roll((-(self.params.k_size//2),-(self.params.k_size//2)),dims=(-1,-2)) # (B,C,C,h,w)
+
+        K = torch.fft.fft2(K) # (B,C,C,h,w)
+
+        return K #(B,C,C,h,w)
+
+    def growth(self, u): # u:(B,C,C,H,W)
         """
             Computes the growth of the automaton given the concentration u.
 
             Args :
-            u : (3,3,H,W) tensor of concentrations.
-
-            Returns : 
-            (3,3,H,W) tensor of growths
+            u : (B,C,C,H,W) tensor of concentrations.
         """
 
         # Possibly in the future add other growth function using bump instead of guassian
-        mu = self.mu[:,:, None, None]
-        sigma = self.sigma[:,:,None,None]
-        mu = mu.expand(-1,-1, self.h, self.w)
-        sigma = sigma.expand(-1,-1, self.h, self.w)
+        mu = self.params.mu[..., None, None] # (B,C,C,1,1)
+        sigma = self.params.sigma[...,None,None] # (B,C,C,1,1)
+        mu = mu.expand(-1,-1,-1, self.h, self.w) # (B,C,C,H,W)
+        sigma = sigma.expand(-1,-1,-1, self.h, self.w) # (B,C,C,H,W)
 
-        return 2*torch.exp(-((u-mu)**2/(sigma)**2)/2)-1 #(3,3,H,W)
+        return 2*torch.exp(-((u-mu)**2/(sigma)**2)/2)-1 #(B,C,C,H,W)
 
 
     def step(self):
         """
             Steps the automaton state by one iteration.
         """
+        U = self.get_fftconv(self.state) # (B,C,C,H,W)
 
-        # Compute the convolutions.
-        # We use torch's Conv2d, we have to make some shenanigans
-        # to make the convolutions in all channels at once
-        kernel_eff = self.kernel.reshape([9,1,self.k_size,self.k_size])#(9,1,k,k)
+        assert (self.h,self.w) == (U.shape[-2], U.shape[-1])
 
+        weights = self.normal_weights[...,None, None] # (B,C,C,1,1)
+        weights = weights.expand(-1,-1, -1, self.h,self.w) # (B,C,C,H,W)
 
-        U = F.pad(self.state[None], [(self.k_size-1)//2]*4, mode = 'circular') # (1,3,H+pad,W+pad)
-        U = F.conv2d(U, kernel_eff, groups=3).squeeze(0) #(9,H,W)
-        U = U.reshape(3,3,self.h,self.w)
+        # Weight normalized growth :
+        dx = (self.growth(U)*weights).sum(dim=1) #(B,C,H,W) # G(U)[:,i,j] is contribution of channel i to channel j
 
-        assert (self.h,self.w) == (self.state.shape[1], self.state.shape[2])
- 
-        weights = self.weights [...,None, None]
-        weights = weights.expand(-1, -1, self.h,self.w) #
-
-        # Compute the update to the state
-        dx = (self.growth(U)*weights).sum(dim=0) #(3,H,W)
-        
-        # Update the state
-        self.state = torch.clamp( self.state + self.dt*dx, 0, 1) 
+        # Apply growth and clamp
+        self.state = torch.clamp(self.state + self.dt*dx, 0, 1) # (B,C,H,W)
     
+    def get_fftconv(self, state):
+        """
+            Compute convolution using fft
+        """
+        state = torch.fft.fft2(state) # (B,C,H,W) fourier transform
+        state = state[:,:,None] # (B,1,C,H,W)
+        state = state*self.fft_kernel # (B,C,C,H,W), convoluted
+        state = torch.fft.ifft2(state) # (B,C,C,H,W), back to spatial domain
+
+        return torch.real(state)
+
+
+    def mass(self):
+        """
+            Computes average 'mass' of the automaton for each channel
+
+            returns :
+            mass : (B,C) tensor, mass of each channel
+        """
+
+        return self.state.mean(dim=(-1,-2)) # (B,C) mean mass for each color
+
     def draw(self):
         """
-            Draws the worldmap from state.
+            Draws the RGB worldmap from state.
         """
-        
-        self._worldmap= self.state # Super simple, just the state, directly   
-        
-    
-    def gen_params(self,device):
-        """ Generates parameters which are expected to sometime die, sometime live. Very Heuristic."""
-        mu = torch.rand((3,3), device=device)
-        sigma = mu/(3*math.sqrt(2*math.log(2)))*(1+ (torch.ones_like(mu)-2*torch.rand_like(mu)))
-            
+        assert self.state.shape[0] == 1, "Batch size must be 1 to draw"
+        toshow= self.state[0]
 
-        params = {
-            'k_size' : self.k_size, 
-            'mu':  mu ,
-            'sigma' : sigma,
-            'beta' : torch.rand((3,3,3), device=device),
-            'mu_k' : torch.rand((3,3,3), device=device),
-            'sigma_k' : torch.rand((3,3,3), device=device),
-            'weights' : torch.rand((3,3),device = device) # element i, j represents contribution from channel i to channel j
-        }
-
-        return params
+        if(self.C==1):
+            toshow = toshow.expand(3,-1,-1)
+        elif(self.C==2):
+            toshow = torch.cat([toshow,torch.zeros_like(toshow)],dim=0)
+        else :
+            toshow = toshow[:3,:,:]
     
+        self._worldmap = toshow
+
     def process_event(self, event, camera=None):
         """
-        CANC    -> resets the automaton
         N       -> pick new random parameters
         V       -> vary current parameters slightly
-        Z       -> reset to perlin noise initial state
+        DEL     -> reset to perlin noise initial state
         M       -> load next saved parameter set
         S       -> save current parameters
         """
         if event.type == pygame.KEYDOWN:
             if(event.key == pygame.K_n):
                 """ New random parameters"""
-                self.update_params(self.gen_params(self.device))
+                self.update_params(LeniaParams(k_size=self.params.k_size, channels=self.C, batch_size=self.params.batch_size, device=self.device))
+                self.set_init_perlin()
             if(event.key == pygame.K_v):
                 """ Variate around parameters"""
-                self.around_params(self.device)
-            if(event.key == pygame.K_z):
+                params = self.params.mutate(magnitude=0.1,rate=0.8)
+                self.update_params(params)
+            if(event.key == pygame.K_DELETE):
                 self.set_init_perlin()
-                n_steps=0
             if(event.key == pygame.K_m):
-                if(self.param_path is not None):
-                    # Load random interesting param
-                    if(self.num_par >0):
-                        file = os.path.join(self.param_path,self.param_files[self.cur_par])
-                        self.cur_par = (self.cur_par+1)%self.num_par
-                        self.update_params(torch.load(file, map_location=self.device))
-                        print('loaded ', os.path.join(self.param_path,file))
+                if(self.saved_param_path is not None and self.num_par>0):
+                    file = os.path.join(self.saved_param_path,self.param_files[self.cur_par])
+                    print('loading ', os.path.join(self.saved_param_path,file))
+                    self.cur_par = (self.cur_par+1)%self.num_par
+                    new_params = LeniaParams(from_file=file)
+                    self.update_params(new_params)
+                else:
+                    print('No saved parameters')
             if(event.key == pygame.K_s):
                 # Save the current parameters:
-                para = self.get_params()
-                name = f'save_mu{para["mu"][0][0][0].item():.2f}_si{para["sigma"][0][0][0].item():.2f}_be{para["beta"][0,0,0,0].item():.2f}'
-                name = os.path.join(self.param_path,name+'.pt')
-                torch.save(para, name)
-
-    def around_params(self,device):
-        """
-            Gets parameters which are perturbations around the given set.
-
-            args :
-            params : dict of parameters. See LeniaMC for the keys.
-        """
-        # Make variations proportional to current value
-        p = self.get_params()
-        p = {
-            'k_size' : p['k_size'],
-            'mu' : p['mu']*(1 + 0.02*torch.randn((3,3), device=device)),
-            'sigma' : torch.clamp(p['sigma']*(1 + 0.02*torch.randn((3,3), device=device)), 0, None),
-            'beta' : torch.clamp(p['beta']*(1 + 0.02*torch.randn((3,3,1), device=device)),0,1),
-            'mu_k' : p['mu_k']*(1 + 0.02*torch.randn((3,3,1), device=device)),
-            'sigma_k' : torch.clamp(p['sigma_k']*(1 + 0.02*torch.randn((3,3,1), device=device)), 0, None),
-            'weights' : p['weights']*(1+0.02*torch.randn((3,3), device = device))
-        }
-        
-        self.update_params(p)
-
-
-def perlin(shape:tuple, wavelengths:tuple, black_prop:float=0.3,device='cpu'):
-    """
-        Makes fractal noise with dominant wavelength equal to max_wavelength.
-
-        Args:
-        shape : (B,H,W) tuple or array, size of tensor
-        wavelength : int, wavelength of the noise in pixels
-        black_prop : percentage of black (0) regions. Defaut is .5=50% of black.
-        device : device for returned tensor
-
-        Returns :
-        (B,3,H,W) torch tensor of perlin noise.
-    """    
-    B,H,W = tuple(shape)
-    lams = tuple(int(wave) for wave in wavelengths)
-    # Extend image so that its integer wavelengths of noise
-    W_new=int(W+(lams[0]-W%lams[0]))
-    H_new=int(H+(lams[1]-H%lams[1]))
-    frequency = [H_new//lams[0],W_new//lams[1]]
-    gen = torch.Generator(device=device) # for GPU acceleration
-    gen.seed()
-    # Strange 1/0.7053 factor to get images noise in range (-1,1), quirk of implementation I think...
-    fp = FractalPerlin2D((B*3,H_new,W_new), [frequency], [1/0.7053], generator=gen)()[:,:H,:W].reshape(B,3,H,W) # (B*3,H,W) noise)
-
-    return torch.clamp((fp+(0.5-black_prop)*2)/(2*(1.-black_prop)),0,1)
+                self.params.save(self.to_save_param_path)
+                print(f'Saved current parameters as {self.params.name}')

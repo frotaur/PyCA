@@ -10,7 +10,7 @@ import pygame
 
 class Baricelli1D(Automaton):
     """
-        Baricelli model in 1D. 
+        1D Baricelli cellular automaton. 
     """
 
     def __init__(self, size, n_species : int=6, reprod_collision=False):
@@ -113,16 +113,12 @@ class Baricelli1D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        CANC -> resets the automaton
-        DOWN -> makes one step
+        DEL -> resets the automaton
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
                 self.reset() 
                 self.draw()
-            if(event.key == pygame.K_DOWN):
-                self.step()
 
     def draw(self):
         """
@@ -246,13 +242,10 @@ class Baricelli2D(Automaton):
         self.time=0
 
         self.world = torch.randint_like(self.world,-self.speciesnum,self.speciesnum+1)
-        # self.world = torch.zeros_like(self.world)
-        # self.world[self.w//2-5]=1
-        # self.world[self.w//2+2]=-2
 
     def process_event(self, event, camera=None):
         """
-        DELETE -> resets the automaton
+        DEL -> resets the automaton
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):

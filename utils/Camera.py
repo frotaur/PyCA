@@ -33,14 +33,14 @@ class Camera:
             Call it from the main pygame loop, passing the event.
         """
         if event.type == pygame.MOUSEBUTTONDOWN and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-            if event.button == 4:  # Scroll wheel up
+            if event.button == 4 and (pygame.key.get_mods() & pygame.KMOD_CTRL):  # Scroll wheel up
                 old_zoom = self.zoom
                 self.zoom *= 1.1
                 # Adjust position to keep mouse point fixed
                 mouse_pos = pygame.mouse.get_pos()
                 self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
                 self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
-            elif event.button == 5:  # Scroll wheel down
+            elif event.button == 5 and (pygame.key.get_mods() & pygame.KMOD_CTRL):  # Scroll wheel down
                 old_zoom = self.zoom
                 self.zoom /= 1.1
                 # Adjust position to keep mouse point fixed

@@ -3,11 +3,11 @@ import torch
 from colorsys import hsv_to_rgb
 import pygame
 from torchvision.transforms import GaussianBlur
-
+from easydict import EasyDict
 
 class LGCA(Automaton):
     """
-        Simple FHP lattice gas cellular automaton, with support for boundaries
+        Lattice Gas Cellular Automaton. Simulates a gas by particles moving and colliding on a square grid.
     """
 
     def __init__(self, size, device='cpu'):
@@ -43,6 +43,8 @@ class LGCA(Automaton):
         # For drawing : 
         self.Y, self.X = torch.meshgrid(torch.arange(0, self.h, device=self.device), torch.arange(0, self.w, device=self.device), indexing='ij')
 
+        self.m_pos = EasyDict(x=0,y=0)
+        
     def process_event(self, event, camera=None):
         """
             LEFT CLICK      -> add particles
@@ -59,21 +61,14 @@ class LGCA(Automaton):
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
                 self.w_pressed = False
-        if event.type == pygame.MOUSEBUTTONDOWN :
-            if(event.button == 1):
-                self.left_pressed=True
-            if(event.button ==3):
-                self.right_pressed=True
-        if event.type == pygame.MOUSEBUTTONUP:
-            if(event.button==1):
-                self.left_pressed=False
-            elif(event.button==3):
-                self.right_pressed=False
-    
+
+        m = self.get_mouse_state(camera)
+        # save mouse position for brush drawing
+        self.m_pos.x = m.x
+        self.m_pos.y = m.y
         if event.type == pygame.MOUSEMOTION:
-            if(self.left_pressed):
-                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                set_mask = self.get_brush_slice(x,y)
+            if(m.left):
+                set_mask = self.get_brush_slice(m.x,m.y)
                 if(self.w_pressed):
                     # Add walls
                     self.walls[set_mask] = True
@@ -82,15 +77,15 @@ class LGCA(Automaton):
                     # Add particles
                     self.world[set_mask,:] = (self.world[set_mask,:] | 
                                         (torch.rand(self.world[set_mask,:].shape,device=self.device)<0.1)) & ~self.walls[set_mask][:,None]
-            elif(self.right_pressed):
-                x,y=camera.convert_mouse_pos(pygame.mouse.get_pos())
-                set_mask = self.get_brush_slice(x,y)
+            elif(m.right):
+                set_mask = self.get_brush_slice(m.x,m.y)
                 if(self.w_pressed):
                     # Erase walls
                     self.walls[set_mask] = False
                 else:
                     # Erase particles
                     self.world[set_mask,:] = False
+    
         if event.type == pygame.MOUSEWHEEL:
             if event.y > 0:  # Scroll wheel up
                 self.brush_size += 1  # Increase brush size
@@ -152,4 +147,8 @@ class LGCA(Automaton):
         self._worldmap = self._worldmap
         # Draw walls
         self._worldmap = torch.where(self.walls[None],torch.tensor([1.,0.,0.2],device=self.device)[:,None,None],self._worldmap) # Draw walls
+
+        # Draw brush
+        brush_mask = self.get_brush_slice(self.m_pos.x,self.m_pos.y)
+        self._worldmap = torch.clamp(self._worldmap+torch.where(brush_mask[None],torch.tensor([.4,0.,0.],device=self.device)[:,None,None],0),min=0,max=1)   
         # self._worldmap = torch.where((self.walls & self.world.any(dim=-1))[None,:,:],torch.tensor([1.,1.,0.],device=self.device)[:,None,None],self._worldmap)

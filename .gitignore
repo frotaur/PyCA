@@ -3,7 +3,6 @@ Videos
 __pycache__
 wandb
 runs
-testwindowtorch.py
 Images
 __pycache__
-env
+NCA_train/nca_train_state

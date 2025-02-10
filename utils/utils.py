@@ -1,5 +1,5 @@
 import os, torch, cv2, numpy as np
-from showtens import show_image
+from showtens import show_image,save_image
 import pygame
 import json
 
@@ -26,9 +26,9 @@ def add_frame(writer, worldmap):
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     writer.write(frame)
 
-def save_image(worldmap):
+def print_screen(worldmap):
     os.makedirs('Images',exist_ok=True)
     numimgs = len(os.listdir('Images/'))
     img_name = f'img_{numimgs}'
-    show_image(torch.tensor(worldmap).permute(2,1,0),folderpath='Images',name = img_name)
+    save_image(torch.tensor(worldmap).permute(2,1,0),folder='Images',name = img_name)
 

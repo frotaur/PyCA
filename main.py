@@ -1,8 +1,8 @@
 import pygame, os, torch
 from utils.Camera import Camera
 from Automata.models import (
-    CA1D, 
-    GeneralCA1D, 
+    ElementaryCA, 
+    TotalisticCA1D, 
     CA2D, 
     Baricelli1D,
     Baricelli2D, 
@@ -17,7 +17,7 @@ from Automata.models.ReactionDiffusion import (
     Brusselator
 )
 
-from utils.utils import launch_video, add_frame, save_image
+from utils.utils import launch_video, add_frame, print_screen
 from interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks, load_std_help
 
 
@@ -36,9 +36,10 @@ W, H = 300, 300
 # Device to run the automaton
 device = 'cuda'
 
-fps = 400 # Visualization (target) frames per second
+fps = 200 # Visualization (target) frames per second
+video_fps = 30 # Video frames per second
 text_size = int(sH/40)
-font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
+font = pygame.font.Font("utils/fonts/AldotheApache.ttf", size=text_size)
 screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
 clock = pygame.time.Clock() 
 running = True
@@ -57,8 +58,8 @@ writer=None
 # Define automaton classes without instantiating
 automaton_options = {
     "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device='cuda'),
-    "CA1D":         lambda h, w: CA1D((h,w), wolfram_num=90, random=True),
-    "GeneralCA1D":  lambda h, w: GeneralCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
+    "CA1D":         lambda h, w: ElementaryCA((h,w), wolfram_num=90, random=True),
+    "GeneralCA1D":  lambda h, w: TotalisticCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
     "LGCA":         lambda h, w: LGCA((h,w), device='cuda'),
     "Gray-Scott":   lambda h, w: GrayScott((h,w), device='cuda'),
     "Belousov-Zhabotinsky": lambda h, w: BelousovZhabotinsky((h,w), device='cuda'),
@@ -66,12 +67,12 @@ automaton_options = {
     "Falling Sand": lambda h, w: FallingSand((h,w)),
     "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device='cuda'),
     "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
-    "MultiLenia":   lambda h, w: MultiLenia((h,w), param_path='LeniaParams', device='cuda'),
-    # "Neural CA":  lambda h, w: NCA((h,w), model_path='NCA_train/trained_model/latestNCA.pt', device='cuda')
+    "MultiLenia":   lambda h, w: MultiLenia((h,w),dt=0.1, param_path='LeniaCool', device='cuda'),
+    "Neural CA":  lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/latestbetta.pt', device='cuda')
 }
 
 # Then when initializing the first automaton:
-initial_automaton = "CA2D"
+initial_automaton = "MultiLenia"
 auto = automaton_options[initial_automaton](H, W)
 
 description, help_text = auto.get_help()
@@ -98,7 +99,7 @@ dropdown = DropdownMenu(
     height=30,
     font=font,
     options=automaton_options,
-    default_option="CA2D",
+    default_option=initial_automaton,
     margin=20  # Distance from screen edges
 )
 
@@ -144,7 +145,7 @@ while running:
                     launch_vid=True
                     writer.release()
             if(event.key == pygame.K_p):
-                save_image(auto.worldmap)
+                print_screen(auto.worldmap)
             if(event.key == pygame.K_s):
                 auto.step()
             if (event.key == pygame.K_h):
@@ -215,12 +216,7 @@ while running:
     zoomed_surface = camera.apply(surface)
     screen.blit(zoomed_surface, (0,0))
 
-    if (recording):
-        if(launch_vid):# If the video is not launched, we create it
-            launch_vid = False
-            writer = launch_video((H,W), fps, 'mp4v')
-        add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
-        pygame.draw.circle(screen, (255,0,0), (15,H-15), 5)
+
     
     if (display_help):
         render_text_blocks(screen, [TextBlock(f"FPS: {int(clock.get_fps())}", "up_dx", (255, 89, 89), font)])
@@ -234,6 +230,14 @@ while running:
     # Draw input fields
     w_input.draw()
     h_input.draw()
+
+    # Draw the recording circle
+    if (recording):
+        if(launch_vid):# If the video is not launched, we create it
+            launch_vid = False
+            writer = launch_video((H,W), video_fps, 'mp4v')
+        add_frame(writer,world_state)
+        pygame.draw.circle(screen, (255,0,0), (sW-10,15), 7)
 
     # Update the screen
     pygame.display.flip()

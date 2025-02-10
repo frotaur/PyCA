@@ -10,9 +10,9 @@ import torch
 
 
 
-class CA1D(Automaton):
+class ElementaryCA(Automaton):
     """
-        Class that implements all 1D Cellular Automata, the "Elementary" cellular automata.
+        1D Elementary Cellular Automata.
     """
 
     def __init__(self, size, wolfram_num : int, random: bool = False):
@@ -122,7 +122,7 @@ class CA1D(Automaton):
         self.time+=1
 
 
-class GeneralCA1D(Automaton):
+class TotalisticCA1D(Automaton):
     """
         General TOTALISTIC 1D Cellular Automaton, supports arbitrary neighborhoods and states.
         Totalistic means that the output state of a cell depends only on the sum of the states of the neighborhood.
@@ -154,12 +154,11 @@ class GeneralCA1D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        CANC -> resets the automaton
+        DELETE -> resets the automaton
         N -> pick a new random rule
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
-                # ONLY WORKS WITH CA1D ! REMOVE/add reset method to use with other automata
                 self.reset(random=self.random) 
                 self.draw()
             if(event.key == pygame.K_n):

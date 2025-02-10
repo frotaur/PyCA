@@ -4,12 +4,12 @@ import torch.nn.functional as F
 import pygame
 from torchenhanced import DevModule, ConfigModule
 import math
-
+from easydict import EasyDict
 
 class NCA(Automaton):
     """
-        Neural Cellular Automaton. Wrapper for NCAModule, adds visualization
-        and interaction.
+        Neural Cellular Automaton. Can be trained to grow any image
+        from a 'seed', using only local interactions, and a neural network.
     """
 
     def __init__(self, size, model_path, seed=None, device='cpu'):
@@ -26,10 +26,14 @@ class NCA(Automaton):
         super().__init__(size)
 
         model_data = torch.load(model_path,map_location=device)
-        self.model = NCAModule(**model_data['config'],device=device)
+        if('device' in model_data['config'].keys()):
+            model_data['config']['device'] = device
+
+        self.model = NCAModule(**model_data['config'])
         self.model.load_model(model_path)
         self.model.eval()
-        
+        self.model.to(device)
+
         for p in self.model.parameters():
             p.requires_grad=False
 
@@ -43,11 +47,8 @@ class NCA(Automaton):
         self.insert_seed(size[0]//2,size[1]//2)
         self.device = device
 
-
-        # Interaction
-        self.left_dragging = False
-        self.right_dragging = False 
-
+        self.brush_size = 4
+        self.m_pos = EasyDict(x=0,y=0)
         self.hgrid, self.wgrid = torch.meshgrid(torch.arange(size[0],device=device),torch.arange(size[1],device=device))
 
     def step(self):
@@ -67,36 +68,50 @@ class NCA(Automaton):
         pic = pic[:3]*pic[3:] # Blend assuming black background
 
         self._worldmap = pic # (3,H,W)
-    
+        # Draw brush
+        brush_mask = self.get_brush_slice(self.m_pos.x,self.m_pos.y)
+        self._worldmap = torch.clamp(self._worldmap+torch.where(brush_mask[None],torch.tensor([.2,.2,0.],device=self.device)[:,None,None],0),min=0,max=1)   
+
     def process_event(self, event, camera=None):
         """
         DELETE              -> resets the automaton
-        F                   -> randomize parameters
+        R                   -> randomize parameters
         LEFT CLICK + DRAG   -> erase cells
         RIGHT CLICK         -> insert seed at cursor position
+        SCROLL WHEEL        -> change brush size
         """
+        mouse = self.get_mouse_state(camera)
+        #Update mouse position, to have it for drawing
+        self.m_pos.x = mouse.x
+        self.m_pos.y = mouse.y
+
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
                 self.reset()
-            if event.key == pygame.K_f:
+            if event.key == pygame.K_r:
                 self.randomize()
-                print('Randomized')
+
         if event.type == pygame.MOUSEBUTTONDOWN :
-            if event.button == pygame.BUTTON_LEFT:  # If left mouse button pressed
-                self.left_dragging = True
             if event.button == pygame.BUTTON_RIGHT:
-                w,h = camera.convert_mouse_pos(event.pos)
-                self.insert_seed(int(h),int(w))
+                self.insert_seed(int(self.m_pos.y),int(self.m_pos.x))
 
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == pygame.BUTTON_LEFT:  # If left mouse button released
-                self.left_dragging = False
-        elif event.type == pygame.MOUSEMOTION :
-            (w,h) = camera.convert_mouse_pos(event.pos)
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:  # Scroll wheel up
+                self.brush_size += 1  # Increase brush size
+            elif event.y < 0:  # Scroll wheel down
+                self.brush_size -= 1  # Decrease brush size
+            self.brush_size = max(1, self.brush_size)
 
-            if(self.left_dragging):
-                self.state=torch.where((self.hgrid-h)**2+(self.wgrid-w)**2<16,0,self.state)
+        if event.type == pygame.MOUSEMOTION :
+            if(mouse.left):
+                brush = self.get_brush_slice(self.m_pos.x,self.m_pos.y)
+                self.state=torch.where(brush,0,self.state)
 
+    def get_brush_slice(self, x, y):
+        """Gets coordinate slices corresponding to the brush located at x,y"""
+        set_mask = (self.hgrid-y)**2 + (self.wgrid-x)**2 < self.brush_size**2
+        return set_mask # (H,W)
+    
     def insert_seed(self, h, w):
         """
             Inserts twe seed centered at twe position (h,w) in twe state.
@@ -127,7 +142,7 @@ class NCA(Automaton):
 class NCAModule(ConfigModule):
     """
         NCA cellular automaton, implemented as a torch module.
-        (use NCA for interactivity and use as an Automaton class.)
+        (use NCA class for interactivity and use as an Automaton class.)
     """
 
     def __init__(self,kernel_size=3,n_states=12,n_hidden=128, device='cpu'):
@@ -139,26 +154,24 @@ class NCAModule(ConfigModule):
                                 (unused for now)
 
         """
-        config=dict(kernel_size=kernel_size,n_states=n_states,
-                n_hidden=n_hidden)
-        super().__init__(config=config,device=device)
+
+        super().__init__()
 
 
-        
         self.n_states=max(4,n_states) # At least 1 hidden state
 
         self.kern = kernel_size
 
-        self.sobel= CABlock(n_states=self.n_states,device=device)
+        self.sobel = SobelConv(n_states=self.n_states,device=device)
 
-        self.think = nn.Sequential(
-            nn.Linear(3*self.n_states,n_hidden),
+        self.computer = nn.Sequential(
+            nn.Linear(3*self.n_states,n_hidden,device=device),
             nn.ReLU(),
-            nn.Linear(n_hidden,self.n_states))
+            nn.Linear(n_hidden,self.n_states,device=device)) # Fully connected that given the sobel observations, computes the next state
         
         # Initialize to identity
-        nn.init.zeros_(self.think[2].weight)
-        nn.init.zeros_(self.think[2].bias)
+        nn.init.zeros_(self.computer[2].weight)
+        nn.init.zeros_(self.computer[2].bias)
 
         print(f"NCA with {self.paranum} parameters")
 
@@ -171,8 +184,6 @@ class NCAModule(ConfigModule):
 
         for p in self.parameters():
             0.1*nn.init.normal_(p,0,1)
-
-            print('bruv')
 
     def getlivemask(self,state):
         """
@@ -201,7 +212,7 @@ class NCAModule(ConfigModule):
         for _ in range(n_steps):
             dx = self.sobel(state) #(B,3*n_states,H,W)
             dx = dx.permute(0,2,3,1) # (B,H,W,3*n_states)
-            dx = self.think(dx).permute(0,3,1,2) # (B,n_states,H,W)
+            dx = self.computer(dx).permute(0,3,1,2) # (B,n_states,H,W)
 
             live_before = self.getlivemask(state) # (B,1,H,W)
 
@@ -249,15 +260,16 @@ class NCAModule(ConfigModule):
             Loads the model from path.
         """
         model_dict = torch.load(path,map_location=self.device)
-        assert self.config==model_dict['config'], f"Model configuration mismatch!\n \
-            Current : {self.config}\nLoaded : {model_dict['config']}"
+        if(self.config!=model_dict['config']):
+            print(f"Warning : Model configuration mismatch!\n \
+            Current : {self.config}\nLoaded : {model_dict['config']}")
         
         self.load_state_dict(model_dict['state_dict'])
     
 
-class CABlock(DevModule):
+class SobelConv(DevModule):
     """
-        Compute depthwise convolutions using the sobel filters.
+        Compute depthwise convolutions using the Sobel filters.
     """
     def __init__(self,n_states, device='cpu'):
         """
@@ -273,23 +285,21 @@ class CABlock(DevModule):
                               [0,0,0],
                               [1,2,1]],dtype=torch.float)[None,None]/8. # (1,1,3,3)
         
-        # self.register_buffer('sobelx',sobelx.repeat(n_states,1,1,1)) # (n_states,1,3,3)
-        # self.register_buffer('sobely',sobely.repeat(n_states,1,1,1)) # (n_states,1,3,3)
         self.register_buffer('sobelkern',torch.cat([sobelx.expand(n_states,-1,-1,-1),
                                                       sobely.expand(n_states,-1,-1,-1)],dim=0)) # (2*n_states,1,3,3)
         self.to(device)
 
     def forward(self,x):
         """
-            Takes state, spits out state :
+            Takes a NCA state (B,n_chans,H,W) and returns the state concatenated with the sobel filters
 
-            x : tensor (B,n_states,H,W)
+            Args:
+                x : tensor (B,n_states,H,W)
+            
+            Returns:
+                out : tensor (B,3*n_states,H,W)
         """
         padx = F.pad(x,pad=(1,1,1,1),mode='circular')
-        # out = torch.cat([
-        #     F.conv2d(padx,self.sobelx,groups=self.n_states),
-        #     F.conv2d(padx,self.sobely,groups=self.n_states),
-        #     x],dim=1) #(B,3*n_states,H,W)
 
         out = torch.cat([
             F.conv2d(padx,weight=self.sobelkern,groups=self.n_states),
@@ -300,7 +310,7 @@ class CABlock(DevModule):
 
 class SamplePool:
     """
-        Pool of samples for training NCA's.
+        Pool of samples for NCA training.
     """
 
     def __init__(self, seed: torch.Tensor, pool_size: int=1024, loss_f = None, return_device='cpu'):
@@ -317,17 +327,17 @@ class SamplePool:
 
         self.pool = seed[None].repeat(pool_size,1,1,1) # Initial pool, full of seeds
         self.p_size = pool_size
-        self.device=return_device
+        self.device = return_device
 
         self.h,self.w = seed.shape[1:]
         self.nstates = seed.shape[0]
         self.rmax = min(self.h//2,self.w//2)# For corrupting purposes
 
-        self.ygrid, self.xgrid=torch.meshgrid(torch.arange(0,self.h),torch.arange(0,self.w))
+        self.ygrid, self.xgrid=torch.meshgrid(torch.arange(0,self.h),torch.arange(0,self.w))# For corrupting purposes
         self.ygrid = self.ygrid[None,None] # (1,1,H,W)
-        self.xgrid = self.xgrid[None,None]
+        self.xgrid = self.xgrid[None,None] # (1,1,H,W)
 
-        self.seed_mask = self.seed > 0.01 # (n_states,H,W), location where seed is not zero
+        self.seed_mask = self.seed > 0.01 # (n_states,H,W), location where seed is not zero, avoid corruption
         self.loss_f = loss_f
     
     @torch.no_grad()
@@ -339,6 +349,7 @@ class SamplePool:
             num_samples : size of batch
             replace_num : number of samples to be replaced with seed
             corrupt : if True, will corrupt half the elements of the batch with erasure.
+            num_cor : the number of elements to corrupt, if None, will corrupt a third of the batch
 
             returns : tuple
             batch of elements (n_samples,C,H,W), indices of the elements in the pool
@@ -350,38 +361,45 @@ class SamplePool:
         batch_init = self.pool[randindices] # Index the selected initial states (num_samples,n_states,H,W)
         
         if(corrupt):
+            # Corrupt the batch if corrupt is True
             if(num_cor is None):
                 num_cor = num_samples//3 # A third of corruptions
 
-            # Draw a the corruption circle center by drawing r and theta
-            r_size = torch.rand((num_cor,))*self.rmax//3+self.rmax//6 # (num_cor)
-            r_loc = (self.rmax-(r_size+.5))*torch.rand((num_cor,))
+            # Random corruption circle radius : 
+            r_size = torch.rand((num_cor,))*self.rmax//3+self.rmax//6 # Random size of corruption circle
+            r_size = r_size[:,None,None,None] # (num_cor,1,1,1)
+
+            # Random corruption circle center location : 
+            r_loc = self.rmax*torch.rand((num_cor,)) # Random 
             theta_loc = torch.rand((num_cor,))*2*torch.pi
 
-            x_loc = (r_loc*torch.cos(theta_loc))[:,None,None,None] + self.w//2# (num_cor,1,1,1)
+            # Compute the center of the corruption circle, given the sampled r_loc and theta_loc:
+            x_loc = (r_loc*torch.cos(theta_loc))[:,None,None,None] + self.w//2 # (num_cor,1,1,1)
             y_loc = (r_loc*torch.sin(theta_loc))[:,None,None,None] + self.h//2
             
-            radius2 = (self.xgrid-x_loc)**2+(self.ygrid-y_loc)**2 # (num_cor,1,H,W)
+            corrupt_mask = (self.xgrid-x_loc)**2+(self.ygrid-y_loc)**2<r_size**2 # (num_cor,1,H,W), mask of where to corrupt
             is_seed = torch.isclose(batch_init[:num_cor],self.seed.expand(num_cor,-1,-1,-1)).\
-                        reshape(num_cor,-1).all(dim=1)# (num_cor,)
+                        reshape(num_cor,-1).all(dim=1)# (num_cor,), True if the element is seed
             
-            batch_init[:num_cor]=torch.where((radius2<r_size[:,None,None,None]**2),0,batch_init[:num_cor])
-            batch_init[:num_cor][is_seed]=self.batch_blank_seed(batch_init[:num_cor][is_seed].shape[0])   # Replace with seed if it was seed, to prevent corruption
-    
-        if(replace_num>0):
-            reseed_ind = torch.randperm(num_samples,device=self.device)[:replace_num] # Select some of the indices to reseed 
-            batch_init[reseed_ind] = self.batch_blank_seed(replace_num) # Replace some of the initial states with the seeds, but not changing the species
+            batch_init[:num_cor]=torch.where(corrupt_mask,0,batch_init[:num_cor]) # Corrupt the batch
+            # To prevent corrupting the seed (which makes it impossible to recover), we re-generate the seed if it was corrupted
+            batch_init[:num_cor][is_seed]=self.batch_seed(batch_init[:num_cor][is_seed].shape[0]) 
 
-        return batch_init.to(self.device), randindices.to(self.device) # (num_samples,n_states,H,W),(num_samples),
+        if(replace_num>0):
+            # Randomly reseed some of the elements
+            reseed_ind = torch.randperm(num_samples,device=self.device)[:replace_num] # Select some of the indices to reseed 
+            batch_init[reseed_ind] = self.batch_seed(replace_num) # Replace some of the initial states with the seed
+
+        return batch_init.to(self.device), randindices.to(self.device) # (num_samples,n_states,H,W), (num_samples,)
     
-    def batch_blank_seed(self,num_samples):
+    def batch_seed(self,num_samples):
         """
             Returns : batch of seeds (n_samples,C,H,W)
         """
 
         return self.seed.repeat(num_samples,1,1,1)
     
-    
+    @torch.no_grad()
     def update(self,indices, batch, batchloss=None, kill=0.1,cutoff=0.06):
         """
             Update the pool at 'indices' with the provided batch.
@@ -389,23 +407,26 @@ class SamplePool:
             elements, and replace the 'kill' fraction of the weakest with a seed.
 
             params:
-            indices : (num_samples,) of ints between 0 and pool_size
+            indices : (num_samples,) indices referring to the pool location of the given batch
             batch : (num_samples,n_states,H,W) of states to be replaced in pool
             batchloss : (num_samples,) of loss of the batch
             kill : bottom kill fraction in terms of loss are reset to seed
             cutoff : loss cutoff, above which the samples are not updated
         """
         cutoff_mask = batchloss>cutoff
-        num_bad = cutoff_mask.sum().item()
-        # Replace by seed if above cutoff
-        batch[cutoff_mask] = self.batch_blank_seed(num_bad).to(batch.device)
+        num_bad = cutoff_mask.sum().item() # Number of samples above cutoff
 
-        if(batchloss is not None):
+        # Replace by seed if above cutoff
+        batch[cutoff_mask] = self.batch_seed(num_bad).to(batch.device)
+
+        if(batchloss is not None): # If we can cull by loss
             _,sortind = torch.sort(batchloss) # Indices of sorted loss, ascending
-            killind = sortind[-math.ceil(kill*len(sortind)):] # Kill the higher loss
-            # Very inefficient, replacing twice, TODO : Change this later
-            self.pool[indices[sortind].to('cpu')] = batch[sortind].to('cpu')
-            self.pool[indices[killind].to('cpu')] = self.batch_blank_seed(len(killind)).to('cpu')
+            num_to_kill = math.ceil(kill*len(sortind)) # Number of samples to kill
+            killind = sortind[-num_to_kill:] # Indices of the samples to kill
+            keepind = sortind[:-num_to_kill] # Indices of the samples to keep
+
+            self.pool[indices[keepind].to('cpu')] = batch[keepind].to('cpu') # Update the pool with the survivors
+            self.pool[indices[killind].to('cpu')] = self.batch_seed(len(killind)).to('cpu')
 
         else :
             self.pool[indices.to('cpu')] = batch.to('cpu')
