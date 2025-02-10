@@ -3,15 +3,13 @@ PROBLEMS:
 
 
 TODO: 
-- make the device choosable 
-- wrap main and make a script to launch it where you choose from command line
-    - device
-    - screen size
-- fix some position of things in the interface 
 
 
 
 DONE: 
+X wrap main and make a script to launch it where you choose from command line
+    . device
+    . screen size
 X Model selection dropdown
 X Help on camera controls
 X Help on default controls

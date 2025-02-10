@@ -81,8 +81,8 @@ class CA2D(Automaton):
         CANC -> resets the automaton
         N -> pick a new random rule
         Z -> change the highlight color
-        UP -> increase the decay speed
-        DOWN -> decrease the decay speed
+        UP -> slower decay
+        DOWN -> faster decay
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):

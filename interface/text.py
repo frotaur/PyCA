@@ -28,6 +28,7 @@ class DropdownMenu:
         
         # Calculate position based on screen size
         self.update_position()
+        self.resize(width, height, margin)  # Use new resize method for initialization
         
     def update_position(self):
         screen_width, screen_height = self.screen.get_size()
@@ -111,6 +112,14 @@ class DropdownMenu:
                     break
         
         return False  # No option was selected
+
+    def resize(self, width, height, margin, font=None):
+        self.width = width
+        self.height = height
+        self.margin = margin
+        if font is not None:
+            self.font = font
+        self.update_position()
 
 def calculate_wrapped_height(text, font, screen_width, position):
     # Calculate max width based on position
@@ -275,6 +284,7 @@ class InputField:
         self.label_color = (230, 230, 230)
         self.index = index
         self.update_position()
+        self.resize(width, height, margin)  # Use new resize method for initialization
     
     def update_position(self):
         screen_width = self.screen.get_width()
@@ -348,3 +358,11 @@ class InputField:
             return int(self.text)
         except ValueError:
             return None
+
+    def resize(self, width, height, margin, font=None):
+        self.width = width
+        self.height = height
+        self.margin = margin
+        if font is not None:
+            self.font = font
+        self.update_position()

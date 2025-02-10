@@ -1,4 +1,4 @@
-import pygame, os, cv2
+import pygame, os
 from torch.cuda import empty_cache, reset_max_memory_allocated
 
 from Automata.models import (
@@ -10,7 +10,6 @@ from Automata.models import (
     LGCA, 
     FallingSand, 
     MultiLenia,
-    NCA
 )
 from Automata.models.ReactionDiffusion import (
     GrayScott, 
@@ -22,112 +21,25 @@ from utils.Camera import Camera
 from utils.utils import launch_video, add_frame, save_image
 from interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks, load_std_help
 
-import imutils
-from imutils.video import VideoStream
-from flask import Response, Flask, render_template, request
-
 if os.name == 'posix':  # Check if OS is Linux/Unix
     print("Setting window position to 0, 0")
     os.environ["SDL_VIDEO_WINDOW_POS"] = "0, 0"
 
-app = Flask(__name__)
-
-viewport_size = {'width': 1920, 'height': 1080}  # Default size
-
-@app.route("/")
-def index():    
-	return render_template("index.html")
-
-@app.route("/video_feed")
-def video_feed():
-	# return the response generated along with the specific media
-	# type (mime type)
-	return Response(gameloop(),
-		mimetype = "multipart/x-mixed-replace; boundary=frame")
-
-@app.route("/set_viewport_size")
-def set_viewport_size():
-    global viewport_size
-    # Add minimum size constraints
-    width = max(int(request.args.get('width', 1920)), 640)  # Minimum width of 640px
-    height = max(int(request.args.get('height', 1080)), 480)  # Minimum height of 480px
-    viewport_size['width'] = width
-    viewport_size['height'] = height
-    return "OK"
-
-@app.route("/keypress")
-def keypress():
-    key = request.args.get('key')
-    key_mapping = {
-        'space': pygame.K_SPACE,
-        'r': pygame.K_r,
-        's': pygame.K_s,
-        'h': pygame.K_h,
-        'c': pygame.K_c
-    }
-    
-    if key in key_mapping:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, {'key': key_mapping[key]}))
-    return "OK"
-
-@app.route("/mouse_event")
-def mouse_event():
-    event_type = request.args.get('type')
-    # Get coordinates relative to the video feed
-    x = float(request.args.get('x', 0))
-    y = float(request.args.get('y', 0))
-    
-    # Map browser coordinates to pygame coordinates
-    # We need to account for the aspect ratio and scaling
-    pygame_x = int((x / viewport_size['width']) * viewport_size['width'])
-    pygame_y = int((y / viewport_size['height']) * viewport_size['height'])
-    
-    # Create and post the appropriate pygame event
-    if event_type == 'wheel':
-        delta = int(request.args.get('delta', 0))
-        # Wheel up is negative delta, down is positive
-        button = 5 if delta > 0 else 4
-        pygame.event.post(pygame.event.Event(
-            pygame.MOUSEBUTTONDOWN,
-            {
-                'button': button,
-                'pos': (pygame_x, pygame_y)
-            }
-        ))
-    elif event_type == 'mousedown':
-        pygame.event.post(pygame.event.Event(
-            pygame.MOUSEBUTTONDOWN,
-            {
-                'button': 1,
-                'pos': (pygame_x, pygame_y)
-            }
-        ))
-    elif event_type == 'mousemove':
-        pygame.event.post(pygame.event.Event(
-            pygame.MOUSEMOTION,
-            {
-                'pos': (pygame_x, pygame_y),
-                'rel': (0, 0),  # We don't track relative movement for now
-                'buttons': (1, 0, 0)  # Left button pressed
-            }
-        ))
-    
-    return "OK"
 
 pygame.init()
 
-def gameloop():
-    global viewport_size
+def gameloop(screen: tuple[int], world: tuple[int], device: str):
+    
     # Replace the static sW, sH definition with:
-    sW, sH = viewport_size['width'], viewport_size['height']
+    sW, sH = screen
 
     # Automaton world size 
-    W, H = 300, 300
+    W, H = world
 
     # Device to run the automaton
-    device = 'cuda'
+    device = device
 
-    fps = 400 # Visualization (target) frames per second
+    fps = 60 # Visualization (target) frames per second
     text_size = int(sH/40)
     title_size = int(text_size*1.5)
     font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
@@ -185,42 +97,60 @@ def gameloop():
         return text_blocks
     text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
 
+    # Update these initial sizes to be relative to screen size
+    button_width = int(sW * 0.15)  # 15% of screen width
+    button_height = int(sH * 0.05)  # 5% of screen height
+    input_width = int(sW * 0.05)   # 5% of screen width
+    input_height = int(sH * 0.05)  # 5% of screen height
+    margin = int(sH * 0.02)        # 2% of screen height
+
     dropdown = DropdownMenu(
         screen=screen,
-        width=200,
-        height=30,
+        width=button_width,
+        height=button_height,
         font=font,
         options=automaton_options,
         default_option="CA2D",
-        margin=20  # Distance from screen edges
+        margin=margin
     )
 
-    # Create input fields for width and height
+    # Update input fields with new relative sizes
     w_input = InputField(
         screen=screen,
-        width=60,
-        height=30,
+        width=input_width,
+        height=input_height,
         font=font,
         label="Width",
         initial_value=W,
-        margin=20,
-        index=0  # First input field
+        margin=margin,
+        index=0
     )
 
     h_input = InputField(
         screen=screen,
-        width=60,
-        height=30,
+        width=input_width,
+        height=input_height,
         font=font,
         label="Height",
         initial_value=H,
-        margin=20,
-        index=1  # Second input field, will appear below width
+        margin=margin,
+        index=1
+    )
+
+    fps_input = InputField(
+        screen=screen,
+        width=input_width,
+        height=input_height,
+        font=font,
+        label="FPS",
+        initial_value=fps,
+        margin=margin,
+        index=2
     )
 
 
     while running:
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -251,13 +181,41 @@ def gameloop():
                     camera.zoom = zoom
 
             if event.type == pygame.VIDEORESIZE:
-                camera.resize(event.w, event.h)
-                dropdown.update_position()
-                w_input.update_position()
-                h_input.update_position()
-                text_size = int(event.h/45)
+                # Get current window size and new window size
+                old_w, old_h = screen.get_size()
+                new_w, new_h = event.w, event.h
+                
+                # Calculate scale factors
+                scale_w = new_w / old_w
+                scale_h = new_h / old_h
+                
+                # Update camera with new screen dimensions and scale position and zoom
+                camera.resize(new_w, new_h)
+                camera.position.x *= scale_w
+                camera.position.y *= scale_h
+                camera.zoom *= min(scale_w, scale_h)  # Use minimum scale to preserve aspect ratio
+                camera.updateFov()
+                
+                # Calculate new sizes based on new dimensions
+                button_width = int(new_w * 0.15)
+                button_height = int(new_h * 0.05)
+                input_width = int(new_w * 0.05)
+                input_height = int(new_h * 0.05)
+                margin = int(new_h * 0.02)
+                
+                # Update text sizes
+                text_size = int(new_h/45)
+                title_size = int(text_size*1.5)
                 font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
                 font_title = pygame.font.Font("public/fonts/AldotheApache.ttf", size=title_size)
+                
+                # Update UI elements with new sizes and font
+                dropdown.resize(button_width, button_height, margin, font)
+                w_input.resize(input_width, input_height, margin, font)
+                h_input.resize(input_width, input_height, margin, font)
+                fps_input.resize(input_width, input_height, margin, font)
+                
+                # Update text blocks with new font
                 text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
             
             auto.process_event(event,camera) # Process the event in the automaton
@@ -296,6 +254,11 @@ def gameloop():
                     zoom = min(current_sW/W,current_sH/H)
                     camera.zoom = zoom
 
+            if fps_input.handle_event(event):
+                new_fps = fps_input.get_value()
+                if new_fps and new_fps > 0:
+                    fps = new_fps
+
         if(not stopped):
             auto.step() # step the automaton
         
@@ -329,28 +292,12 @@ def gameloop():
         # Draw input fields
         w_input.draw()
         h_input.draw()
+        fps_input.draw()
 
         # Update the screen
         pygame.display.flip()
-
-        screen_surface = pygame.display.get_surface()
-        screen_array = pygame.surfarray.array3d(screen_surface)
-        screen_array = screen_array.transpose([1,0,2])
-        screen_array = cv2.cvtColor(screen_array, cv2.COLOR_RGB2BGR)
-
-        # Before encoding, optionally resize if needed for performance
-        # screen_array = cv2.resize(screen_array, (1280, 720))  # Uncomment if you want to limit resolution
-
-        # Improve JPEG encoding quality
-        encode_params = [cv2.IMWRITE_JPEG_QUALITY, 100]  # Quality from 0-100, higher is better
-        (flag, encoded_image) = cv2.imencode('.jpg', screen_array, encode_params)
-        if not flag: continue
-        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encoded_image) + b'\r\n')
 
         clock.tick(fps)  # limits FPS to 60
         print('FPS : ', clock.get_fps(), end='\r')
 
     pygame.quit()
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
