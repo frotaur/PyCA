@@ -68,18 +68,18 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
 
     # Define automaton classes without instantiating
     automaton_options = {
-        "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device='cuda'),
+        "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device=device),
         "ElementaryCA":         lambda h, w: ElementaryCA((h,w), wolfram_num=90, random=True),
         "Totalistic1DCA":  lambda h, w: TotalisticCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
-        "LGCA":         lambda h, w: LGCA((h,w), device='cuda'),
-        "Gray-Scott":   lambda h, w: GrayScott((h,w), device='cuda'),
-        "Belousov-Zhabotinsky": lambda h, w: BelousovZhabotinsky((h,w), device='cuda'),
-        "Brusselator":  lambda h, w: Brusselator((h,w), device='cuda'),
+        "LGCA":         lambda h, w: LGCA((h,w), device=device),
+        "Gray-Scott":   lambda h, w: GrayScott((h,w), device=device),
+        "Belousov-Zhabotinsky": lambda h, w: BelousovZhabotinsky((h,w), device=device),
+        "Brusselator":  lambda h, w: Brusselator((h,w), device=device),
         "Falling Sand": lambda h, w: FallingSand((h,w)),
-        "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device='cuda'),
+        "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device=device),
         "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
-        "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, param_path='LeniaCool', device='cuda'),
-        "Neural CA":  lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/betta.pt', device='cuda')
+        "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, param_path='lenia_cool_params', device=device),
+        "Neural CA":  lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/betta.pt', device=device)
     }
 
     # Then when initializing the first automaton:
@@ -227,9 +227,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             auto.process_event(event,camera) # Process the event in the automaton
 
             if dropdown.handle_event(event):
-                # Handle automaton change
-                empty_cache()
-                reset_max_memory_allocated()
+                # # Handle automaton change
                 auto = automaton_options[dropdown.current_option](H, W)
                 # Update help text
                 description, help_text = auto.get_help()

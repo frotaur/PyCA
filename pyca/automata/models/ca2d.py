@@ -80,14 +80,14 @@ class CA2D(Automaton):
         
     def process_event(self, event, camera=None):
         """
-        CANC -> resets the automaton
+        DEL -> resets the automaton
         N -> pick a new random rule
         Z -> change the highlight color
         UP -> longer-lasting highlights
         DOWN -> shorter-lasting highlights
         """
         if(event.type == pygame.KEYDOWN):
-            if(event.key == pygame.K_DELETE):
+            if(event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE):
                 self.reset() 
             if(event.key == pygame.K_n):
                 # Picks a random rule
