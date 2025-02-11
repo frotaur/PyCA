@@ -212,8 +212,8 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                 # Update text sizes
                 text_size = int(new_h/45)
                 title_size = int(text_size*1.5)
-                font = pygame.font.Font("public/fonts/AldotheApache.ttf", size=text_size)
-                font_title = pygame.font.Font("public/fonts/AldotheApache.ttf", size=title_size)
+                font = pygame.font.Font(font_path, size=text_size)
+                font_title = pygame.font.Font(font_path, size=title_size)
                 
                 # Update UI elements with new sizes and font
                 dropdown.resize(button_width, button_height, margin, font)
