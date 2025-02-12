@@ -24,7 +24,7 @@ pygame.init()
 def gameloop(screen: tuple[int], world: tuple[int], device: str):
     # Define available automaton classes
     automaton_options = {
-        "CA2D":         lambda h, w: CA2D((h,w), b_num='345', s_num='5', random=True, device=device),
+        "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device=device),
         "ElementaryCA": lambda h, w: ElementaryCA((h,w), wolfram_num=90, random=True),
         "Totalistic1DCA":lambda h, w: TotalisticCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
         "LGCA":         lambda h, w: LGCA((h,w), device=device),
@@ -35,7 +35,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device=device),
         "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, param_path='lenia_cool_params', device=device),
-        "Neural CA":    lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/betta.pt', device=device)
+        "Neural CA":    lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/betta.pt', device=device),
     }
     
     # Replace the static sW, sH definition with:
@@ -296,3 +296,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         clock.tick(fps)  # limits FPS to 60
 
     pygame.quit()
+
+if __name__=="__main__":
+    gameloop((800,600), (100,100), 'cuda')

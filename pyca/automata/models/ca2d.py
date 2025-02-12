@@ -21,8 +21,8 @@ class CA2D(Automaton):
         """
         super().__init__(size)
 
-        self.s_num = self.get_num_rule(s_num)  # Translate string to number form
-        self.b_num = self.get_num_rule(b_num)  # Translate string to number form
+        self.s_num = self.get_num_from_rule(s_num)  # Translate string to number form
+        self.b_num = self.get_num_from_rule(b_num)  # Translate string to number form
         self.random = random
         self.device = device
 
@@ -49,15 +49,28 @@ class CA2D(Automaton):
             colorsys.hls_to_rgb(hue, saturation, light), dtype=torch.float, device=self.device
         )
 
-    def get_num_rule(self, num):
+    def get_num_from_rule(self, num : str):
         """
-        Get the rule number for the automaton
+        Get the rule number for the automaton, given the string representation of the rule.
         """
         rule_out = 0
         if num != "":  # If the num is empty, the associated number is 0
             rule_out = sum([2 ** int(d) for d in num])
 
         return rule_out
+
+    def get_rule_from_num(self, num : int):
+        """
+            Get the rule string from the rule number
+        """
+        numbers_list = [int(num//2**i % 2) for i in range(9)]
+
+        out = ""
+        for i, n in enumerate(numbers_list):
+            if n == 1:
+                out += str(i)
+
+        return out
 
     def reset(self):
         """
@@ -69,7 +82,7 @@ class CA2D(Automaton):
             self.world = self.get_init_mat(0.5)
         else:
             self.world = torch.zeros_like(self.world, dtype=torch.int, device=self.device)
-            self.world[self.w // 2 - 1 : self.w // 2 + 1, self.h // 2 - 1 : self.h // 2 + 1] = torch.randint(
+            self.world[self.h // 2 - 1 : self.h // 2 + 1, self.w // 2 - 1 : self.w // 2 + 1] = torch.randint(
                 0, 2, (2, 2), device=self.device
             )
 
@@ -103,7 +116,7 @@ class CA2D(Automaton):
                 b_rule = torch.randint(0, 2**9, (1,)).item()
                 s_rule = torch.randint(0, 2**9, (1,)).item()
                 self.change_num(s_rule, b_rule)
-                print("rule : ", (s_rule, b_rule))
+                print(f"rule :  s:{self.get_rule_from_num(s_rule)}, b:{self.get_rule_from_num(b_rule)}")
             if event.key == pygame.K_z:
                 self.change_highlight_color()
             if event.key == pygame.K_UP:
@@ -111,10 +124,15 @@ class CA2D(Automaton):
             if event.key == pygame.K_DOWN:
                 self.decay_speed = min(0.1 * self.decay_speed + self.decay_speed, 3)
 
-    def change_num(self, s_num: int, b_num: int):
+    def change_num(self, s_num: int | str, b_num: int | str):
         """
-        Changes the rule of the automaton to the one specified by s_num and b_num
+        	Changes the rule of the automaton to the one specified by s_num and b_num
         """
+        if(isinstance(s_num, str)):
+            s_num = self.get_num_from_rule(s_num)
+        if(isinstance(b_num, str)):
+            b_num = self.get_num_from_rule(b_num)
+            
         self.s_num = s_num
         self.b_num = b_num
         self.reset()

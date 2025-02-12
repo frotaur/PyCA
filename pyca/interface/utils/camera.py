@@ -100,7 +100,7 @@ class Camera:
             Returns :
             2-uple (x,y) , absolute position in the world, without zoom or camera offset
         """
-        return (pos[0]/self.zoom+self.fov.left, pos[1]/self.zoom+self.fov.top)
+        return (int(pos[0]/self.zoom+self.fov.left), int(pos[1]/self.zoom+self.fov.top))
     
     def apply(self, surface : pygame.Surface, border=False):
         """
