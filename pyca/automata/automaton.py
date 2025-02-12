@@ -85,4 +85,10 @@ class Automaton:
 
 
     def get_help(self):
-        return dedent(self.__doc__), dedent(self.process_event.__doc__)
+        doc = self.__doc__
+        process = self.process_event.__doc__
+        if(doc is None):
+            doc = "No description available"
+        if(process is None):
+            process = "No interactivity help available"
+        return dedent(doc), dedent(process)

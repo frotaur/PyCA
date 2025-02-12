@@ -116,7 +116,7 @@ class Baricelli1D(Automaton):
         DEL -> resets the automaton
         """
         if(event.type == pygame.KEYDOWN):
-            if(event.key == pygame.K_DELETE):
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset() 
                 self.draw()
 

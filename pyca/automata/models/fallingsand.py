@@ -96,7 +96,7 @@ class FallingSand(Automaton):
                 # Toggle between sand and water
                 self.element = self.WATER if self.element == self.SAND else self.SAND
                 self.lowshift = self.lowshift_map[self.element]
-            if event.key == pygame.K_DELETE:
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 # Clear the world
                 self.world = np.zeros((self.h, self.w))
 
@@ -105,7 +105,7 @@ class FallingSand(Automaton):
         self.m_pos.y = m.y
 
         if event.type == pygame.MOUSEWHEEL:
-            # Adjust flow rate with mouse wheel
+            # Adjust brush size with the mouse wheel
             self.brush_size = max(1, min(10, self.brush_size + event.y))
     
     def paint(self):

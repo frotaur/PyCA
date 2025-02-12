@@ -86,7 +86,7 @@ class NCA(Automaton):
         self.m_pos.y = mouse.y
 
         if(event.type == pygame.KEYDOWN):
-            if(event.key == pygame.K_DELETE):
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset()
             if event.key == pygame.K_r:
                 self.randomize()

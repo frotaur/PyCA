@@ -172,7 +172,7 @@ class TotalisticCA1D(Automaton):
         N -> pick a new random rule
         """
         if(event.type == pygame.KEYDOWN):
-            if(event.key == pygame.K_DELETE):
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset(random=self.random) 
                 self.draw()
             if(event.key == pygame.K_n):

@@ -296,7 +296,7 @@ class MultiLenia(Automaton):
                 """ Variate around parameters"""
                 params = self.params.mutate(magnitude=0.1,rate=0.8)
                 self.update_params(params)
-            if(event.key == pygame.K_DELETE):
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.set_init_perlin()
             if(event.key == pygame.K_m):
                 if(self.saved_param_path is not None and self.num_par>0):

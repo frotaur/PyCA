@@ -5,5 +5,4 @@ from .reactiondiffusion import ReactionDiffusion, GrayScott, BelousovZhabotinsky
 from .lgca import LGCA
 from .fallingsand import FallingSand
 from .nca import NCA
-# from .Lenia import MultiLenia
 from .lenia import MultiLenia

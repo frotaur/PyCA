@@ -163,7 +163,7 @@ class ReactionDiffusion(Automaton):
             - Delete to reset the state to homogeneous
         """
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_DELETE:
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset()
             if event.key == pygame.K_c:
                 self.recolor()

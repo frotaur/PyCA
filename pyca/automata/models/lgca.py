@@ -55,7 +55,7 @@ class LGCA(Automaton):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:
                 self.w_pressed = True
-            if event.key == pygame.K_DELETE:
+            if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset()
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
