@@ -47,10 +47,14 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     fps = 60 # Visualization (target) frames per second
     video_fps = 60 # Video frames per second
 
-    text_size = int(sH/40)
-    title_size = int(text_size*1.5)
+    text_size = int(sH/45)
+    title_size = int(text_size*1.3)
     font = pygame.font.Font(font_path, size=text_size)
     font_title = pygame.font.Font(font_path, size=title_size)
+
+    programIcon = pygame.image.load(files('pyca.interface.files').joinpath('icon.png'))
+    pygame.display.set_icon(programIcon)
+    pygame.display.set_caption('PyCA')
     screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
     clock = pygame.time.Clock() 
     running = True
@@ -101,6 +105,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         text_blocks.append(TextBlock("Automaton controls", "below_sx", (230, 89, 89), font))
         text_blocks.append(TextBlock(help_text, "below_sx", (230, 230, 230), font))
         return text_blocks
+
     text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
 
     # Update these initial sizes to be relative to screen size
@@ -233,35 +238,36 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                 description, help_text = auto.get_help()
                 text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
 
-            # Handle input field events
-            if w_input.handle_event(event):
-                new_w = w_input.get_value()
-                if new_w and new_w > 0:
-                    W = new_w
-                    current_sW, current_sH = screen.get_size()
-                    # Recreate automaton with new size
-                    auto = automaton_options[dropdown.current_option](H, W)
-                    camera = Camera(W,H)
-                    camera.resize(current_sW,current_sH)
-                    zoom = min(current_sW/W,current_sH/H)
-                    camera.zoom = zoom
+            if(display_help):
+                # Handle input field events
+                if w_input.handle_event(event):
+                    new_w = w_input.get_value()
+                    if new_w and new_w > 0:
+                        W = new_w
+                        current_sW, current_sH = screen.get_size()
+                        # Recreate automaton with new size
+                        auto = automaton_options[dropdown.current_option](H, W)
+                        camera = Camera(W,H)
+                        camera.resize(current_sW,current_sH)
+                        zoom = min(current_sW/W,current_sH/H)
+                        camera.zoom = zoom
 
-            if h_input.handle_event(event):
-                new_h = h_input.get_value()
-                if new_h and new_h > 0:
-                    H = new_h
-                    current_sW, current_sH = screen.get_size()
-                    # Recreate automaton with new size
-                    auto = automaton_options[dropdown.current_option](H, W)
-                    camera = Camera(W,H)
-                    camera.resize(current_sW,current_sH)
-                    zoom = min(current_sW/W,current_sH/H)
-                    camera.zoom = zoom
+                if h_input.handle_event(event):
+                    new_h = h_input.get_value()
+                    if new_h and new_h > 0:
+                        H = new_h
+                        current_sW, current_sH = screen.get_size()
+                        # Recreate automaton with new size
+                        auto = automaton_options[dropdown.current_option](H, W)
+                        camera = Camera(W,H)
+                        camera.resize(current_sW,current_sH)
+                        zoom = min(current_sW/W,current_sH/H)
+                        camera.zoom = zoom
 
-            if fps_input.handle_event(event):
-                new_fps = fps_input.get_value()
-                if new_fps and new_fps > 0:
-                    fps = new_fps
+                if fps_input.handle_event(event):
+                    new_fps = fps_input.get_value()
+                    if new_fps and new_fps > 0:
+                        fps = new_fps
 
         if(not stopped):
             auto.step() # step the automaton
@@ -274,7 +280,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         screen.fill((0, 0, 0))
 
         # Draw the scaled surface on the window
-        zoomed_surface = camera.apply(surface)
+        zoomed_surface = camera.apply(surface, border=True)
         screen.blit(zoomed_surface, (0,0))
 
         if (recording):
@@ -288,15 +294,14 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             render_text_blocks(screen, [TextBlock(f"FPS: {int(clock.get_fps())}", "up_dx", (255, 89, 89), font)])
             render_text_blocks(screen, text_blocks)
 
-        render_text_blocks(screen, [TextBlock(f"H -> help", "below_dx", (74, 101, 176), font)])
-
         # Draw dropdown (before pygame.display.flip())
-        dropdown.draw(screen)
+        dropdown.draw(screen, display_text=display_help)
 
         # Draw input fields
-        w_input.draw()
-        h_input.draw()
-        fps_input.draw()
+        if(display_help):
+            w_input.draw()
+            h_input.draw()
+            fps_input.draw()
 
         # Update the screen
         pygame.display.flip()

@@ -19,7 +19,9 @@ class Camera:
         self.drag_start = None # Position of the mouse when dragging
         self.size = pygame.Rect(0,0,width,height) # Size of the camera
         self.updateFov() # Update the field of view
-    
+
+        self.width = width  
+        self.height = height
     def resize(self, width, height):
         """
             Resize the camera
@@ -100,7 +102,7 @@ class Camera:
         """
         return (pos[0]/self.zoom+self.fov.left, pos[1]/self.zoom+self.fov.top)
     
-    def apply(self, surface : pygame.Surface):
+    def apply(self, surface : pygame.Surface, border=False):
         """
             Given a pygame surface, return a new surface which is the view of the camera.
 
@@ -111,5 +113,33 @@ class Camera:
         visible_surface = pygame.Surface((self.fov.w, self.fov.h))
 
         visible_surface.blit(surface, (0,0), self.fov)
-
-        return pygame.transform.scale(visible_surface, (self.size.w, self.size.h))
+        scaled_surface = pygame.transform.scale(visible_surface, (self.size.w, self.size.h))
+        if border:
+            self.draw_border(scaled_surface)
+        return scaled_surface
+    
+    def draw_border(self, surface: pygame.Surface, thickness: int = 3, color: tuple = (125, 125, 125)):
+        """
+        Draw a border around the simulation area on the given surface.
+        
+        Parameters:
+        surface : pygame.Surface
+            Surface to draw the border on
+        thickness : int
+            Border thickness in pixels
+        color : tuple
+            RGB color tuple for the border
+        """
+        # Convert world coordinates to screen coordinates
+        left = -self.fov.left * self.zoom
+        top = -self.fov.top * self.zoom
+        
+        # Calculate the scaled width and height
+        width = self.width * self.zoom
+        height = self.height * self.zoom
+        
+        # Draw the border
+        pygame.draw.rect(surface, 
+                        color,
+                        (left, top, width, height),
+                        thickness)

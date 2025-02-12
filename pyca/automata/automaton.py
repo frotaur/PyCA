@@ -8,12 +8,8 @@ from easydict import EasyDict
 class Automaton:
     """
     Class that internalizes the rules and evolution of
-    a cellular automaton. It has a step function
-    that makes one timestep of evolution.
-    By convention, the world tensor has shape
-    (3,H,W). It contains float values between 0 and 1, which
-    are mapped to [0, 255] and casted to a uint8 numpy array,
-    which is compatible with pygame.
+    an Alife model. By default, the world tensor has shape
+    (3,H,W) and should contain floats with values in [0.,1.].
     """
 
     def __init__(self, size):
@@ -25,25 +21,38 @@ class Automaton:
         self.h, self.w = size
         self.size = size
 
-        self._worldmap = torch.zeros((3, self.h, self.w))  # (3,H,W), contains a 2D 'view' of the CA world
-
-        self.right_pressed = False
-        self.left_pressed = False
+        self._worldmap = torch.zeros((3, self.h, self.w), dtype=float)  # (3,H,W), contains a 2D 'view' of the CA world
 
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')
 
     def draw(self):
         """
-        This function should update the self._worldmap tensor
+        This method should be overriden. It should update the self._worldmap tensor,
+        drawing the current state of the CA world. self._worldmap is a torch tensor of shape (3,H,W).
+        If you choose to use another format, you should override the worldmap property as well.
         """
         return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
+    
+    def process_event(self, event, camera=None):
+        """
+        Processes a pygame event, if needed. Should be overriden to 
+        add interactivity to the automaton.
+
+        Parameters:
+        event : pygame.event
+            The event to process
+        camera : Camera
+            The camera object. Need for the call to self.get_mouse_state.
+        """
+        pass
 
     @property
     def worldmap(self):
-        """Converts _worldmap to a numpy array, and returns it in a pygame-plottable format (W,H,3).
+        """
+        Converts self._worldmap to a numpy array, and returns it in a pygame-plottable format (W,H,3).
 
-        Can be overriden if you use another format for self._worldmap, instead of a torch (3,H,W) tensor.
+        Should be overriden only if you use another format for self._worldmap, instead of a torch (3,H,W) tensor.
         """
         return (255 * self._worldmap.permute(2, 1, 0)).detach().cpu().numpy().astype(dtype=np.uint8)
 
@@ -57,7 +66,7 @@ class Automaton:
         camera : Camera
             The camera object. Needed to convert mouse positions to world coordinates.
         
-        Returns: mouse_state an EasyDict with keys :
+        Returns: mouse_state, an EasyDict with keys :
             x : x position in the CA world (access also as mouse_state.x)
             y : y position in the CA world (access also as mouse_state.y)
             left : True if left mouse button is pressed (access also as mouse_state.left)
@@ -74,18 +83,6 @@ class Automaton:
             left = middle = right = 0
         return EasyDict({"x":mouse_x, "y":mouse_y, 'left': left==1, 'right': right==1, 'middle': middle==1})
 
-    def process_event(self, event, camera=None):
-        """
-        Processes a pygame event, if needed.
-
-        Parameters:
-        event : pygame.event
-            The event to process
-        camera : Camera
-            The camera object. Might be needed to convert mouse positions to world coordinates.
-            Use camera.convert_mouse_pos(pygame.mouse.get_pos()) to convert the mouse position to world coordinates.
-        """
-        pass
 
     def get_help(self):
         return dedent(self.__doc__), dedent(self.process_event.__doc__)

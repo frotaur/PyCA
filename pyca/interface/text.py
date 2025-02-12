@@ -21,7 +21,7 @@ class DropdownMenu:
         self.active = False
         self.current_option = default_option if default_option else self.option_list[0]
         self.hover_index = -1
-        self.label = "Select automaton"
+        self.label = "Select Automaton"
         self.selected_color = (230, 230, 230)  # White color for selected option
         self.normal_color = (50, 50, 50)       # Normal background color
         self.hover_color = (70, 70, 70)        # Hover background color
@@ -47,20 +47,21 @@ class DropdownMenu:
                                     self.width, self.height)
             self.option_rects.append(option_rect)
     
-    def draw(self, screen):
+    def draw(self, screen, display_text=True):
         # Draw label
-        label_surface = self.font.render(self.label, True, (230, 230, 230))
-        label_rect = label_surface.get_rect(bottomright=(self.rect.right, self.rect.top - 5))
-        # Draw label background
-        padding = 5
-        background_rect = pygame.Rect(
-            label_rect.x - padding,
-            label_rect.y - padding,
-            label_rect.width + (padding * 2),
-            label_rect.height + (padding * 2)
-        )
-        pygame.draw.rect(screen, (0, 0, 0), background_rect)
-        screen.blit(label_surface, label_rect)
+        if(display_text):
+            label_surface = self.font.render(self.label, True, (230, 230, 230))
+            label_rect = label_surface.get_rect(bottomright=(self.rect.right, self.rect.top - 5))
+            # Draw label background
+            padding = 5
+            background_rect = pygame.Rect(
+                label_rect.x - padding,
+                label_rect.y - padding,
+                label_rect.width + (padding * 2),
+                label_rect.height + (padding * 2)
+            )
+            pygame.draw.rect(screen, (0, 0, 0), background_rect)
+            screen.blit(label_surface, label_rect)
         
         # Draw main button with selected color
         pygame.draw.rect(screen, self.selected_color, self.rect)

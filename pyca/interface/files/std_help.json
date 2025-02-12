@@ -4,18 +4,20 @@
             "title": "Interface controls",
             "commands": {
                 "SPACE": "start/stop the simulation",
+                "S": "(while stopped) one simulation step",
                 "H": "show/hide this help",
-                "R": "record the simulation",
+                "R": "toggle recording of the simulation",
                 "P": "screenshot the simulation",
-                "Q": "quit the simulation",
-                "C": "reset the camera"
+                "Q": "quit the simulation"
+
             }
         },
         {
             "title": "Camera controls",
             "commands": {
                 "CTRL + MOUSE WHEEL": "Zoom in/out",
-                "CTRL + MOUSE DRAG": "Move the camera"
+                "CTRL + MOUSE DRAG": "Move the camera",
+                "C": "reset the camera"
             }
         }
     ]
