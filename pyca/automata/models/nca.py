@@ -145,7 +145,7 @@ class NCAModule(ConfigModule):
         (use NCA class for interactivity and use as an Automaton class.)
     """
 
-    def __init__(self,kernel_size=3,n_states=12,n_hidden=128, device='cpu'):
+    def __init__(self,n_states=12,n_hidden=128, device='cpu'):
         """
             Args:
                 n_states : int, number of hidden states
@@ -159,8 +159,6 @@ class NCAModule(ConfigModule):
 
 
         self.n_states=max(4,n_states) # At least 1 hidden state
-
-        self.kern = kernel_size
 
         self.sobel = SobelConv(n_states=self.n_states,device=device)
 
@@ -210,19 +208,18 @@ class NCAModule(ConfigModule):
         B,C,H,W = state.shape
 
         for _ in range(n_steps):
-            dx = self.sobel(state) #(B,3*n_states,H,W)
+            dx = self.sobel(state) #(B,3*n_states,H,W) PERCEPTION STEP
             dx = dx.permute(0,2,3,1) # (B,H,W,3*n_states)
-            dx = self.computer(dx).permute(0,3,1,2) # (B,n_states,H,W)
+            dx = self.computer(dx).permute(0,3,1,2) # (B,n_states,H,W) COMPUTATION STEP
 
-            live_before = self.getlivemask(state) # (B,1,H,W)
+            live_before = self.getlivemask(state) # (B,1,H,W) MASK OF LIVE CELLS
+            rand_update = torch.rand(B,1,H,W,device=self.device)<=0.5 # Update stochasticity
 
-            rand_update = torch.rand(B,1,H,W,device=self.device)<=0.5 # Update with chance .5
+            state += dx*rand_update # Update the state
 
-            state += dx*rand_update
+            life_mask = live_before & self.getlivemask(state) # Maks of cells alive before AND after step
 
-            life_mask = live_before & self.getlivemask(state)
-
-            state = state*life_mask # Kill cells that were not alive before and after
+            state = state*life_mask # Reset dead cells to zero
         
         return torch.nan_to_num(state,nan=1.0,posinf=100.0,neginf=-100.0)
         

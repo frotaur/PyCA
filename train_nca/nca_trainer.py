@@ -16,8 +16,8 @@ import wandb
 class NCA_Trainer(Trainer):
     def __init__(
         self,
-        model: NCAModule,
-        tar_image: torch.Tensor,
+        model: NCAModule, ## TODO : potentially modify if you make a new model
+        tar_image: torch.Tensor, ## TODO : modify to allow for several images
         frame_run: int = 64,
         frame_delta: int = 32,
         run_name: str = None,
@@ -45,13 +45,20 @@ class NCA_Trainer(Trainer):
             model, optim, scheduler, save_loc=save_loc, device=device, run_name=run_name, project_name="NCA"
         )
         self.model = model.to(self.device)  # just for auto-completion
+
+        ## TODO : modify to store for tar images
         self.tar_image = tar_image.to(self.device)[None]  # (1,4,H,W) Target image padded with 4 pixels
 
         self.world_size = (tar_image.shape[1], tar_image.shape[2])  # Add padding to the target image
         self.frame_run = frame_run  # Number of frames to evolve the NCA before evaluation
         self.frames_delta = frame_delta  # Random variations max on frame_run
+
+        ## TODO : modify the seed generation; you will need to have different seeds for each
+        ## target image. So for 2 images, you need 2 seeds, which MUST be different in some way
         seed = torch.zeros(self.model.n_states, *self.world_size)
         seed[:, self.world_size[0] // 2, self.world_size[1] // 2] = 1
+
+        ## TODO : You will need one pool per target image, with its dedicated seed
         self.pool = SamplePool(seed, return_device=self.device)  # Pool of samples for training
 
         self.save_loc = os.path.join(save_loc, "NCA", f"{self.run_name}")
@@ -211,6 +218,7 @@ class NCA_Trainer(Trainer):
                 commit=False,
             )
             self.logger.log({"loss/l2": sum(self.step_loss) / len(self.step_loss)}, commit=False)
+            print('Current logloss : ', sum([math.log10(ell) for ell in self.step_loss]) / len(self.step_loss))
             self.logger.log({"metrics/lr": self.scheduler.get_last_lr()[0]}, commit=False)
             before_after = torch.cat((batch[0:8], state[0:8]), dim=0)  # (8,C,H,W)
             before_after = gridify(

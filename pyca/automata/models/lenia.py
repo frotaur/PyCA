@@ -233,6 +233,7 @@ class MultiLenia(Automaton):
             Steps the automaton state by one iteration.
         """
         ## TODO : this is where you will do the mixing of the batches
+        ## convs[i] contains the convolution result of the i-th batch
         convs = self.get_fftconv(self.state) # (B,C,C,H,W) Convolutions for each channel interaction
 
         assert (self.h,self.w) == (convs.shape[-2], convs.shape[-1])
@@ -240,13 +241,20 @@ class MultiLenia(Automaton):
         weights = self.normal_weights[...,None, None] # (B,C,C,1,1)
         weights = weights.expand(-1,-1, -1, self.h,self.w) # (B,C,C,H,W)
 
+        ## TODO : growths[i] contains the growths of the i-th batch.
+        ## If you want to mix and match growths and convs, you can mix
+        ## the batch dimension of convs
         growths = self.growth(convs) # (B,C,C,H,W) growths for each channel interaction
         # Weight normalized growth :
+        ##TODO : YOU WILL PROBABLY NEED TO COMPUTE dx DIFFERENTLY WHEN YOU DO THE MIXING
         dx = (growths*weights).sum(dim=1) #(B,C,H,W) # Use the weights to sum the growths of each channel
 
         # Apply growth and clamp
+        ## TODO : YOU WILL HAVE TO REWRITE THE STATE UPDATE WHEN YOU DO THE MIXING
         self.state = torch.clamp(self.state + self.dt*dx, 0, 1) # (B,C,H,W)
         
+        ## TODO : THIS CAN BE DELETED WHEN YOU DO THE MIXING. YOU SHOULD MAKE SURE
+        ## YOU NATURALLY END UP WITH A (1,C,H,W) STATE.
         self.state = self.state[:1] # (1,C,H,W), keep only the first batch, in case of batched parameters
     
     def get_fftconv(self, state):
