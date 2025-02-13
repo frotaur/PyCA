@@ -42,7 +42,7 @@ class MultiLenia(Automaton):
             self.params = LeniaParams(param_dict=params, device=device)
         else:
             self.params = params.to(device)
-        
+
         self.k_size = self.params['k_size'] # The chosen kernel size
 
         self.state = torch.rand(self.batch,self.C,self.h,self.w,device=device) # Our world state
@@ -75,28 +75,23 @@ class MultiLenia(Automaton):
         self.kernel = self.kernel.to(device)
         self.normal_weights = self.normal_weights.to(device)
     
-    def update_params(self, params, k_size_override = None):
+    def update_params(self, params : LeniaParams, k_size_override = None):
         """
-            Updates some or all parameters of the automaton. 
-            Changes batch size to match the one of provided params (take mu as reference)
+            Updates parameters of the automaton. 
+            Changes batch size to match the one of provided params.
 
             Args:
-                params : LeniaParams or dict, prefer the former
+                params : LeniaParams, prefer the former
+                k_size_override : int, override the kernel size of params
         """
-        if(isinstance(params,LeniaParams)):
-            params = params.param_dict
-
-        new_dict ={}
-        for key in self.params.param_dict.keys():
-            new_dict[key] = params.get(key,self.params[key])
 
         if(k_size_override is not None):
             self.k_size = k_size_override
             if(self.k_size%2==0):
                 self.k_size += 1
                 print(f'Increased even kernel size to {self.k_size} to be odd')
-            new_dict['k_size'] = self.k_size
-        self.params = LeniaParams(param_dict=new_dict, device=self.device)
+            params.k_size = self.k_size
+        self.params = LeniaParams(param_dict=params.param_dict, device=self.device)
 
         self.to(self.device)
         self.norm_weights()
@@ -126,7 +121,7 @@ class MultiLenia(Automaton):
             Sets the initial state of the automaton using fractal perlin noise.
             Max wavelength is k_size*1.5.
         """
-        self.state = perlin_fractal((self.batch,self.h,self.w),int(self.k_size*1.5),
+        self.state = perlin_fractal((1,self.h,self.w),int(self.k_size*1.5),
                                     device=self.device,black_prop=0.25,num_channels=self.C,persistence=0.4) 
     
     def set_init_perlin(self,wavelength=None):
@@ -136,7 +131,7 @@ class MultiLenia(Automaton):
         """
         if(not wavelength):
             wavelength = self.k_size
-        self.state = perlin((self.batch,self.h,self.w),[wavelength]*2,
+        self.state = perlin((1,self.h,self.w),[wavelength]*2,
                             device=self.device,num_channels=self.C,black_prop=0.25)
     
     def set_init_circle(self,fractal=False, radius=None):
@@ -146,13 +141,14 @@ class MultiLenia(Automaton):
         if(radius is None):
             radius = self.k_size*3
         if(fractal):
-            self.state = perlin_fractal((self.batch,self.h,self.w),int(self.k_size*1.5),
+            self.state = perlin_fractal((1,self.h,self.w),int(self.k_size*1.5),
                                     device=self.device,black_prop=0.25,num_channels=self.C,persistence=0.4)
         else:
-            self.state = perlin((self.batch,self.h,self.w),[self.k_size]*2,
+            self.state = perlin((1,self.h,self.w),[self.k_size]*2,
                             device=self.device,num_channels=self.C,black_prop=0.25)
         X,Y = torch.meshgrid(torch.linspace(-self.h//2,self.h//2,self.h,device=self.device),torch.linspace(-self.w//2,self.w//2,self.w,device=self.device))
         R = torch.sqrt(X**2+Y**2)
+    
         self.state = torch.where(R<radius,self.state,torch.zeros_like(self.state,device=self.device))
 
     def kernel_slice(self, r):
@@ -236,29 +232,34 @@ class MultiLenia(Automaton):
         """
             Steps the automaton state by one iteration.
         """
-        U = self.get_fftconv(self.state) # (B,C,C,H,W) K_{ij} * A_j
+        ## TODO : this is where you will do the mixing of the batches
+        convs = self.get_fftconv(self.state) # (B,C,C,H,W) Convolutions for each channel interaction
 
-        assert (self.h,self.w) == (U.shape[-2], U.shape[-1])
+        assert (self.h,self.w) == (convs.shape[-2], convs.shape[-1])
 
         weights = self.normal_weights[...,None, None] # (B,C,C,1,1)
         weights = weights.expand(-1,-1, -1, self.h,self.w) # (B,C,C,H,W)
 
+        growths = self.growth(convs) # (B,C,C,H,W) growths for each channel interaction
         # Weight normalized growth :
-        dx = (self.growth(U)*weights).sum(dim=1) #(B,C,H,W) # G(U)[:,i,j] is contribution of channel i to channel j
+        dx = (growths*weights).sum(dim=1) #(B,C,H,W) # Use the weights to sum the growths of each channel
 
         # Apply growth and clamp
         self.state = torch.clamp(self.state + self.dt*dx, 0, 1) # (B,C,H,W)
+        
+        self.state = self.state[:1] # (1,C,H,W), keep only the first batch, in case of batched parameters
     
     def get_fftconv(self, state):
         """
             Compute convolution of state with kernel using fft
         """
-        state = torch.fft.fft2(state) # (B,C,H,W) fourier transform
-        state = state[:,:,None] # (B,1,C,H,W)
+        state = torch.fft.fft2(state) # (1,C,H,W) fourier transform
+        state = state.expand(self.batch,-1,-1,-1) # (B,C,H,W) expanded for batched parameters
+        state = state[:,:,None] # (B,C,1,H,W)
         state = state*self.fft_kernel # (B,C,C,H,W), convoluted
         state = torch.fft.ifft2(state) # (B,C,C,H,W), back to spatial domain
 
-        return torch.real(state)
+        return torch.real(state) # (B,C,C,H,W), convolved with the batch of kernels
 
 
     def mass(self):
@@ -269,7 +270,7 @@ class MultiLenia(Automaton):
             mass : (B,C) tensor, mass of each channel
         """
 
-        return self.state.mean(dim=(-1,-2)) # (B,C) mean mass for each color
+        return self.state.mean(dim=(-1,-2)) # (1,C) mean mass for each color
 
     def draw(self):
         """
@@ -299,6 +300,7 @@ class MultiLenia(Automaton):
         if event.type == pygame.KEYDOWN:
             if(event.key == pygame.K_n):
                 """ New random parameters"""
+                ## TODO : MODIFY FOR TRACK 2;
                 self.update_params(LeniaParams(k_size=self.params.k_size, channels=self.C, batch_size=self.params.batch_size, device=self.device))
                 self.set_init_perlin()
             if(event.key == pygame.K_v):
@@ -308,6 +310,11 @@ class MultiLenia(Automaton):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.set_init_perlin()
             if(event.key == pygame.K_m):
+                ## TODO : MODIFY FOR TRACK 2;
+                ## The save parameters are all batch_size=1
+                ## Load however many you need, randomly, and concatenate them
+                ## To generate a batch of parameters
+                ## Use LeniaParams.cat to concatenate LeniaParams
                 if(self.saved_param_path is not None and self.num_par>0):
                     file = os.path.join(self.saved_param_path,self.param_files[self.cur_par])
                     print('loading ', os.path.join(self.saved_param_path,file))
@@ -318,9 +325,10 @@ class MultiLenia(Automaton):
                 else:
                     print('No saved parameters')
             if(event.key == pygame.K_o):
-                self.update_params(LeniaParams.random_gen(batch_size=1,num_channels=self.C,k_size=self.params.k_size,device=self.device))
+                self.update_params(LeniaParams.random_gen(batch_size=self.params.batch_size,num_channels=self.C,k_size=self.params.k_size,device=self.device))
                 self.set_init_perlin()
             if(event.key == pygame.K_s):
+                ## TODO : might need to modify this if you add extra parameters that you want to save
                 # Save the current parameters:
                 self.params.save(self.to_save_param_path)
                 print(f'Saved current parameters as {self.params.name}')
