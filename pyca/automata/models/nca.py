@@ -5,6 +5,7 @@ import pygame
 from torchenhanced import DevModule, ConfigModule
 import math
 from easydict import EasyDict
+from pathlib import Path
 
 class NCA(Automaton):
     """
@@ -12,7 +13,7 @@ class NCA(Automaton):
         from a 'seed', using only local interactions, and a neural network.
     """
 
-    def __init__(self, size, model_path, seed=None, device='cpu'):
+    def __init__(self, size, models_folder, seed=None, device='cpu'):
         """
             Args:
                 size : tuple (H,W), size of the automaton
@@ -24,19 +25,15 @@ class NCA(Automaton):
                 device : str, device on which to run the module
         """
         super().__init__(size)
+        self.device = device
 
-        model_data = torch.load(model_path,map_location=device)
-        if('device' in model_data['config'].keys()):
-            model_data['config']['device'] = device
+        self.models_paths = list(Path(models_folder).rglob('*.pt')) # List of all models in the folder
 
-        self.model = NCAModule(**model_data['config'])
-        self.model.load_model(model_path)
-        self.model.eval()
-        self.model.to(device)
+        self.cur_model = 0 # Current model index
+        self.load_model(self.models_paths[self.cur_model]) # Load the first model
 
-        for p in self.model.parameters():
-            p.requires_grad=False
-
+        ## TODO : Add the different possible seeds
+        ## You could hard-code them, or load them from a folder
         if(seed is None):
             self.seed = torch.ones((self.model.n_states,1,1),device=device)
         else:
@@ -44,13 +41,30 @@ class NCA(Automaton):
         
         self.seed_size = self.seed.shape[1:]
         self.state = torch.zeros((1,self.model.n_states,size[0],size[1]),device=device)
+
+        ## TODO : Potentially need modification if you modify the method
         self.insert_seed(size[0]//2,size[1]//2)
-        self.device = device
 
         self.brush_size = 4
         self.m_pos = EasyDict(x=0,y=0)
         self.hgrid, self.wgrid = torch.meshgrid(torch.arange(size[0],device=device),torch.arange(size[1],device=device))
 
+    def load_model(self, model_path):
+        """
+            Loads the model from model_path.
+        """
+        # if('device' in model_data['config'].keys()):
+        #     model_data['config']['device'] = device
+        model_data = torch.load(model_path,map_location=self.device)
+
+        self.model = NCAModule(**model_data['config'])
+        self.model.load_model(model_path)
+        self.model.eval()
+        self.model.to(self.device)
+        for p in self.model.parameters():
+            p.requires_grad=False
+
+    @torch.no_grad()
     def step(self):
         """
             Step the automaton one step forward.
@@ -75,24 +89,30 @@ class NCA(Automaton):
     def process_event(self, event, camera=None):
         """
         DELETE              -> resets the automaton
-        R                   -> randomize parameters
+        R                   -> randomize NCA parameters
         LEFT CLICK + DRAG   -> erase cells
         RIGHT CLICK         -> insert seed at cursor position
         SCROLL WHEEL        -> change brush size
+        M                   -> load next trained model
         """
         mouse = self.get_mouse_state(camera)
         #Update mouse position, to have it for drawing
         self.m_pos.x = mouse.x
         self.m_pos.y = mouse.y
 
+        ## TODO : potentially add the seed selction with arrow keys ?
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset()
             if event.key == pygame.K_r:
                 self.randomize()
-
+            if event.key == pygame.K_m:
+                self.cur_model = (self.cur_model+1)%len(self.models_paths)
+                self.load_model(self.models_paths[self.cur_model])
+                print('Selected model : ',self.models_paths[self.cur_model])
         if event.type == pygame.MOUSEBUTTONDOWN :
             if event.button == pygame.BUTTON_RIGHT:
+                ## TODO : Add seed according to selected one.
                 self.insert_seed(int(self.m_pos.y),int(self.m_pos.x))
 
         if event.type == pygame.MOUSEWHEEL:
@@ -116,6 +136,9 @@ class NCA(Automaton):
         """
             Inserts twe seed centered at twe position (h,w) in twe state.
         """
+        ### TODO : You will need to modify this function, to potentially take an argument
+        ##  for the specific seed to insert. It could also be random !
+        
         # Only put seed if it fits
         if(h+self.seed_size[0]//2<self.size[0] and w+self.seed_size[1]//2<self.size[1]):
             slice_h, slice_w = self._center_slice(h,self.seed_size[0],self.size[0]), \
@@ -144,7 +167,7 @@ class NCAModule(ConfigModule):
         NCA cellular automaton, implemented as a torch module.
         (use NCA class for interactivity and use as an Automaton class.)
     """
-
+    
     def __init__(self,n_states=12,n_hidden=128, device='cpu'):
         """
             Args:
@@ -310,7 +333,7 @@ class SamplePool:
         Pool of samples for NCA training.
     """
 
-    def __init__(self, seed: torch.Tensor, pool_size: int=1024, loss_f = None, return_device='cpu'):
+    def __init__(self, seed: torch.Tensor, pool_size: int=1024, return_device='cpu'):
         """
             Args:
                 seed : tensor (n_states,H,W), NCA 'seed', or initial condition
@@ -335,7 +358,6 @@ class SamplePool:
         self.xgrid = self.xgrid[None,None] # (1,1,H,W)
 
         self.seed_mask = self.seed > 0.01 # (n_states,H,W), location where seed is not zero, avoid corruption
-        self.loss_f = loss_f
     
     @torch.no_grad()
     def sample(self,num_samples:int,replace_num=1,corrupt=False,num_cor=None):

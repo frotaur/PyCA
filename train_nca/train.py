@@ -4,8 +4,8 @@ from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import MultiStepLR
 from pathlib import Path
 
-RUN_NAME = 'delet' # Name of the run, for saving/loading and logging
-IMG_PATH = 'images/whale.png' # Relative path to the image to train on
+RUN_NAME = 'betta' # Name of the run, for saving/loading and logging
+IMG_PATH = 'images/betta.png' # Relative path to the image to train on
 
 TARGET_SIZE = (40,40) # Size of the target image (will be resized to this)
 FRAMES = 64 # Number of frames to evolve the NCA before evaluation
@@ -14,7 +14,7 @@ SAVE_EVERY = 250 # Save a checkpoint every 'save_every' steps
 BACKUP_EVERY = 1000 # Save a backup every 'backup_every' steps
 STEP_LOG = 100 # Log the loss and image every 'step_log' steps
 BATCH_SIZE = 8 # Batch size
-DEVICE = 'cpu' # Device to run the model on
+DEVICE = 'cuda' # Device to run the model on
 
 MODEL_SAVE_LOC = Path(__file__).parent.parent / 'saved_models'
 TRAIN_SAVE_LOC = Path(__file__).parent / 'nca_train_state'

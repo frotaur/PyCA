@@ -35,7 +35,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device=device),
         "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
-        "Neural CA":    lambda h, w: NCA((h,w), model_path='saved_models/NCA/whale/whale.pt', device=device)
+        "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device)
     }
     
     # Replace the static sW, sH definition with:
@@ -48,7 +48,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     device = device
 
     fps = 60 # Visualization (target) frames per second
-    video_fps = 20 # Video frames per second
+    video_fps = 60 # Video frames per second
 
     text_size = int(sH/45)
     title_size = int(text_size*1.3)

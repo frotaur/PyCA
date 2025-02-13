@@ -62,7 +62,7 @@ class NCA_Trainer(Trainer):
         self.pool = SamplePool(seed, return_device=self.device)  # Pool of samples for training
 
         self.save_loc = os.path.join(save_loc, "NCA", f"{self.run_name}")
-        self.model_save_loc = os.path.join(model_save_loc, "NCA", f"{self.run_name}")
+        self.model_save_loc = os.path.join(model_save_loc, "NCA")
 
     def train_steps(
         self,
@@ -105,6 +105,9 @@ class NCA_Trainer(Trainer):
             Pickup : bool
                 If True, will pick up the training from the last checkpoint (if it exists)
         """
+
+        ## Some boilerplate to initialize the training
+        ##--------------------------------------------
         if(pickup):
             self._load_if_exists() # Load the training state if it already exists
 
@@ -121,41 +124,50 @@ class NCA_Trainer(Trainer):
         load_bar = tqdm(total=steps, desc="Training", unit="step")
         do_corrupt = False # Start out with no corruption
 
+        ## -------------------------------------------
         while not steps_completed:
             self.do_step_log = numsteps % self.step_log == 0 if self.step_log is not None else False # Log every step_log steps
 
             if corrupt and self.steps_done > 1000: # Initiate corruptiong after 1000 steps
                 do_corrupt = True
 
+## ========================= MEAT OF THE TRAINING LOOP HERE ===========================
+## ====================================================================================
+            ## TODO : you will need to extensively modify this part to handle multiple target images
+            ## At each step, you will need to sample from all the pools, and concatenate the samples into 
+            ## a single batch.
             batch, indices = self.pool.sample(
                 num_samples=batch_size, replace_num=replace_num, corrupt=do_corrupt, num_cor=num_cor
             )  # get the next batch
+            state = torch.clone(batch)
 
             if varying_frames: #  Choose the number of evolution frames
                 rand_evo = torch.randint(self.frame_run, self.frame_run + self.frames_delta, (1,)).item()
             else:
                 rand_evo = self.frame_run
 
-            state = torch.clone(batch) # TODO : check if necessary
             state = self.model(state, n_steps=rand_evo)  # (B,C,H,W) evolved state
 
+            ## TODO : you will need to modify the computation of the loss. Each of the target images must
+            ## be compared to the corresponding evolved state.
             loss = self.model.loss(state, self.tar_image.expand(batch_size, -1, -1, -1)).mean(
                 dim=(1, 2, 3)
             )  # (B,) loss per sample
-            loss.mean().backward()
 
+            loss.mean().backward()
 
             # Clip the gradients
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-
 
             self.optim.step()
             self.optim.zero_grad()
 
             self.log_progress(loss, batch, state)
-
+            ## TODO : you will need to modify the update of the pool.
+            ## Each pool must be updated with its corresponding indices and evolved state
             self.pool.update(indices, state, batchloss=loss.detach())
-
+## ========================= END OF THE MEAT OF THE TRAINING LOOP ===========================
+## ==========================================================================================
             self.scheduler.step()
             # Update the tracked quantities
             self.steps_done += 1
@@ -168,6 +180,7 @@ class NCA_Trainer(Trainer):
 
             if numsteps > steps:
                 steps_completed = True
+            # -------------------------------------------
 
     def to_rgb(self, state: torch.Tensor, bg_color: float = 0):
         """
@@ -204,6 +217,9 @@ class NCA_Trainer(Trainer):
     def log_progress(self, loss, batch, state):
         """
             Log the progress of the training.
+            You can add more metrics to log here if you wish.
+            Look into the wandb documentation for how to do it,
+            or ask an LLM!
             
             Args:
             loss : (B,) this step batched loss
@@ -232,7 +248,10 @@ class NCA_Trainer(Trainer):
             self.step_loss = []
 
 def prepare_img(img_path: str, tarsize: tuple, pad: int = 4):
-    # Prepare targets and seeds
+    """
+        Helper function. Given an image path, returns a preprocessed tensor
+        to use as a target image for the NCA model.
+    """
     target = Image.open(img_path).convert("RGBA")  # (C,H,W)
 
     w, h = target.size
