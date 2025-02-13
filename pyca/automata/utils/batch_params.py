@@ -265,12 +265,12 @@ class LeniaParams(BatchParams):
 
         Keys:
             'k_size' : odd int, size of kernel used for computations
-            'mu' : (B,kmult*C,C) tensor, mean of growth functions
-            'sigma' : (B,kmult*C,C) tensor, standard deviation of the growth functions
-            'beta' :  (B,kmult*C,C, # of rings) float, max of the kernel rings 
-            'mu_k' : (B,kmult*C,C, # of rings) [0,1.], location of the kernel rings
-            'sigma_k' : (B,kmult*C,C, # of rings) float, standard deviation of the kernel rings
-            'weights' : (B,kmult*C,C) float, weights for the growth weighted sum
+            'mu' : (B,C,C) tensor, mean of growth functions
+            'sigma' : (B,C,C) tensor, standard deviation of the growth functions
+            'beta' :  (B,C,C, # of cores) float, max of the kernel cores 
+            'mu_k' : (B,C,C, # of cores) [0,1.], location of the kernel cores
+            'sigma_k' : (B,C,C, # of cores) float, standard deviation of the kernel cores
+            'weights' : (B,C,C) float, weights for the growth weighted sum
     """
 
     def __init__(self, param_dict=None, from_file=None, k_size=None, batch_size=None, channels=3, device='cpu'):
@@ -323,7 +323,7 @@ class LeniaParams(BatchParams):
         sigma = mu/(math.sqrt(2*math.log(2)))*0.8*torch.rand((batch_size,num_channels,num_channels), device=device)+1e-4
         
         params = {
-                'k_size' : k_size if k_size is not None else k_size, 
+                'k_size' : k_size if k_size is not None else 25, 
                 'mu':  mu ,
                 'sigma' : sigma,
                 'beta' : torch.rand((batch_size,num_channels,num_channels,3), device=device), 
@@ -349,7 +349,7 @@ class LeniaParams(BatchParams):
         sigma = torch.rand((batch_size,num_channels,num_channels), device=device)+1e-4
         
         params = {
-                'k_size' : k_size if k_size is not None else k_size, 
+                'k_size' : k_size if k_size is not None else 25, 
                 'mu':  mu ,
                 'sigma' : sigma,
                 'beta' : torch.rand((batch_size,num_channels,num_channels,3), device=device), 

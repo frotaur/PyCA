@@ -1,11 +1,11 @@
 from nca_trainer import NCA_Trainer, prepare_img, SamplePool
 from pyca.automata.models.nca import NCAModule
-from torch.optim import Adam
+from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import MultiStepLR
 from pathlib import Path
 
-RUN_NAME = 'betta' # Name of the run, for saving/loading and logging
-IMG_PATH = 'images/betta.png' # Relative path to the image to train on
+RUN_NAME = 'whale' # Name of the run, for saving/loading and logging
+IMG_PATH = 'images/whale.png' # Relative path to the image to train on
 
 TARGET_SIZE = (40,40) # Size of the target image (will be resized to this)
 FRAMES = 64 # Number of frames to evolve the NCA before evaluation
@@ -22,7 +22,8 @@ IMG_PATH = Path(__file__).parent / IMG_PATH
 target = prepare_img(IMG_PATH,tarsize=TARGET_SIZE, pad=8) # Resizes image and adds padding
 
 model = NCAModule(n_states=16,n_hidden=128)
-optimizer = Adam(model.parameters(), lr=5e-3)
+# optimizer = Adam(model.parameters(), lr=2e-3)
+optimizer = AdamW(model.parameters(), lr=2e-3)
 scheduler = MultiStepLR(optimizer, milestones=[2000,5000], gamma=0.5)
 
 

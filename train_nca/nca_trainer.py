@@ -149,6 +149,7 @@ class NCA_Trainer(Trainer):
 
             self.pool.update(indices, state, batchloss=loss.detach())
 
+            self.scheduler.step()
             # Update the tracked quantities
             self.steps_done += 1
             self.batches += 1
@@ -210,6 +211,7 @@ class NCA_Trainer(Trainer):
                 commit=False,
             )
             self.logger.log({"loss/l2": sum(self.step_loss) / len(self.step_loss)}, commit=False)
+            self.logger.log({"metrics/lr": self.scheduler.get_last_lr()[0]}, commit=False)
             before_after = torch.cat((batch[0:8], state[0:8]), dim=0)  # (8,C,H,W)
             before_after = gridify(
                 self.to_rgb(before_after, bg_color=0.6), max_width=400, columns=8

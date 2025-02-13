@@ -34,8 +34,8 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "Falling Sand": lambda h, w: FallingSand((h,w)),
         "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device=device),
         "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
-        "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, param_path='lenia_cool_params', device=device),
-        "Neural CA":    lambda h, w: NCA((h,w), model_path='saved_models/NCA/betta/betta.pt', device=device),
+        "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
+        "Neural CA":    lambda h, w: NCA((h,w), model_path='saved_models/NCA/whale/whale.pt', device=device)
     }
     
     # Replace the static sW, sH definition with:
