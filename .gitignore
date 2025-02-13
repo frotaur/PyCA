@@ -8,10 +8,12 @@ Videos
 __pycache__
 wandb
 runs
-testwindowtorch.py
 Images
 __pycache__
+NCA_train/nca_train_state
 env
 build
 */node_modules
 psyca
+.vscode
+.venv
