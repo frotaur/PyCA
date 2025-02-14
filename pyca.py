@@ -1,4 +1,4 @@
-from interface import main
+from . import main
 
 import argparse
 
