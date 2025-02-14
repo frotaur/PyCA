@@ -101,34 +101,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     input_height = int(sH * 0.05)  # 5% of screen height
     margin = int(sH * 0.02)        # 2% of screen height
 
-    custom_automaton_controls = {
-        "CA2D":
-            [
-                InputField(
-                    screen=screen,
-                    width=input_width,
-                    height=input_height,
-                    font=font,
-                    label="birth rule",
-                    initial_value=3,
-                    margin=margin,
-                    y = 140,
-                    index=0
-                ),
-                InputField(
-                    screen=screen,
-                    width=input_width,
-                    height=input_height,
-                    font=font,
-                    label="death rule",
-                    initial_value=23,
-                    margin=margin,
-                    y = 140,
-                    index=1
-                ),
-
-            ]
-    }
 
     dropdown = DropdownMenu(
         screen=screen,
@@ -282,14 +254,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                 if fps_input.handle_event(event):
                     new_fps = fps_input.get_value()
                     if new_fps and new_fps > 0:
-                        fps = new_fps
-                
-                if dropdown.current_option in list(custom_automaton_controls.keys()):
-                    if dropdown.current_option == "CA2D":
-                        comp_0 = custom_automaton_controls[dropdown.current_option][0]
-                        comp_1 = custom_automaton_controls[dropdown.current_option][1]
-                        if comp_0.handle_event(event) or comp_1.handle_event(event):
-                            auto.change_num(b_num=comp_0.get_value(), s_num=comp_1.get_value())                        
+                        fps = new_fps                    
                         
 
 
@@ -326,10 +291,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             w_input.draw()
             h_input.draw()
             fps_input.draw()
-            if dropdown.current_option in list(custom_automaton_controls.keys()):
-                for el in custom_automaton_controls[dropdown.current_option]:
-                    el.draw()
-
         # Update the screen
         pygame.display.flip()
 

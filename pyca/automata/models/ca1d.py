@@ -170,8 +170,8 @@ class TotalisticCA1D(Automaton):
         """
         DELETE -> resets the automaton
         N -> pick a new random rule
-        UP -> +1 to radius (max 3)
-        DOWN -> -1 to radius (min 1)
+        UP -> increase the number of states
+        DOWN -> decrease the number of states(resets the automaton)
         """
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
@@ -183,10 +183,16 @@ class TotalisticCA1D(Automaton):
                 self.change_num(rule)
                 print('rule : ', rule)
             if event.key == pygame.K_UP:
-                self.r = min(self.r+1, 3)
+                self.k = min(self.k+1, 4)
+                rule = random.randint(0,self.k**((2*self.r+1)*(self.k-1)+1))
+                self.change_num(rule)
+                self.colors = self.get_color_list(self.k) # (k,3) tensor, contains the RGB values of the colors
             if event.key == pygame.K_DOWN:
-                self.r = max(self.r-1, 1)
-
+                self.k = max(self.k-1, 2)
+                rule = random.randint(0,self.k**((2*self.r+1)*(self.k-1)+1))
+                self.change_num(rule)
+                self.colors = self.get_color_list(self.k) # (k,3) tensor, contains the RGB values of the colors
+                self.reset(random=self.random)  
     def get_color_list(self,n):
         colors = []
         zerohue = random.random()
@@ -247,7 +253,6 @@ class TotalisticCA1D(Automaton):
         """
             Steps the automaton one timestep, recording the state of the world in self.world.
         """
-        print(self.r)
         summed_states = sum([torch.roll(self.world,shifts=(i)) for i in range(-self.r,self.r+1)]) # (W,), compute in parallel all sums
         # print('k = ',self.k,' r = ',self.r,' summed_states = ',summed_states[self.w//2-1:self.w//2+2])
         self.world=self.rule[summed_states]
