@@ -267,7 +267,7 @@ def blit_text(screen, text, position, font, color, y_offset=None):
     return total_height
 
 class InputField:
-    def __init__(self, screen, width, height, font, label, initial_value, margin=30, index=0):
+    def __init__(self, screen, width, height, font, label, initial_value, margin=30, index=0, y=70):
         self.screen = screen
         self.width = width
         self.height = height
@@ -280,6 +280,7 @@ class InputField:
         self.margin = margin
         self.label_color = (230, 230, 230)
         self.index = index
+        self.y = y
         self.update_position()
         self.resize(width, height, margin)  # Use new resize method for initialization
     
@@ -287,7 +288,7 @@ class InputField:
         screen_width = self.screen.get_width()
         # Position at top right with margin, stacked vertically
         x = screen_width - self.width - self.margin - (self.index * (self.width + 20))  # Stack horizontally from right
-        y = 70  # Fixed vertical position below FPS text
+        y = self.y  # Fixed vertical position below FPS text
         self.rect = pygame.Rect(x, y, self.width, self.height)
         
     def draw(self):

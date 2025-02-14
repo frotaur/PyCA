@@ -2,11 +2,8 @@ import pygame, os, json
 from torch.cuda import empty_cache, reset_max_memory_allocated
 from importlib.resources import files
 
-
 from pyca.interface import Camera
-
 from pyca.automata.models import *
-
 from pyca.interface import launch_video, add_frame, print_screen
 from pyca.interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks
 
@@ -21,6 +18,7 @@ with open(str(files('pyca.interface.files').joinpath('std_help.json')), 'r') as 
     std_help = json.load(f)
 
 pygame.init()
+
 def gameloop(screen: tuple[int], world: tuple[int], device: str):
     # Define available automaton classes
     automaton_options = {
@@ -37,6 +35,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
         "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device)
     }
+
     
     # Replace the static sW, sH definition with:
     sW, sH = screen
@@ -101,6 +100,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     input_width = int(sW * 0.05)   # 5% of screen width
     input_height = int(sH * 0.05)  # 5% of screen height
     margin = int(sH * 0.02)        # 2% of screen height
+
 
     dropdown = DropdownMenu(
         screen=screen,
@@ -254,7 +254,9 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                 if fps_input.handle_event(event):
                     new_fps = fps_input.get_value()
                     if new_fps and new_fps > 0:
-                        fps = new_fps
+                        fps = new_fps                    
+                        
+
 
         if(not stopped):
             auto.step() # step the automaton
@@ -289,7 +291,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             w_input.draw()
             h_input.draw()
             fps_input.draw()
-
         # Update the screen
         pygame.display.flip()
 

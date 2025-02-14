@@ -170,6 +170,8 @@ class TotalisticCA1D(Automaton):
         """
         DELETE -> resets the automaton
         N -> pick a new random rule
+        UP -> increase the number of states
+        DOWN -> decrease the number of states(resets the automaton)
         """
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
@@ -180,7 +182,17 @@ class TotalisticCA1D(Automaton):
                 rule = random.randint(0,self.k**((2*self.r+1)*(self.k-1)+1))
                 self.change_num(rule)
                 print('rule : ', rule)
-
+            if event.key == pygame.K_UP:
+                self.k = min(self.k+1, 4)
+                rule = random.randint(0,self.k**((2*self.r+1)*(self.k-1)+1))
+                self.change_num(rule)
+                self.colors = self.get_color_list(self.k) # (k,3) tensor, contains the RGB values of the colors
+            if event.key == pygame.K_DOWN:
+                self.k = max(self.k-1, 2)
+                rule = random.randint(0,self.k**((2*self.r+1)*(self.k-1)+1))
+                self.change_num(rule)
+                self.colors = self.get_color_list(self.k) # (k,3) tensor, contains the RGB values of the colors
+                self.reset(random=self.random)  
     def get_color_list(self,n):
         colors = []
         zerohue = random.random()

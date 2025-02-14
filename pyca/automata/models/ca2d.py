@@ -1,4 +1,5 @@
 from ..automaton import Automaton
+from ...interface import text
 import torch, pygame
 import torch.nn.functional as F
 import colorsys
@@ -189,3 +190,4 @@ class CA2D(Automaton):
         init_mat = init_mat.to(torch.int16)
 
         return init_mat.to(self.device)  # (B,H,W)
+
