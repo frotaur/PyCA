@@ -17,23 +17,27 @@ class FallingSand(Automaton):
         self.EMPTY = 0
         self.SAND = 1
         self.WATER = 2
-        
+        self.WALL = 3
+    
         self.element = self.SAND  # Start with sand
         self.lowshift_map = {
             self.SAND: 1,   # Sand only moves diagonally down
-            self.WATER: 0   # Water can move horizontally
+            self.WATER: 0,   # Water can move horizontally
         }
         self.spread_speed = {
             self.SAND: 1,   # Sand spreads 1 cell at a time
             self.WATER: 3   # Water spreads up to 3 cells at a time
         }
+
+
         self.lowshift = self.lowshift_map[self.element]
         
         self.world = np.zeros((self.h, self.w))
         self.world[50,50] = self.SAND
         self.sand_color = np.array([0.961, 0.8, 0.208])
         self.water_color = np.array([0, 145, 156])/255
-        
+        self.wall_color = np.array([0.5, 0.5, 0.5]) 
+
         self.left_pressed = False
         self.right_pressed = False
         self.brush_size = 4
@@ -60,10 +64,12 @@ class FallingSand(Automaton):
         # Create a mask for each element type
         sand_mask = self.world[None, ...] == self.SAND
         water_mask = self.world[None, ...] == self.WATER
-        
+        wall_mask = self.world[None, ...] == self.WALL
+
         # Apply colors using the masks
         self._worldmap = np.where(sand_mask, self.sand_color[:,None,None],
-                                np.where(water_mask, self.water_color[:, None, None], 0.))
+                                np.where(water_mask, self.water_color[:, None, None],
+                                         np.where(wall_mask, self.wall_color[:, None,None],0.)))
         # Draw a subtle red square around the mouse cursor
         if 0 <= self.m_pos.x < self.w and 0 <= self.m_pos.y < self.h:
             x, y = int(self.m_pos.x), int(self.m_pos.y)
@@ -72,10 +78,11 @@ class FallingSand(Automaton):
     
     def process_event(self, event, camera):
         """
-        LEFT CLICK -> add sand
-        RIGHT CLICK -> remove sand
-        MOUSE WHEEL -> adjust flow rate
-        E -> toggle sand/water
+        LEFT CLICK -> add material
+        RIGHT CLICK -> remove material
+        MOUSE WHEEL -> adjust brush size
+        E -> toggle sand/water material
+        W -> select 'wall' material
         DEL -> clear the world
         """
         m = self.get_mouse_state(camera)
@@ -99,7 +106,8 @@ class FallingSand(Automaton):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 # Clear the world
                 self.world = np.zeros((self.h, self.w))
-
+            if event.key == pygame.K_w:
+                self.element = self.WALL
         # Update the mouse position
         self.m_pos.x = m.x
         self.m_pos.y = m.y
@@ -139,7 +147,7 @@ class FallingSand(Automaton):
         for i in range(self.h-2, 0, -1):
             j_mixing = np.random.permutation(np.arange(1,self.w-1)) # Randomize the order of the columns
             for j in j_mixing:
-                if(self.world[i,j] != self.EMPTY):
+                if (self.world[i,j] != self.EMPTY and self.world[i,j] != self.WALL):
                     el = self.world[i,j]
                     ls = self.lowshift_map[el]
                     spread = self.spread_speed[el]

@@ -3,7 +3,7 @@ videos/
 __pycache__
 wandb
 runs
-./images/
+images
 train_nca/nca_train_state
 env
 build

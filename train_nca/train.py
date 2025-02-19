@@ -5,7 +5,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 from pathlib import Path
 
 RUN_NAME = 'mushroom' # Name of the run, for saving/loading and logging
-IMG_PATH = 'images/mushroom.png' # Relative path to the image to train on
+IMG_PATH = 'targets/mushroom.png' # Relative path to the image to train on
 
 TARGET_SIZE = (40,40) # Size of the target image (will be resized to this)
 FRAMES = 64 # Number of frames to evolve the NCA before evaluation

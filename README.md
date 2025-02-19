@@ -1,47 +1,59 @@
-# Skeleton for 1D CA, and more general cellular automata
+# PyCA
+PyCA is a small library that facilitates the implementation of Artificial Life models (such as cellular automata) using tensor libraries, such as PyTorch.
 
-This little project contains the necessary tools to easily implement and Visualize cellular automata, using python and pygame.
+All you need to do is sub-class the `Automaton` class, define how to `step` your model, define how to `draw` it, and you can visualize it in real time! 
 ## Installation
 You need python 3.11 or later (ideally, might work with earlier versions).
 
-<font color="red"> FOR WINDOWS PC WITH GPUS :  If you are running windows, and have a NVIDIA GPU, please run the following command before proceeding : `pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126`. If something doesn't work afterwards, visit https://pytorch.org/ and choose an earlier version.  Linux and Max users can safely skip this step.</font>
+<font color="red"> FOR WINDOWS PC WITH GPUS :  If you are running windows, and have a NVIDIA GPU, please run the following command before proceeding : `pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126`. If something doesn't work afterwards, visit https://pytorch.org/ and choose an earlier version.  Linux and Mac users can safely skip this step.</font>
 
 
 Install the pyca package by running `pip install -e .` from the projects directory (i.e., the same directory as `README.md`). You are all set!
 
 ## Run the implemented automatons
-To run the main user interface that allows you to interact with the implementend automata you run the script 'simulate.py'.
+To run the main user interface that allows you to interact with the implementend automata, run : 
+```[python]
+python simulate.py
+```
 
-The basic command is : `simulate.py [-h] [-s SCREEN SCREEN] [-w WORLD WORLD] [-d DEVICE]`
-Options are as follows : 
+If you have a cuda GPU, run : 
+```
+python simulate.py -d cuda
+```
 
+More generally you can change the Screen size with the options `simulate.py [-h] [-s SCREEN SCREEN] [-w WORLD WORLD] [-d DEVICE]`
 ```options:
   -s SCREEN SCREEN, --screen SCREEN SCREEN
                         Screen dimensions as width height (default: 1280 720)
   -w WORLD WORLD, --world WORLD WORLD
                         World dimensions as width height (default: 200 200)
   -d DEVICE, --device DEVICE
-                        Device to run on: "cuda" or "cpu" or "mps" (default: cuda)
+                        Device to run on: "cuda" or "cpu" or "mps" (default: cpu)
 ```
-The only really important parameter is `-d DEVICE`, as the others can be changed in-simulation.
 
-If you have a NVIDIA GPU, you should run it with `-d cuda`. If you have no GPU, you can run with `-d cpu`, it will be a little bit slower, so stick with small worlds. With a mac, you can try `-d mps`, which will be faster but pytorch is notoriously unreliable with mps, so some things might work differently (.e.g, for Lenia).
+<font color="red"> NOTE : 'mps' device is known to behave very differently. Other devices untested </font>
 
-The 'screen ' parameter  determines the screen size of the window. The default parameter should be fine, but you can make it bigger if you want it to fill your screen. You can also directly modify the defaults in `simulate.py`.
 
-The 'world' parameter determines the size of the simulated world. This can also be changed directly in the GUI, so mostly you won't need to change this parameter, except maybe the default value (again, in `simulate.py`) if you find yourself changing it every time.
+## Tutorial
+To learn to use the library, the best way is to follow the <a href='https://amldworlds.notion.site/'>tutorial at this link.</a> It will teach all the basics how to implement the Game of Life, with mouse and keyboard interactivity!
 
-## Automaton
-Inside `pyca/automaton.py`, you will find 'Automaton', the base class for all artificial life models you will implement.The docstring are quite extensive, so the code should be understandable from those only. To summarize :
+## Documentation
+Documentation is under construction. In the meantime, the code is heavily documented with docstrings
 
-- Automaton
-    - Base class for any Cellular Automaton 
-    - Should be sub-classed when designing a new cellular automaton
-    - It contains the following pre-existing attributes
-        - `self._worldmap` : a (3,H,W) float tensor (i.e., an RGB image), that contains a representation of the current state of the cellular automaton
-        - `self.size` : 2-uple (H,W) containing the height and width of the world
-        - `self.h, self.w` : width and height of the world
-        - `self.worldmap` : Not to be confused with `self._worldmap`. By default, it is a numpy (W,H,3) array of 8 bit integers (0-255), that contains the representation of the world. It is basically the same as `self._worldmap`, but translated for pygame.
-    - The methods that should be overriden are the following : 
-        - `self.draw()` : This method should update `self._worldmap`to correctly represent the current state of the world.
-        - `self.step()` : This method, when called, should step the automaton once. The way the automaton state is represented internally is totally free.
+## Code structure
+
+```python
+├─pyca
+│  ├──automata
+│  │   ├──models/ # All implemented automata
+│  │   ├──utils/
+│  │   ├──automaton.py # Base Automaton class
+│  ├──interface/ # Utils for the PyCA GUI
+├─saved_models # Where pre-trained/saved models are stored
+├─lenia_cool_params # Cool parameters for Lenia automaton, to be moved to saved_models
+├─train_nca/ # Codebase to train Neurall Cellular Automata
+├─main.py # Logic for main Pygame loop
+├─simulate.py # Main entry script for PyCA  
+```
+
+(Still under construction, will change in the future.)
