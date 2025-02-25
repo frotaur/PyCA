@@ -56,6 +56,16 @@ class Automaton:
         """
         return (255 * self._worldmap.permute(2, 1, 0)).detach().cpu().numpy().astype(dtype=np.uint8)
 
+    @property
+    def worldsurface(self):
+        """
+            Converts self.worldmap to a pygame surface.
+
+            Can be overriden for more complex drawing operations, 
+            such as blitting sprites.
+        """
+        return pygame.surfarray.make_surface(self.worldmap)
+    
     def get_mouse_state(self, camera):
         """
         Helper function that returns the current mouse state. 
