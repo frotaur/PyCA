@@ -1,7 +1,6 @@
-import torch
 from ...automaton import Automaton
 from pathlib import Path
-import pygame
+import pygame, os, torch
 
 class VonNeumann(Automaton):
     """
@@ -52,6 +51,15 @@ class VonNeumann(Automaton):
 
         self.screen_size = screen_size
 
+        self.select_bar = True
+        self.erasing = False
+        self.sel_state = 0
+        self.mx,self.my = 0,0
+        self.mouse_out=True
+
+        saved_folder = Path(__file__).parent / 'premades'
+        self.premades = [torch.load(state) for state in saved_folder.glob('*.pt')]
+        self.sel_premade = 0
 
     def inj_excitations(self):
         self.excitations = (torch.rand((1,*self.size), device=self.device)<0.2).to(dtype=torch.uint8)
@@ -179,7 +187,10 @@ class VonNeumann(Automaton):
 
         return state
 
-    def reset_state(self):
+    def random_square(self):
+        """
+            Reset state to a random square in the middle.
+        """
         state = torch.randint(0,10,(1,*self.size), device=self.device)
 
         mask = torch.zeros_like(state)
@@ -251,10 +262,10 @@ class VonNeumann(Automaton):
         self.excitations = torch.zeros((1,*self.size), device=self.device, dtype=torch.int)
 
         bench_state, bench_excit = VonNeumann.get_sens_benchmark(spe)
-        state[0,2:9+2,2:5+2] = bench_state.to(self.device)
-        self.excitations[0,2:9+2,2:5+2] = bench_excit.to(self.device)
-
-        return state
+        state[0,10:9+10,10:5+10] = bench_state.to(self.device)
+        self.excitations[0,10:9+10,10:5+10] = bench_excit.to(self.device)
+        
+        self.set_state(state,self.excitations)
     
     def compute_is_ord(self):
         self.is_ord = (self.ord_e|self.ord_w|self.ord_s|self.ord_n)
@@ -427,6 +438,75 @@ class VonNeumann(Automaton):
         self.compute_is_ground()
         self._check_no_problem()
 
+    def process_event(self, event, camera=None):
+        """
+            B -> Toggle select bar
+            O -> Reset to random squar
+            E -> Inject random excitations
+            Tab -> Cycle pre-sets
+            DELETE -> Reset to empty state
+            A -> Save state (not great for now)
+            0-9 -> Choose drawing state
+            DOWN -> Erase mode
+            UP -> Excitation mode
+            Left-click-> Insert selected state
+            Right-click -> Add excitation, or erase chunk
+            
+            Please stop the simulation before drawing.
+        """
+        m = self.get_mouse_state(camera)
+        self.mx,self.my = int((m.x)//self.el_size), int((m.y)//self.el_size)
+        if(self.my>=self.h or self.mx<0 or self.my<0 or self.mx>=self.w):
+            self.mouse_out=True
+        else:
+            self.mouse_out=False
+    
+        self.mx = min(max(self.mx,0),self.w-1)
+        self.my = min(max(self.my,0),self.h-1)
+
+        if event.type == pygame.KEYDOWN:
+            if(event.key ==pygame.K_o):
+                self.random_square()
+            if(event.key == pygame.K_e):
+                self.inj_excitations()
+            if(event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE):
+                self.is_killed = torch.ones_like(self.is_killed)
+                self.kill_dead()
+            if(event.key == pygame.K_a):
+                statio = self.get_state()
+                state_excit = torch.stack((statio,self.excitations),dim=0) # (2,H,W)
+                os.makedirs('saved_vonno',exist_ok=True)    
+                torch.save(state_excit,'saved_vonno/saved_state.pt')
+            if(event.key == pygame.K_DOWN):
+                self.erasing= True
+            if(event.key == pygame.K_UP):
+                self.erasing= False
+            if(event.key == pygame.K_b):
+                self.select_bar = not self.select_bar
+            if event.key in [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5,pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9]:
+                self.sel_state = int(event.unicode)
+            if event.key == pygame.K_TAB:
+                self.sel_premade = (self.sel_premade + 1) % len(self.premades)
+                self.set_state(self.premades[self.sel_premade][0],self.premades[self.sel_premade][1])
+        elif event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:  # scroll up
+                self.sel_state = (self.sel_state + 1) % 10
+            elif event.y < 0:  # scroll down
+                self.sel_state = (self.sel_state - 1) % 10
+        if event.type == pygame.MOUSEBUTTONDOWN and not self.mouse_out:
+            if m.left:
+                status = self.get_state()
+                status[:,self.my,self.mx] = self.sel_state
+                self.set_state(status,excitations=self.excitations)
+            if m.right:
+                if(not self.erasing):
+                    self.excitations[:,self.my,self.mx] = ~self.excitations[:,self.my,self.mx]
+
+        if event.type ==pygame.MOUSEMOTION and not self.mouse_out:
+            if m.right and self.erasing:
+                self.is_killed[:,max(self.my-5,0):min(self.my+5,self.h),max(self.mx-5,0):min(self.mx+5,self.w)] = 1
+                self.kill_dead()
+
     def kill_dead(self):
         is_alive = ~self.is_killed
         # Try to batch this operation
@@ -514,14 +594,51 @@ class VonNeumann(Automaton):
                         surf.blit(self.sprites['conf01'], (i*self.el_size, j*self.el_size))
                     else:
                         surf.blit(self.sprites['conf0'], (i*self.el_size, j*self.el_size))
-
-
                 if(excitations[i,j,0]>0):
                     surf.blit(self.sprites['excited'], (i*self.el_size, j*self.el_size))
+
+        if(not self.mouse_out):
+            pygame.draw.rect(surf, (125,25,25),(self.mx*self.el_size,self.my*self.el_size,self.el_size,self.el_size),1)
+
+        if(self.select_bar):
+            bar_el_size = 10
+            bar_height = bar_el_size
+            bar_width = 11 * bar_el_size  # 10 sprites
+            select_surf = pygame.Surface((bar_width+2, bar_height+2))
+            select_surf.fill((0, 0, 0))
+
+            # Draw bar outline
+            pygame.draw.rect(select_surf, (0, 0, 255), (0, 0, bar_width+2, bar_height+2), 1)
+            # Draw sprites
+            for i in range(11):
+                if i == 9:
+                    select_surf.blit(self.sprites['conf0'], (i*bar_el_size+1, 1))
+                elif i == 10 :
+                    if(self.erasing):
+                        pygame.draw.rect(select_surf, (200, 10, 10), (i*bar_el_size+1, 1, bar_el_size-1, bar_el_size-1))
+                    else:
+                        pygame.draw.rect(select_surf, (125, 125, 20), (i*bar_el_size+1, 1, bar_el_size-1, bar_el_size-1))
+                    pygame.draw.rect(select_surf, (100, 100, 250), (i*bar_el_size+1, 1, bar_el_size-1, bar_el_size-1), 1)
+                elif i>0 and i<9:
+                    select_surf.blit(self.sprites[self.sprite_keys[i]], (i*bar_el_size+1, 1))
+                if i == self.sel_state:  # state was selected with number keys
+                    pygame.draw.rect(select_surf, (0, 255, 0), (i*bar_el_size+1, 1, bar_el_size, bar_el_size), 1)
+
+            # Blit select bar onto main surface at top right
+            bar_x = surf.get_width() - bar_width
+            surf.blit(select_surf, (bar_x-2, 2))
+
+
         # Check if surface size matches screen_size and resize if needed
         if (surf.get_height(), surf.get_width()) != self.screen_size:
-            surf = pygame.transform.scale(surf, (self.screen_size[1],self.screen_size[0]))
-        
+            padded = pygame.Surface(self.screen_size)  # This creates a black surface by default
+            # Calculate centering coordinates
+            x_offset = (self.screen_size[1] - surf.get_width()) // 2
+            y_offset = (self.screen_size[0] - surf.get_height()) // 2
+            # Blit original surface onto center of padded surface
+            padded.blit(surf, (0, 0))
+            surf = padded
+    
         return surf
 
     @property
