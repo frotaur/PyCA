@@ -6,3 +6,4 @@ from .lgca import LGCA
 from .fallingsand import FallingSand
 from .nca import NCA
 from .lenia import MultiLenia
+from .vonneumann import VonNeumann

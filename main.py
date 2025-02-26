@@ -33,7 +33,8 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device=device),
         "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
-        "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device)
+        "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device),
+        "Von Neumann":  lambda h, w: VonNeumann((h,w),element_size=9, device=device),
     }
 
     
@@ -262,14 +263,13 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             auto.step() # step the automaton
         
         auto.draw() # draw the worldstate
-        world_state = auto.worldmap
-        surface = pygame.surfarray.make_surface(world_state)
+        world_surface = auto.worldsurface
         
         # Clear the screen
         screen.fill((0, 0, 0))
 
         # Draw the scaled surface on the window
-        zoomed_surface = camera.apply(surface, border=True)
+        zoomed_surface = camera.apply(world_surface, border=True)
         screen.blit(zoomed_surface, (0,0))
 
         if (recording):
