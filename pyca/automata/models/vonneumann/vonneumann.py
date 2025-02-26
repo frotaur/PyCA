@@ -61,6 +61,8 @@ class VonNeumann(Automaton):
         self.premades = [torch.load(state) for state in saved_folder.glob('*.pt')]
         self.sel_premade = 0
 
+        self.make_state_bench()
+
     def inj_excitations(self):
         self.excitations = (torch.rand((1,*self.size), device=self.device)<0.2).to(dtype=torch.uint8)
 
@@ -123,8 +125,29 @@ class VonNeumann(Automaton):
             excitations = torch.zeros_like(state, dtype=torch.bool).to(self.device)
         else :
             excitations = (excitations.to(torch.bool).to(self.device))
-        assert state.shape == excitations.shape, "State and excitations should have the same shape"
+        if(state.shape != excitations.shape):
+            print("Skipping; State and excitations should have the same shape")
+            return
+        if(state.shape[1]> self.h or state.shape[2]>self.w):
+            print("Skipping; State is too big")
+            return
+        # Calculate padding size to center the state
+        h_pad = (self.h - state.shape[1]) // 2
+        w_pad = (self.w - state.shape[2]) // 2
 
+        # Create padded tensors filled with zeros
+        padded_state = torch.zeros((1, self.h, self.w), dtype=state.dtype)
+        padded_excit = torch.zeros((1, self.h, self.w), dtype=excitations.dtype)
+
+        # Insert state and excitations in center
+        padded_state[0, h_pad:h_pad+state.shape[1], w_pad:w_pad+state.shape[2]] = state
+        padded_excit[0, h_pad:h_pad+state.shape[1], w_pad:w_pad+state.shape[2]] = excitations
+
+        # Update state and excitations
+        state = padded_state
+        excitations = padded_excit
+
+        
         state = state.to(self.device)
         # Ordinary transmissions :
         self.ord_e = torch.where(state==1,True,False).to(torch.bool)
@@ -187,17 +210,16 @@ class VonNeumann(Automaton):
 
         return state
 
-    def random_square(self):
+    def random_square(self, sq_size=20):
         """
             Reset state to a random square in the middle.
         """
         state = torch.randint(0,10,(1,*self.size), device=self.device)
-
         mask = torch.zeros_like(state)
-        mask[:,self.h//2-35:self.h//2+35,self.w//2-35:self.w//2+35]=0
+        mask[:,self.h//2-sq_size//2:self.h//2+sq_size//2,self.w//2-sq_size//2:self.w//2+sq_size//2]=1
         # mask[:,self.h//2-35:self.h//2+35,self.w//2-35:self.w//2+35]=torch.randint(6,8,(1,70,70), device=self.device)
-    
-        state[:,self.h//2-35:self.h//2+35,self.w//2-35:self.w//2+35] = mask[:,self.h//2-35:self.h//2+35,self.w//2-35:self.w//2+35]
+        state = state*mask
+        # state[:,self.h//2-sq_size//2:self.h//2+sq_size//2,self.w//2-sq_size//2:self.w//2+sq_size//2] = mask[:,self.h//2-sq_size//2:self.h//2+sq_size//2,self.w//2-sq_size//2:self.w//2+sq_size//2]
         
         # Excitations :
         excitations = (torch.rand((1,*self.size), device=self.device)<0.5).to(dtype=torch.uint8)
@@ -205,7 +227,10 @@ class VonNeumann(Automaton):
         # state=self.make_state_bench() # UNCOMMENT TO USE BENCHMARK 
         self.set_state(state,excitations)
 
-
+        state, exci = VonNeumann.get_sens_benchmark(True)
+        self.save_state('bench_true',state[None],exci[None])
+        state, exci = VonNeumann.get_sens_benchmark(False)
+        self.save_state('bench_false', state[None], exci[None])
 
     @staticmethod
     def get_sens_benchmark(spe=False):
@@ -258,14 +283,9 @@ class VonNeumann(Automaton):
         """
             Replaces the state with the benchmark state
         """
-        state= torch.zeros((1,*self.size), device=self.device, dtype=torch.int)
-        self.excitations = torch.zeros((1,*self.size), device=self.device, dtype=torch.int)
-
         bench_state, bench_excit = VonNeumann.get_sens_benchmark(spe)
-        state[0,10:9+10,10:5+10] = bench_state.to(self.device)
-        self.excitations[0,10:9+10,10:5+10] = bench_excit.to(self.device)
         
-        self.set_state(state,self.excitations)
+        self.set_state(bench_state[None],bench_excit[None])
     
     def compute_is_ord(self):
         self.is_ord = (self.ord_e|self.ord_w|self.ord_s|self.ord_n)
@@ -437,6 +457,25 @@ class VonNeumann(Automaton):
 
         self.compute_is_ground()
         self._check_no_problem()
+
+    def save_state(self,  path='.', state=None, excitations=None):
+        """
+            Saves current state. If state and or excitations are provided, saves these instead.
+        """
+        if(state is None):
+            if(excitations is not None):
+                print('Please provide both state and excitations, or none of them')
+                return
+            else:
+                state = self.get_state()
+                excitations = self.excitations
+        if(excitations is None and state is not None):
+            print('Please provide both state and excitations, or none of them')
+            return
+
+        os.makedirs(path,exist_ok=True)
+        to_save = torch.stack((state,excitations),dim=0) # (2,B,H,W)
+        torch.save(to_save,path+'/saved_state.pt')
 
     def process_event(self, event, camera=None):
         """
