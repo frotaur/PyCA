@@ -35,6 +35,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
         "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device),
         "Von Neumann":  lambda h, w: VonNeumann((h,w),element_size=9, device=device),
+        "ConservCA":    lambda h, w: ConservCA((h,w), device=device)
     }
 
     
@@ -74,7 +75,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     writer=None
 
     # Then when initializing the first automaton:
-    initial_automaton = "CA2D"
+    initial_automaton = "ConservCA"
     auto = automaton_options[initial_automaton](H, W)
 
     description, help_text = auto.get_help()
@@ -276,7 +277,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             if(launch_vid):# If the video is not launched, we create it
                 launch_vid = False
                 writer = launch_video((H,W), video_fps, 'mp4v')
-            add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
+            add_frame(writer,pygame.surfarray.array3d(world_surface)) # (in the future, we may add the zoomed frame instead of the full frame)
             pygame.draw.circle(screen, (255,0,0), (sW-10,15), 7)
         
         if (display_help):
@@ -299,4 +300,4 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     pygame.quit()
 
 if __name__=="__main__":
-    gameloop((800,600), (100,100), 'cuda')
+    gameloop((800,600), (200,200), 'cuda')
