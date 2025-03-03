@@ -167,7 +167,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                         launch_vid=True
                         writer.release()
                 if(event.key == pygame.K_p):
-                    print_screen(auto.worldmap)
+                    print_screen(auto.worldsurface)
                 if(event.key == pygame.K_s):
                     auto.step()
                 if (event.key == pygame.K_h):
@@ -276,7 +276,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
             if(launch_vid):# If the video is not launched, we create it
                 launch_vid = False
                 writer = launch_video((H,W), video_fps, 'mp4v')
-            add_frame(writer,world_state) # (in the future, we may add the zoomed frame instead of the full frame)
+            add_frame(writer,world_surface) # (in the future, we may add the zoomed frame instead of the full frame)
             pygame.draw.circle(screen, (255,0,0), (sW-10,15), 7)
         
         if (display_help):

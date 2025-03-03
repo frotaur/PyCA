@@ -18,17 +18,17 @@ def launch_video(size,fps,fourcc='avc1'):
     vid_loc = f'videos/vid_{numvids}.mp4'
     return cv2.VideoWriter(vid_loc, fourcc, fps, (size[1], size[0]))
 
-def add_frame(writer, worldmap):
+def add_frame(writer, worldsurface):
+    worldmap = pygame.surfarray.array3d(worldsurface) # (W,H,3)
+
     frame = worldmap.transpose(1,0,2) # (H,W,3)
-    # tempB = np.copy(frame[:,:,2])
-    # frame[:,:,2]=frame[:,:,0]
-    # frame[:,:,0]=tempB
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     writer.write(frame)
 
-def print_screen(worldmap):
+def print_screen(worldsurface):
+    worldmap = pygame.surfarray.array3d(worldsurface) # (W,H,3)
     os.makedirs('images',exist_ok=True)
     numimgs = len(os.listdir('images/'))
     img_name = f'img_{numimgs}'
-    save_image(torch.tensor(worldmap).permute(2,1,0),folder='images',name = img_name)
+    save_image(torch.tensor(worldmap,dtype=float).permute(2,1,0)/255.,folder='images',name = img_name)
 
