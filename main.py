@@ -24,6 +24,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     automaton_options = {
         "CA2D":         lambda h, w: CA2D((h,w), b_num='3', s_num='23', random=True, device=device),
         "ElementaryCA": lambda h, w: ElementaryCA((h,w), wolfram_num=90, random=True),
+        "Rule110Universality": lambda h, w: Rule110Universality((h,w), wolfram_num=110, random=True),
         "Totalistic1DCA":lambda h, w: TotalisticCA1D((h,w), wolfram_num=1203, r=3, k=3, random=True),
         "LGCA":         lambda h, w: LGCA((h,w), device=device),
         "Gray-Scott":   lambda h, w: GrayScott((h,w), device=device),

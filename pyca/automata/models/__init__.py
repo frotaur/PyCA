@@ -7,3 +7,4 @@ from .fallingsand import FallingSand
 from .nca import NCA
 from .lenia import MultiLenia
 from .vonneumann import VonNeumann
+from .rule110 import Rule110Universality

@@ -1,0 +1,1 @@
+from .rule110 import Rule110Universality
