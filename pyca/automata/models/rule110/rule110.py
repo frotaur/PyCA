@@ -32,10 +32,6 @@ class Rule110Universality(Automaton):
         self.rule = self.convert_wolfram_num(110) # (8,) tensor, rule[i] is 0 if the i'th neighborhood yields 0, 1 otherwise
 
 
-        # initialize data about the cyclic tag system
-        self.cyclic_tag = ['NNYYNN', 'YNNNYN', 'NNNNYN']
-        self.init_cyclic_tag_data()
-
         self.max_tape_symbols = 6
 
         # load dictionaries and glider patterns
@@ -117,7 +113,7 @@ class Rule110Universality(Automaton):
         self.num_empty = self.cyclic_tag.count("")
         self.num_non_empty = len(self.cyclic_tag)-self.num_empty
 
-        self.long_ossifier_distance =  int((76*self.num_ys+80*self.num_ns+60*self.num_non_empty+43*self.num_empty)//4)*4*3+3    #to be double-checked, is from Cooks paper concrete view of rule 110 computation 
+        self.long_ossifier_distance =  int((76*self.num_ys+80*self.num_ns+60*self.num_non_empty+43*self.num_empty)//4)*4*12+3    #to be double-checked, is from Cooks paper concrete view of rule 110 computation 
 
     def load_patterns(self):
         self.dict_yn = json.load(open('pyca/automata/utils/rule110/dict_yn.json', 'r'))
@@ -639,8 +635,10 @@ class Rule110Universality(Automaton):
             self.get_init_hidden_world()
             self.world = self.hidden_world[self.world_center-int(self.w//2):self.world_center+int(self.w//2)]
         else:
-            self.init_tape = 'YNNNN'
-            self.generate_random_cyclic_tag_system()
+            self.init_tape = 'YN'
+            self.cyclic_tag = ["YYYYNY"]
+            self.init_cyclic_tag_data()
+            #self.generate_random_cyclic_tag_system()
             self.get_init_hidden_world()
             self.world = self.hidden_world[self.world_center-int(self.w//2):self.world_center+int(self.w//2)]
      
