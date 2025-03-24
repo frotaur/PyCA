@@ -34,6 +34,7 @@ class ConservCA(Automaton):
 
         self.faucet=False
         self.tapestry=False
+
     def _count(self) :
         """
             Computes neighborhood count
@@ -47,7 +48,7 @@ class ConservCA(Automaton):
             Default affinity function. Count is outer-holistic. World is provided for outer-holistic computations
         """
         full_sum = count+world
-        score = torch.exp(-torch.abs(full_sum.float() - 10.)/5.)+torch.exp(-torch.abs(full_sum.float() - 30.)/3.)
+        score = torch.exp(-torch.abs(full_sum.float() - 10.)/5.)+torch.exp(-torch.abs(full_sum.float() - 30.)/3.) # Arbitrary
 
         return score
         # return -torch.sigmoid(count.float()-5.)
@@ -112,12 +113,10 @@ class ConservCA(Automaton):
     
     def process_event(self, event, camera=None):
         """
-        DEL -> re-initializes the automaton
-        I -> toggles initialization between noise and a single dot
-        N -> pick a new random rule
-        Z -> change the highlight color
-        UP -> longer-lasting highlights
-        DOWN -> shorter-lasting highlights
+        DEL -> reset
+        C -> circle
+        T -> tapestry
+        F -> faucet
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:

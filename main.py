@@ -276,7 +276,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         if (recording):
             if(launch_vid):# If the video is not launched, we create it
                 launch_vid = False
-                writer = launch_video((H,W), video_fps, 'mp4v')
+                writer = launch_video((H,W), video_fps, 'VP90')
             add_frame(writer,pygame.surfarray.array3d(world_surface)) # (in the future, we may add the zoomed frame instead of the full frame)
             pygame.draw.circle(screen, (255,0,0), (sW-10,15), 7)
         

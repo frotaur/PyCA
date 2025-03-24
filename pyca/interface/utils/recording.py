@@ -15,7 +15,7 @@ def launch_video(size,fps,fourcc='avc1'):
     os.makedirs('videos',exist_ok=True)
     fourcc = cv2.VideoWriter_fourcc(*fourcc)
     numvids = len(os.listdir('videos/'))
-    vid_loc = f'videos/vid_{numvids}.mp4'
+    vid_loc = f'videos/vid_{numvids}.webm'
     return cv2.VideoWriter(vid_loc, fourcc, fps, (size[1], size[0]))
 
 def add_frame(writer, worldmap):
