@@ -243,7 +243,7 @@ class NCAModule(ConfigModule):
             life_mask = live_before & self.getlivemask(state) # Maks of cells alive before AND after step
 
             state = state*life_mask # Reset dead cells to zero
-        
+
         return torch.nan_to_num(state,nan=1.0,posinf=100.0,neginf=-100.0)
         
     

@@ -36,6 +36,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
         "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device),
         "Von Neumann":  lambda h, w: VonNeumann((h,w),element_size=9, device=device),
+        "DeepCA":      lambda h, w: DeepCA((h,w), deep_model_config_file='saved_models/deepCA/varied-wait-time.config', deep_model_pt_file='saved_models/deepCA/varied-wait-time.pt', device=device)
     }
 
     
@@ -75,7 +76,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     writer=None
 
     # Then when initializing the first automaton:
-    initial_automaton = "CA2D"
+    initial_automaton = "DeepCA"
     auto = automaton_options[initial_automaton](H, W)
 
     description, help_text = auto.get_help()
@@ -300,4 +301,4 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     pygame.quit()
 
 if __name__=="__main__":
-    gameloop((800,600), (100,100), 'cuda')
+    gameloop((800,600), (100,100), 'cpu')

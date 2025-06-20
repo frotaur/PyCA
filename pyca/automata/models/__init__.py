@@ -8,3 +8,4 @@ from .nca import NCA
 from .lenia import MultiLenia
 from .vonneumann import VonNeumann
 from .rule110 import Rule110Universality
+from .deep_ca import DeepCA

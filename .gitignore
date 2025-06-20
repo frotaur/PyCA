@@ -9,3 +9,4 @@ env
 build
 .vscode
 .venv
+saved_models/deepCA
