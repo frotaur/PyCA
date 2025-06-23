@@ -5,6 +5,7 @@ from importlib.resources import files
 from pyca.interface import Camera
 from pyca.automata.models import *
 from pyca.interface import launch_video, add_frame, print_screen
+from pyca.interface.utils import make_text_blocks
 from pyca.interface.text import TextBlock, DropdownMenu, InputField, render_text_blocks
 
 if os.name == 'posix':  # Check if OS is Linux/Unix
@@ -39,13 +40,8 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     }
 
     
-    # Replace the static sW, sH definition with:
     sW, sH = screen
-
-    # Automaton world size 
     W, H = world
-
-    # Device to run the automaton
     device = device
 
     fps = 60 # Visualization (target) frames per second
@@ -59,6 +55,8 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     programIcon = pygame.image.load(files('pyca.interface.files').joinpath('icon.png'))
     pygame.display.set_icon(programIcon)
     pygame.display.set_caption('PyCA')
+
+
     screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
     clock = pygame.time.Clock() 
     running = True
@@ -79,20 +77,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     auto = automaton_options[initial_automaton](H, W)
 
     description, help_text = auto.get_help()
-
-    def make_text_blocks(description, help_text, std_help, font, font_title):
-        text_blocks = [
-            TextBlock(description, "up_sx", (74, 101, 176), font_title),
-            TextBlock("\n", "up_sx", (230, 230, 230), font)
-        ]
-        for section in std_help['sections']:
-            text_blocks.append(TextBlock(section["title"], "up_sx", (230, 89, 89), font))
-            for command, description in section["commands"].items():
-                text_blocks.append(TextBlock(f"{command} -> {description}", "up_sx", (230, 230, 230), font))
-            text_blocks.append(TextBlock("\n", "up_sx", (230, 230, 230), font))
-        text_blocks.append(TextBlock("Automaton controls", "below_sx", (230, 89, 89), font))
-        text_blocks.append(TextBlock(help_text, "below_sx", (230, 230, 230), font))
-        return text_blocks
 
     text_blocks = make_text_blocks(description, help_text, std_help, font, font_title)
 
