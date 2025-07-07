@@ -48,7 +48,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     # Device to run the automaton
     device = device
 
-    fps = 60 # Visualization (target) frames per second
+    fps = 180 # Visualization (target) frames per second
     video_fps = 60 # Video frames per second
 
     text_size = int(sH/45)
@@ -276,7 +276,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         if (recording):
             if(launch_vid):# If the video is not launched, we create it
                 launch_vid = False
-                writer = launch_video((H,W), video_fps, 'VP90')
+                writer = launch_video((H,W), video_fps, 'mp4v')
             add_frame(writer,pygame.surfarray.array3d(world_surface)) # (in the future, we may add the zoomed frame instead of the full frame)
             pygame.draw.circle(screen, (255,0,0), (sW-10,15), 7)
         

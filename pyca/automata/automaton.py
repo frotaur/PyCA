@@ -22,6 +22,9 @@ class Automaton:
         self.size = size
 
         self._worldmap = torch.zeros((3, self.h, self.w), dtype=float)  # (3,H,W), contains a 2D 'view' of the CA world
+        x = torch.arange(0, self.w, dtype=float)
+        y = torch.arange(0, self.h, dtype=float)
+        self.Y, self.X = torch.meshgrid(y, x, indexing='ij') # (H,W)
 
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')
