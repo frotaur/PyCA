@@ -125,6 +125,12 @@ class AttCA(Automaton):
                 self.alternating = not self.alternating
             if event.key == pygame.K_z:
                 self.change_highlight_color()
+            if event.key == pygame.K_t:
+                if(pygame.key.get_mods() & pygame.KMOD_SHIFT):
+                    self.threshold = max(self.threshold - 1, 0.)
+                else:
+                    self.threshold =  min(self.threshold+1, 5)
+                print(f"Threshold: {self.threshold}")
             if event.key == pygame.K_UP:
                 self.decay_speed = max(self.decay_speed - 0.1 * self.decay_speed, 0.005)
             if event.key == pygame.K_DOWN:
@@ -156,6 +162,8 @@ class AttCA(Automaton):
         sx = torch.where(
             sx >= self.threshold, 1, torch.where(sx <= -self.threshold, -1, 0)
         )  # Apply threshold to sobel x
+
+
         sy = torch.where(
             sy >= self.threshold, 1, torch.where(sy <= -self.threshold, -1, 0)
         )  # Apply threshold to sobel y

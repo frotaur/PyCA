@@ -24,6 +24,8 @@ class CA2D(Automaton):
 
         self.s_num = self.get_num_from_rule(s_num)  # Translate string to number form
         self.b_num = self.get_num_from_rule(b_num)  # Translate string to number form
+
+
         self.random = random
         self.device = device
 
