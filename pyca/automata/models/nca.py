@@ -110,6 +110,8 @@ class NCA(Automaton):
                 self.cur_model = (self.cur_model+1)%len(self.models_paths)
                 self.load_model(self.models_paths[self.cur_model])
                 print('Selected model : ',self.models_paths[self.cur_model])
+            if event.key == pygame.K_i:
+                self.random_init()
         if event.type == pygame.MOUSEBUTTONDOWN :
             if event.button == pygame.BUTTON_RIGHT:
                 ## TODO : Add seed according to selected one.
@@ -126,6 +128,20 @@ class NCA(Automaton):
             if(mouse.left):
                 brush = self.get_brush_slice(self.m_pos.x,self.m_pos.y)
                 self.state=torch.where(brush,0,self.state)
+
+    def random_init(self):
+        """
+        Initializes the state to a circular patch of radius h//3 with random values between 0 and 1.
+        """
+        h, w = self.size
+        center_h, center_w = h // 2, w // 2
+        radius = h // 3
+        y, x = torch.meshgrid(torch.arange(h, device=self.device), torch.arange(w, device=self.device), indexing='ij')
+        mask = ((y - center_h) ** 2 + (x - center_w) ** 2) < radius ** 2  # (h, w)
+        rand_patch = torch.rand((self.model.n_states, h, w), device=self.device)
+        new_state = torch.zeros((1, self.model.n_states, h, w), device=self.device)
+        new_state[0, :, mask] = rand_patch[:, mask]
+        self.state = new_state
 
     def get_brush_slice(self, x, y):
         """Gets coordinate slices corresponding to the brush located at x,y"""
@@ -184,6 +200,7 @@ class NCAModule(ConfigModule):
         self.n_states=max(4,n_states) # At least 1 hidden state
 
         self.sobel = SobelConv(n_states=self.n_states,device=device)
+        
 
         self.computer = nn.Sequential(
             nn.Linear(3*self.n_states,n_hidden,device=device),
@@ -191,8 +208,8 @@ class NCAModule(ConfigModule):
             nn.Linear(n_hidden,self.n_states,device=device)) # Fully connected that given the sobel observations, computes the next state
         
         # Initialize to identity
-        nn.init.zeros_(self.computer[2].weight)
-        nn.init.zeros_(self.computer[2].bias)
+        """nn.init.zeros_(self.computer[2].weight)
+        nn.init.zeros_(self.computer[2].bias) """
 
         print(f"NCA with {self.paranum} parameters")
 
@@ -238,14 +255,13 @@ class NCAModule(ConfigModule):
             live_before = self.getlivemask(state) # (B,1,H,W) MASK OF LIVE CELLS
             rand_update = torch.rand(B,1,H,W,device=self.device)<=0.5 # Update stochasticity
 
-            state += dx*rand_update # Update the state
-
+            # state += dx*rand_update # Update the state
+            state = torch.nn.functional.sigmoid(dx)*rand_update
             life_mask = live_before & self.getlivemask(state) # Maks of cells alive before AND after step
 
             state = state*life_mask # Reset dead cells to zero
-        
+        return torch.clamp(state, 0, 1)
         return torch.nan_to_num(state,nan=1.0,posinf=100.0,neginf=-100.0)
-        
     
     @staticmethod
     def state_to_argb(state):
