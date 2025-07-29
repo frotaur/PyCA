@@ -4,7 +4,7 @@ from .ca2d import CA2D
 from .reactiondiffusion import ReactionDiffusion, GrayScott, BelousovZhabotinsky, Brusselator
 from .lgca import LGCA
 from .fallingsand import FallingSand
-from .nca import NCA
+from .nca import NeuralCA
 from .lenia import MultiLenia
 from .vonneumann import VonNeumann
 from .rule110 import Rule110Universality

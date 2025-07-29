@@ -7,7 +7,7 @@ import math
 from easydict import EasyDict
 from pathlib import Path
 
-class NCA(Automaton):
+class NeuralCA(Automaton):
     """
         Neural Cellular Automaton. Can be trained to grow any image
         from a 'seed', using only local interactions, and a neural network.

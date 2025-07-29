@@ -1,2 +1,2 @@
-from .automaton import Automaton
+from .automaton import Automaton, AUTOMATAS
 from .models import *

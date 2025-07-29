@@ -5,6 +5,8 @@ import pygame
 from easydict import EasyDict
 
 
+AUTOMATAS = {}
+
 class Automaton:
     """
     Class that internalizes the rules and evolution of
@@ -22,6 +24,16 @@ class Automaton:
         self.size = size
 
         self._worldmap = torch.zeros((3, self.h, self.w), dtype=float)  # (3,H,W), contains a 2D 'view' of the CA world
+    
+    
+    def __init_subclass__(cls, **kwargs):
+            """
+                Automagically registers subclasses of Automaton in the
+                automaton registry.
+            """
+            super().__init_subclass__(**kwargs)
+
+            AUTOMATAS[cls.__name__] = cls
 
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')

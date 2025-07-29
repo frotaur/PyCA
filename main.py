@@ -1,5 +1,4 @@
 import pygame, os, json
-from torch.cuda import empty_cache, reset_max_memory_allocated
 from importlib.resources import files
 
 from pyca.interface import Camera
@@ -35,7 +34,7 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         "Baricelli 2D": lambda h, w: Baricelli2D((h,w), n_species=7, reprod_collision=True, device=device),
         "Baricelli 1D": lambda h, w: Baricelli1D((h,w), n_species=8, reprod_collision=True),
         "MultiLenia":   lambda h, w: MultiLenia((h,w), dt=0.1, num_channels=3, param_path='lenia_cool_params', device=device),
-        "Neural CA":    lambda h, w: NCA((h,w), models_folder='saved_models/NCA/', device=device),
+        "Neural CA":    lambda h, w: NeuralCA((h,w), models_folder='saved_models/NCA/', device=device),
         "Von Neumann":  lambda h, w: VonNeumann((h,w),element_size=9, device=device),
     }
 
@@ -60,10 +59,9 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     screen = pygame.display.set_mode((sW,sH), flags=pygame.RESIZABLE)
     clock = pygame.time.Clock() 
     running = True
-    camera = Camera(W,H)
-    camera.resize(sW,sH)
-    zoom = min(sW/W,sH/H)
-    camera.zoom = zoom
+    camera = Camera(sW,sH, border=(W,H))  # Create a camera with the screen size and world size as border
+      # Set initial to limit of world size
+    camera.zoom = min(sW/W, sH/H)
 
     # Booleans for the main loop
     stopped=True
@@ -134,12 +132,11 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
 
 
     while running:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             
-            camera.handle_event(event) # Handle the camera events
+            camera.handle_event(event, constrain=False) # Handle the camera events
 
             if event.type == pygame.KEYDOWN :
                 if(event.key == pygame.K_SPACE): # Press 'SPACE' to start/stop the automaton
@@ -159,10 +156,9 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                     display_help = not display_help
                 if (event.key == pygame.K_c):
                     current_sW, current_sH = screen.get_size()
-                    camera = Camera(W,H)
                     camera.resize(current_sW,current_sH)
-                    zoom = min(current_sW/W,current_sH/H)
-                    camera.zoom = zoom
+                    camera.zoom = min(current_sW/W,current_sH/H)
+                    camera.center()
 
             if event.type == pygame.VIDEORESIZE:
                 # Get current window size and new window size
@@ -175,10 +171,6 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                 
                 # Update camera with new screen dimensions and scale position and zoom
                 camera.resize(new_w, new_h)
-                camera.position.x *= scale_w
-                camera.position.y *= scale_h
-                camera.zoom *= min(scale_w, scale_h)  # Use minimum scale to preserve aspect ratio
-                camera.updateFov()
                 
                 # Calculate new sizes based on new dimensions
                 button_width = int(new_w * 0.15)
@@ -249,13 +241,20 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
         
         auto.draw() # draw the worldstate
         world_surface = auto.worldsurface
-        
+        screen_surface = pygame.Surface((sW, sH))
         # Clear the screen
         screen.fill((0, 0, 0))
 
-        # Draw the scaled surface on the window
-        zoomed_surface = camera.apply(world_surface, border=True)
-        screen.blit(zoomed_surface, (0,0))
+        # Draw the world surface centered on the screen
+        world_rect = world_surface.get_rect()
+        world_rect.center = (sW // 2, sH // 2)
+        screen_surface.blit(world_surface, world_rect)
+
+        # Then zoom to current camera view
+        screen_surface = camera.apply(screen_surface, border=True)
+
+
+        screen.blit(screen_surface, (0, 0))
 
         if (recording):
             if(launch_vid):# If the video is not launched, we create it
@@ -284,4 +283,4 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     pygame.quit()
 
 if __name__=="__main__":
-    gameloop((800,600), (100,100), 'cuda')
+    gameloop((800,600), (300,300), 'cuda')

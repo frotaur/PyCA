@@ -1,33 +1,59 @@
 import pygame
+from math import ceil, floor
+
 
 class Camera:
     """
         Class that handles the 'camera' in a pygame application.
         Allows one to move in the 2D world, zoom in and out by using the mouse + CTRL.
     """
-    def __init__(self, width, height):
+    def __init__(self, width, height, border=None):
         """
             Parameters:
-            width : int
-                Width of the camera
             height : int
                 Height of the camera
+            width : int
+                Width of the camera
+            border : tuple (optional)
+                If given, a centered border will be drawn around a rectangle of size (width,height)
+
         """
 
         self.position = pygame.Vector2(width/2,height/2) # Camera position
-        self.zoom = 2.0 # Current zoom value
+        self._zoom = 1.0 # Current zoom value
         self.drag_start = None # Position of the mouse when dragging
         self.size = pygame.Rect(0,0,width,height) # Size of the camera
         self.updateFov() # Update the field of view
 
         self.width = width  
         self.height = height
+
+        if(border is not None):
+            self.border = pygame.Rect(0,0,border[0],border[1])
+            self.border.center = (width/2,height/2)
+
+    @property
+    def zoom(self):
+        return self._zoom
+
+    @zoom.setter
+    def zoom(self, value):
+        if(value<1.):
+            self._zoom = 1.
+        elif(value>20.):
+            self._zoom = 20.
+        else:
+            self._zoom = value
+
     def resize(self, width, height):
         """
             Resize the camera
         """
         self.size = pygame.Rect(0,0,width, height)
         self.updateFov()
+
+    def center(self):
+        self.position = pygame.Vector2(self.width / 2, self.height / 2)
 
     def handle_event(self, event, constrain=False):
         """
@@ -38,24 +64,23 @@ class Camera:
             if event.button == 4 and (pygame.key.get_mods() & pygame.KMOD_CTRL):  # Scroll wheel up
                 old_zoom = self.zoom
                 self.zoom *= 1.1
-                # Adjust position to keep mouse point fixed
-                mouse_pos = pygame.mouse.get_pos()
-                self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
-                self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
+                if(self.zoom!= old_zoom):
+                    # Adjust position to keep mouse point fixed
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
+                    self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
             elif event.button == 5 and (pygame.key.get_mods() & pygame.KMOD_CTRL):  # Scroll wheel down
                 old_zoom = self.zoom
                 self.zoom /= 1.1
-                # Adjust position to keep mouse point fixed
-                mouse_pos = pygame.mouse.get_pos()
-                self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
-                self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
+
+                if(self.zoom!= old_zoom):
+                    # Adjust position to keep mouse point fixed
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.position.x += (mouse_pos[0] - self.size.w/2) * (1/old_zoom - 1/self.zoom)
+                    self.position.y += (mouse_pos[1] - self.size.h/2) * (1/old_zoom - 1/self.zoom)
             elif event.button == 1:  # Left mouse button
                 self.drag_start = pygame.mouse.get_pos()
 
-            if self.zoom < 1:
-                self.zoom = 1.
-            elif self.zoom > 20:
-                self.zoom = 20
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left mouse button
@@ -109,6 +134,8 @@ class Camera:
             Parameters:
             surface : pygame.Surface
                 Surface to apply the camera to
+            border : bool
+                If True, a border will be drawn (if border is not None)
         """
         visible_surface = pygame.Surface((self.fov.w, self.fov.h))
 
@@ -118,7 +145,7 @@ class Camera:
             self.draw_border(scaled_surface)
         return scaled_surface
     
-    def draw_border(self, surface: pygame.Surface, thickness: int = 3, color: tuple = (125, 125, 125)):
+    def draw_border(self, surface: pygame.Surface, thickness: int = 1, color: tuple = (125, 125, 125)):
         """
         Draw a border around the simulation area on the given surface.
         
@@ -130,16 +157,22 @@ class Camera:
         color : tuple
             RGB color tuple for the border
         """
+        if(self.border is None):
+            return
+        # NOTE Ceils, and offset values are obtained empirically, that's the best
+        # way I found to distribute rounding errors the same left and right, top and bottom.
+        # Actual sizes are with no ceil, and with -1 on left and top, and +2 on width and height
+        
         # Convert world coordinates to screen coordinates
-        left = -self.fov.left * self.zoom
-        top = -self.fov.top * self.zoom
-        
+        left = ceil((-self.fov.left  +self.border.left-.75) * self.zoom)
+        top = ceil((-self.fov.top  +self.border.top-.75) * self.zoom)
+
         # Calculate the scaled width and height
-        width = self.width * self.zoom
-        height = self.height * self.zoom
-        
+        width = ceil((self.border.width+2) * self.zoom)
+        height = ceil((self.border.height+2) * self.zoom)
+
         # Draw the border
         pygame.draw.rect(surface, 
                         color,
                         (left, top, width, height),
-                        thickness)
+                        int(thickness*self.zoom))
