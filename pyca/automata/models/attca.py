@@ -27,14 +27,29 @@ class AttCA(Automaton):
 
         self.world = torch.zeros((1, self.h, self.w), dtype=torch.int, device=device)
         self.reset()
+        
+        self.sobel_x = torch.rand((3,3), device=device, dtype=torch.float)
+        self.sobel_x = self.sobel_x - self.sobel_x.mean() #sums to 0
+        self.sobel_x = 2*self.sobel_x/(self.sobel_x.abs().sum()) # Normalize positive values to sum to 1
 
-        self.sobel_x = torch.tensor([[1, 0, -1], [2, 0, -2], [1, 0, -1]], device=device, dtype=torch.float)[
-            None, None, :, :
-        ]  # (1,1,3,3) as required by Pytorch
+        self.sobel_y = self.sobel_x.T
+        self.sobel_y = self.sobel_y[:,[2,1,0]]
 
-        self.sobel_y = torch.tensor([[1, 2, 1], [0, 0, 0], [-1, -2, -1]], device=device, dtype=torch.float)[
-            None, None, :, :
-        ]  # (1,1,3,3) as required by Pytorch
+        print('sobel_x', self.sobel_x)
+        print('sobel_y', self.sobel_y)
+        # self.sobel_y = torch.rand((3,3), device=device, dtype=torch.float)
+        # self.sobel_y = self.sobel_y - self.sobel_y.mean() #sums to 0
+        # self.sobel_y = 2*self.sobel_y/(self.sobel_y.abs().sum()) # Normalize positive values to sum to 1
+        self.sobel_x = self.sobel_x[None, None, :, :]  # (1,1,3,3) as required by Pytorch
+        self.sobel_y = self.sobel_y[None, None, :, :]  # (1,1,3,3) as required by Pytorch
+
+        # self.sobel_x = torch.tensor([[1, 0, -1], [2, 0, -2], [1, 0, -1]], device=device, dtype=torch.float)[
+        #     None, None, :, :
+        # ]  # (1,1,3,3) as required by Pytorch
+
+        # self.sobel_y = torch.tensor([[1, 2, 1], [0, 0, 0], [-1, -2, -1]], device=device, dtype=torch.float)[
+        #     None, None, :, :
+        # ]  # (1,1,3,3) as required by Pytorch
 
         self.side_kernels = (
             torch.tensor(
@@ -51,7 +66,7 @@ class AttCA(Automaton):
 
         self.change_highlight_color()
         self.decay_speed = 0.1
-        self.threshold = 2.0
+        self.threshold = 0.5
 
         self._worldmap = self._worldmap.to(device)
 
@@ -127,9 +142,9 @@ class AttCA(Automaton):
                 self.change_highlight_color()
             if event.key == pygame.K_t:
                 if(pygame.key.get_mods() & pygame.KMOD_SHIFT):
-                    self.threshold = max(self.threshold - 1, 0.)
+                    self.threshold = max(self.threshold - 0.1, 0.)
                 else:
-                    self.threshold =  min(self.threshold+1, 5)
+                    self.threshold =  min(self.threshold+0.1, 1.1)
                 print(f"Threshold: {self.threshold}")
             if event.key == pygame.K_UP:
                 self.decay_speed = max(self.decay_speed - 0.1 * self.decay_speed, 0.005)
@@ -154,6 +169,7 @@ class AttCA(Automaton):
         padded_world = F.pad(
             self.world[None].to(torch.float), (1, 1, 1, 1), mode="circular"
         )  # (1,1,H+2,W+2) circular padded
+
         all_convs = torch.cat([self.sobel_x, self.sobel_y, self.side_kernels], dim=0)  # (6,1,3,3)
         convoluted = F.conv2d(padded_world, all_convs)  # All convolutions, sx, sy and the neighborhoods
         convoluted = convoluted.transpose(0,1) # (1,6,H,W)
