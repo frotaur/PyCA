@@ -12,11 +12,11 @@ from pyca.interface import Camera, launch_video, print_screen, add_frame
 from .ui_components.TextLabel import TextLabel
 from .ui_components.SmartFont import SmartFont
 from ..automata import AUTOMATAS
-from .files import DEFAULTS
+from .files import DEFAULTS, INTERFACE_HELP
 
 class MainWindow:
     """
-        Main window of PyCA application.Deals with the main GUI components,
+    Main window of PyCA application.Deals with the main GUI components,
     main pygame loop, and event handling and dispatching.
 
     Exposes an API of methods to modify stuff, such as giving the list of active automata,
@@ -38,12 +38,10 @@ class MainWindow:
 
         self.font_path = str(files(f'{__package__}.files') / 'AldotheApache.ttf')
 
-        with open(str(files(f'{__package__}.files') / 'std_help.json'), 'r') as f:
-            self.std_help = json.load(f)
         
         pygame.init()
-        self.text_f_size = 1./40
-        self.title_f_size = 1./20
+        self.text_f_size = 1./60
+        self.title_f_size = 1./45
 
         self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=self.font_path)
         self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=self.font_path)
@@ -71,6 +69,44 @@ class MainWindow:
 
         self.auto = self.load_automaton(self._initial_automaton)
 
+
+        # Prep Base GUI elements
+
+        # Text labels for description, help and automaton controls
+        # Use PLACEHOLDER height positions, because we will update them dynamically with the final text height
+        self._generate_and_place_left_texts()  # Place the text labels with correct heights
+
+    def _generate_and_place_left_texts(self):
+        """
+        Generates and places the left text labels of the main GUI. Needs to do some hacking to get dynamic positions
+        of the texts, because a TextLabel component's height cannot be computed before it is rendered (because of text wrapping).
+        """
+        left_text_width = 0.35
+        auto_description, auto_help = self.auto.get_help()
+
+        self.auto_name = TextLabel(self.auto.name(), fract_position = (0.005, 0.005), fract_width=left_text_width, font=self.font_title, color=(230, 89, 89) )
+        self.auto_text = TextLabel(auto_description,fract_position=(0.005,0.), fract_width=left_text_width,font=self.font_title, color=(74, 101, 176))
+        self.help_title = TextLabel(INTERFACE_HELP['title'], fract_position=(0.005, 0.05), fract_width=left_text_width, font=self.font_title, color=(230, 89, 89))
+        self.help_text = TextLabel(INTERFACE_HELP['content'], fract_position=(0.005, 0.1), fract_width=left_text_width, font=self.font_text, color=(230, 230, 230))
+        self.auto_controls_title = TextLabel("Automaton Controls", fract_position=(0.005, 0.2), fract_width=left_text_width, font=self.font_title, color=(230, 89, 89))
+        self.auto_controls_text = TextLabel(auto_help, fract_position=(0.005, 0.25), fract_width=left_text_width, font=self.font_text, color=(230, 230, 230))
+        
+        self.left_components = [
+            self.auto_name,
+            self.auto_text,
+            self.help_title,
+            self.help_text,
+            self.auto_controls_title,
+            self.auto_controls_text
+        ]
+
+        fractional_y_position = self.left_components[0].f_pos[1]
+        for component in self.left_components:
+            component.set_screen_size(self.sH, self.sW)
+            component.f_pos = (component.f_pos[0], fractional_y_position)
+            component.render()
+            fractional_y_position += component.f_size[0] # Add the now correct height to the next component's position
+    
     def load_automaton(self, automaton_name):
         """
             Loads and returns the specified automaton model.
@@ -152,11 +188,6 @@ class MainWindow:
         """
             Runs the PyCA main loop.
         """
-        text_test = TextLabel("""Tutta l'italia
-Tutta l'italia
-Tutta l'italia
-Aho""", fract_position=(0.5,0.5), fract_width=0.5, font=self.font_text)
-
         while self.running:
             self.handle_events()
 
@@ -183,8 +214,8 @@ Aho""", fract_position=(0.5,0.5), fract_width=0.5, font=self.font_text)
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
             if(self.display_help):
-                text_test.draw(self.screen)
-                pass # Draw here the help text, and all GUI elements
+                for component in self.left_components:
+                    component.draw(self.screen)
 
             pygame.display.flip()
             self.clock.tick(self.fps)

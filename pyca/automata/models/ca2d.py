@@ -7,9 +7,9 @@ import colorsys
 
 class CA2D(Automaton):
     """
-    2D Cellular Automaton, with outer-holistic rules and binary values.
-    The state of a pixel in the next generation depends on its own state and
-    the sum of the values of its neighbors.
+2D Cellular Automaton, with outer-holistic rules and binary values.\
+The state of a pixel in the next generation depends on its own state and\
+the sum of the values of its neighbors.
     """
 
     def __init__(self, size, s_num="23", b_num="3", random=False, device="cpu"):
@@ -191,3 +191,8 @@ class CA2D(Automaton):
 
         return init_mat.to(self.device)  # (B,H,W)
 
+    def name(self):
+        """
+        Returns the name of the automaton.
+        """
+        return "2D Cellular Automaton"

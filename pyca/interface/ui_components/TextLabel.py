@@ -10,7 +10,7 @@ class TextLabel(BaseComponent):
 
     def __init__(self, text, fract_position, fract_width, font: SmartFont, color=(255, 89, 89)):
         """
-        Initializes the text label component.
+        Initializes the text label component. TODO : Add optional fract_height, that will clip the text to a certain height, could be useful.
 
         Args:
             text (str): The text to display.
@@ -34,7 +34,7 @@ class TextLabel(BaseComponent):
         """
         self.font.sH = self.sH 
         self._prepare_text()
-    
+
     def _prepare_text(self):
         """
         Preprocesses the text into wrapped lines and renders them as surfaces.
@@ -77,7 +77,9 @@ class TextLabel(BaseComponent):
         for line in lines:
             text_surface = self.font.font.render(line, True, self.color)
             self.rendered_lines.append(text_surface)
-    
+
+        self.f_size = (len(self.rendered_lines) * self.font.f_height, self.f_size[1]) # Can now compute the fractional height!
+
     def draw(self, screen: pygame.Surface) -> pygame.Surface:
         """
         Efficiently draws pre-rendered text lines to the screen.

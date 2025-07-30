@@ -155,16 +155,14 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
                 if (event.key == pygame.K_h):
                     display_help = not display_help
                 if (event.key == pygame.K_c):
-                    current_sW, current_sH = screen.get_size()
-                    camera.resize(current_sW,current_sH)
-                    camera.zoom = min(current_sW/W,current_sH/H)
+                    camera.zoom = min(sW/W,sH/H)
                     camera.center()
 
             if event.type == pygame.VIDEORESIZE:
                 # Get current window size and new window size
                 old_w, old_h = screen.get_size()
                 new_w, new_h = event.w, event.h
-                
+                sH, sW = new_h, new_w
                 # Calculate scale factors
                 scale_w = new_w / old_w
                 scale_h = new_h / old_h
@@ -283,4 +281,4 @@ def gameloop(screen: tuple[int], world: tuple[int], device: str):
     pygame.quit()
 
 if __name__=="__main__":
-    gameloop((800,600), (300,300), 'cuda')
+    gameloop((1600,1200), (300,300), 'cuda')

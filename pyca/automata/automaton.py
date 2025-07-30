@@ -9,7 +9,7 @@ AUTOMATAS = {}
 
 class Automaton:
     """
-    Class that internalizes the rules and evolution of
+    Class that internalizes the rules and evolution of 
     an Alife model. By default, the world tensor has shape
     (3,H,W) and should contain floats with values in [0.,1.].
     """
@@ -114,3 +114,10 @@ class Automaton:
         if(process is None):
             process = "No interactivity help available"
         return dedent(doc), dedent(process)
+
+    def name(self):
+        """
+        Returns the name of the automaton. By default it is the class name,
+        but can be overridden in subclasses to provide a more descriptive name.
+        """
+        return self.__class__.__name__

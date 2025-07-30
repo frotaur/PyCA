@@ -59,7 +59,7 @@ class BaseComponent:
             print("Warning: screen size not set. Returning 0,0.")
             return (0,0)
         
-        return (int(self.sW * self.f_pos[1]), int(self.sH * self.f_pos[0]))
+        return (int(self.sW * self.f_pos[0]), int(self.sH * self.f_pos[1]))
 
     @property
     def x(self):
@@ -77,6 +77,16 @@ class BaseComponent:
         """
         return self.position[1]
 
+    def set_screen_size(self, h,w):
+        """
+        Sets the screen size for the component.
+        
+        Args:
+            h (int): Height of the screen.
+            w (int): Width of the screen.
+        """
+        self.sH, self.sW = h, w
+
     def draw(self, screen : pygame.Surface) -> pygame.Surface:
         """
         Draws the component on the given screen. Must be subclassed.
@@ -93,7 +103,7 @@ class BaseComponent:
         """
         newW, newH = screen.get_size()
         if self.sW != newW or self.sH != newH:
-            self.sW, self.sH = newW, newH
+            self.set_screen_size(newH, newW)
             self.render()
 
         return screen
