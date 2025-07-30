@@ -23,10 +23,10 @@ class SmartFont:
         
         if(base_sH is not None):
             self._size = int(base_sH * self._f_size)
-            self._sH = base_sH
         else:
             self._size = None
         
+        self._sH = base_sH
         self.font = self._create_font()
     
     def _create_font(self):
@@ -37,7 +37,13 @@ class SmartFont:
                 return pygame.font.Font(self.font_path, self._size)
         else:
             return None
-        
+
+    def render(self, text, color):
+        """
+            Uses the font to render text with specified color.
+        """
+        return self.font.render(text, True, color) if self.font else None
+
     @property
     def sH(self):
         """

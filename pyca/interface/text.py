@@ -107,7 +107,6 @@ class DropdownMenu:
                             self.active = False
                             return True  # Option was selected
                     self.active = False
-        
         elif event.type == pygame.MOUSEMOTION and self.active:
             self.hover_index = -1
             for i, rect in enumerate(self.option_rects):

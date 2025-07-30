@@ -12,10 +12,9 @@ if os.name == 'posix':  # Check if OS is Linux/Unix
     os.environ["SDL_VIDEO_WINDOW_POS"] = "0, 0"
 
 font_path = str(files('pyca.interface.files').joinpath('AldotheApache.ttf'))
-std_help = None
-
-with open(str(files('pyca.interface.files').joinpath('std_help.json')), 'r') as f:
-    std_help = json.load(f)
+std_help = {"title": "PyCA Help",
+            "commands": {"one":"two"},
+            "sections":[{"title": "weeee", "commands": {"FUUUUUU":"CKKK"}}]}
 
 pygame.init()
 

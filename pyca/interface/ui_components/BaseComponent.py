@@ -45,7 +45,7 @@ class BaseComponent:
         Returns the width of the component based on the screen size and fractional size.
         """
         return self.size[1]
-
+    
     @property
     def position(self):
         """

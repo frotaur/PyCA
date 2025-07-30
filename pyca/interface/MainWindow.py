@@ -9,10 +9,9 @@ import pygame, os, json
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components.TextLabel import TextLabel
-from .ui_components.SmartFont import SmartFont
+from .ui_components import SmartFont, TextLabel, DropDown
 from ..automata import AUTOMATAS
-from .files import DEFAULTS, INTERFACE_HELP
+from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
 
 class MainWindow:
     """
@@ -36,15 +35,14 @@ class MainWindow:
         self.fps=60 # Visualization FPS
         self.video_fps=60 # Saved video FPS
 
-        self.font_path = str(files(f'{__package__}.files') / 'AldotheApache.ttf')
 
         
         pygame.init()
         self.text_f_size = 1./60
         self.title_f_size = 1./45
 
-        self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=self.font_path)
-        self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=self.font_path)
+        self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH)
+        self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=BASE_FONT_PATH)
 
         programIcon = pygame.image.load(str(files(f'{__package__}.files') / 'icon.png'))
         pygame.display.set_icon(programIcon)
@@ -69,12 +67,14 @@ class MainWindow:
 
         self.auto = self.load_automaton(self._initial_automaton)
 
-
         # Prep Base GUI elements
 
         # Text labels for description, help and automaton controls
-        # Use PLACEHOLDER height positions, because we will update them dynamically with the final text height
-        self._generate_and_place_left_texts()  # Place the text labels with correct heights
+        self._generate_and_place_left_texts()  
+
+        # Dropdown for automaton selection
+        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=(0.85, 0.92), fract_size=(0.05, 0.15),open_upward=True)
+        self.automaton_dropdown.selected = self._initial_automaton
 
     def _generate_and_place_left_texts(self):
         """
@@ -82,15 +82,19 @@ class MainWindow:
         of the texts, because a TextLabel component's height cannot be computed before it is rendered (because of text wrapping).
         """
         left_text_width = 0.35
+        title_color = (230, 89, 89)
+        description_color = (74, 101, 176)
+        text_color = (230, 230, 230)
+        
         auto_description, auto_help = self.auto.get_help()
 
-        self.auto_name = TextLabel(self.auto.name(), fract_position = (0.005, 0.005), fract_width=left_text_width, font=self.font_title, color=(230, 89, 89) )
-        self.auto_text = TextLabel(auto_description,fract_position=(0.005,0.), fract_width=left_text_width,font=self.font_title, color=(74, 101, 176))
-        self.help_title = TextLabel(INTERFACE_HELP['title'], fract_position=(0.005, 0.05), fract_width=left_text_width, font=self.font_title, color=(230, 89, 89))
-        self.help_text = TextLabel(INTERFACE_HELP['content'], fract_position=(0.005, 0.1), fract_width=left_text_width, font=self.font_text, color=(230, 230, 230))
-        self.auto_controls_title = TextLabel("Automaton Controls", fract_position=(0.005, 0.2), fract_width=left_text_width, font=self.font_title, color=(230, 89, 89))
-        self.auto_controls_text = TextLabel(auto_help, fract_position=(0.005, 0.25), fract_width=left_text_width, font=self.font_text, color=(230, 230, 230))
-        
+        self.auto_name = TextLabel(self.auto.name(), fract_position = (0.005, 0.005), fract_width=left_text_width, font=self.font_title, color=title_color)
+        self.auto_text = TextLabel(auto_description,fract_position=(0.005,0.), fract_width=left_text_width,font=self.font_title, color=description_color)
+        self.help_title = TextLabel(INTERFACE_HELP['title'], fract_position=(0.005, 0.05), fract_width=left_text_width, font=self.font_title, color=title_color)
+        self.help_text = TextLabel(INTERFACE_HELP['content'], fract_position=(0.005, 0.1), fract_width=left_text_width, font=self.font_text, color=text_color)
+        self.auto_controls_title = TextLabel("Automaton Controls", fract_position=(0.005, 0.2), fract_width=left_text_width, font=self.font_title, color=title_color)
+        self.auto_controls_text = TextLabel(auto_help, fract_position=(0.005, 0.25), fract_width=left_text_width, font=self.font_text, color=text_color)
+
         self.left_components = [
             self.auto_name,
             self.auto_text,
@@ -121,6 +125,7 @@ class MainWindow:
             return AUTOMATAS[automaton_name]((self.H,self.W),**defaults, device=self.device)
         else:
             raise ValueError(f"Invalid automaton model: {automaton_name}. Must be one of {list(AUTOMATAS.keys())}.")
+
 
     @property
     def initial_automaton(self):    
@@ -180,9 +185,13 @@ class MainWindow:
     
     def _gui_events(self,event):
         """
-            Handles the base GUI events, for fps, world size and automaton selection.""q"
+            Handles the base GUI events, for fps, world size and automaton selection.
         """
-        pass # Implement later when we have the GUI elements properly set up
+        if self.automaton_dropdown.handle_event(event):
+            selected = self.automaton_dropdown.selected
+            self.auto = self.load_automaton(selected)
+            self._generate_and_place_left_texts() # Need to update the text labels
+
 
     def game_loop(self):
         """
@@ -216,6 +225,7 @@ class MainWindow:
             if(self.display_help):
                 for component in self.left_components:
                     component.draw(self.screen)
+                self.automaton_dropdown.draw(self.screen)
 
             pygame.display.flip()
             self.clock.tick(self.fps)
