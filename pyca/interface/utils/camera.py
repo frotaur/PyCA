@@ -28,7 +28,8 @@ class Camera:
         self.width = width  
         self.height = height
 
-        if(border is not None):
+        self.border_size = border
+        if(self.border_size is not None):
             self.border = pygame.Rect(0,0,border[0],border[1])
             self.border.center = (width/2,height/2)
 
@@ -50,7 +51,15 @@ class Camera:
             Resize the camera
         """
         self.size = pygame.Rect(0,0,width, height)
+        rescale_vector = (width/self.width, height/self.height)
+        self.width = width
+        self.height = height
+
         self.updateFov()
+        self.position = pygame.Vector2(rescale_vector[0]*self.position.x, rescale_vector[1]*self.position.y)
+        if(self.border_size is not None):
+            self.border = pygame.Rect(0,0,self.border_size[0],self.border_size[1])
+            self.border.center = (round(width/2), round(height/2))
 
     def center(self):
         self.position = pygame.Vector2(self.width / 2, self.height / 2)

@@ -9,6 +9,8 @@ import pygame, os, json
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
+from .ui_components.TextLabel import TextLabel
+from .ui_components.SmartFont import SmartFont
 from ..automata import AUTOMATAS
 from .files import DEFAULTS
 
@@ -40,9 +42,11 @@ class MainWindow:
             self.std_help = json.load(f)
         
         pygame.init()
+        self.text_f_size = 1./40
+        self.title_f_size = 1./20
 
-        self.font = pygame.font.Font(self.font_path, self.text_size)
-        self.font_title = pygame.font.Font(self.font_path, self.title_size)
+        self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=self.font_path)
+        self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=self.font_path)
 
         programIcon = pygame.image.load(str(files(f'{__package__}.files') / 'icon.png'))
         pygame.display.set_icon(programIcon)
@@ -93,20 +97,6 @@ class MainWindow:
         else:
             raise ValueError(f"Invalid automaton model: {value}. Must be one of {list(AUTOMATAS.keys())}.")
 
-    @property
-    def text_size(self):
-        return int(self.sH/45)
-
-    @property
-    def title_size(self):
-        return int(self.sH/30)
-
-    def update_fonts(self):
-        """
-            Updates the fonts used in the GUI based on the current screen size.
-        """
-        self.font = pygame.font.Font(self.font_path, self.text_size)
-        self.font_title = pygame.font.Font(self.font_path, self.title_size)
 
     def handle_events(self):
         """
@@ -147,10 +137,7 @@ class MainWindow:
             if event.type == pygame.VIDEORESIZE:
                 self.sW, self.sH = event.w, event.h
                 self.s_size = (self.sW, self.sH)
-
                 self.camera.resize(self.sW, self.sH)
-
-                self.update_fonts()
 
             self.auto.process_event(event, self.camera)
             self._gui_events(event)
@@ -165,6 +152,10 @@ class MainWindow:
         """
             Runs the PyCA main loop.
         """
+        text_test = TextLabel("""Tutta l'italia
+Tutta l'italia
+Tutta l'italia
+Aho""", fract_position=(0.5,0.5), fract_width=0.5, font=self.font_text)
 
         while self.running:
             self.handle_events()
@@ -192,6 +183,7 @@ class MainWindow:
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
             if(self.display_help):
+                text_test.draw(self.screen)
                 pass # Draw here the help text, and all GUI elements
 
             pygame.display.flip()

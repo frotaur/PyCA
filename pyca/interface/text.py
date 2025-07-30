@@ -2,6 +2,9 @@ import pygame
 import json
 
 class TextBlock:
+    """
+    Represents a block of text to be displayed in the UI.
+    """
     def __init__(self, text, position, color, font, y_offset = 0):
         self.text = text
         self.position = position  # "up_sx", "below_sx", "up_dx", "below_dx"
