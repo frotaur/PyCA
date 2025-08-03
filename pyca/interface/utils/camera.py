@@ -7,16 +7,16 @@ class Camera:
         Class that handles the 'camera' in a pygame application.
         Allows one to move in the 2D world, zoom in and out by using the mouse + CTRL.
     """
-    def __init__(self, width, height, border=None):
+    def __init__(self, width, height, world_border=None):
         """
             Parameters:
             height : int
                 Height of the camera
             width : int
                 Width of the camera
-            border : tuple (optional)
+            world_border : tuple (optional)
                 If given, a centered border will be drawn around a rectangle of size (width,height)
-
+                If given, convert_mouse_pos will by default return the position in the world border rectangle.
         """
 
         self.position = pygame.Vector2(width/2,height/2) # Camera position
@@ -28,9 +28,9 @@ class Camera:
         self.width = width  
         self.height = height
 
-        self.border_size = border
+        self.border_size = world_border
         if(self.border_size is not None):
-            self.border = pygame.Rect(0,0,border[0],border[1])
+            self.border = pygame.Rect(0,0,world_border[0],world_border[1])
             self.border.center = (width/2,height/2)
 
     @property
@@ -124,7 +124,9 @@ class Camera:
         self.fov.center = self.position
     
     def convert_mouse_pos(self, pos):
-        """ Takes current mouse position, and converts it in the position given no zoom or camera offset
+        """ Takes current mouse position on screen, and converts it in the absolution position,
+         given no zoom or camera offset. If world border is set, it will return values inside the 
+         world border, and clamped.
             
             Params :
             pos : 2-uple (x,y)
@@ -133,8 +135,17 @@ class Camera:
             Returns :
             2-uple (x,y) , absolute position in the world, without zoom or camera offset
         """
-        return (int(pos[0]/self.zoom+self.fov.left), int(pos[1]/self.zoom+self.fov.top))
-    
+        abs_pos = (int(pos[0]/self.zoom+self.fov.left), int(pos[1]/self.zoom+self.fov.top)) # Position in the screen
+
+        if self.border is not None:
+            world_pos = (abs_pos[0] - self.border.left, abs_pos[1] - self.border.top)
+            world_pos = (max(0, min(world_pos[0], self.border.width)),
+                       max(0, min(world_pos[1], self.border.height)))
+
+            return world_pos
+
+        return abs_pos
+
     def apply(self, surface : pygame.Surface, border=False):
         """
             Given a pygame surface, return a new surface which is the view of the camera.

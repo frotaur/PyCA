@@ -9,7 +9,7 @@ import pygame, os, json
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import SmartFont, TextLabel, DropDown
+from .ui_components import SmartFont, TextLabel, DropDown, InputField
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
 
@@ -52,7 +52,7 @@ class MainWindow:
 
         self.screen = pygame.display.set_mode((self.sW,self.sH), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
-        self.camera = Camera(self.sW,self.sH, border=(self.W, self.H))
+        self.camera = Camera(self.sW,self.sH, world_border=(self.W, self.H))
         self.camera.zoom = min(self.sW/self.W, self.sH/self.H)
 
 
@@ -75,6 +75,8 @@ class MainWindow:
         # Dropdown for automaton selection
         self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=(0.85, 0.92), fract_size=(0.05, 0.15),open_upward=True)
         self.automaton_dropdown.selected = self._initial_automaton
+
+        self.input = InputField((0.85, 0.2), (0.1,0.15), label='Manamatest')
 
     def _generate_and_place_left_texts(self):
         """
@@ -226,6 +228,7 @@ class MainWindow:
                 for component in self.left_components:
                     component.draw(self.screen)
                 self.automaton_dropdown.draw(self.screen)
+                self.input.draw(self.screen)
 
             pygame.display.flip()
             self.clock.tick(self.fps)

@@ -42,7 +42,8 @@ class DropDown(BaseComponent):
         self.selected_color = tuple(255-bg for bg in bg_color)  # Invert background color for selected option
         self.selected_text_color = tuple(255-tc for tc in text_color)  # Invert text color for selected option
 
-        self.border_width = min(5,self.f_size[0]//10)
+        self.border_size_fraction = 0.07  # Border size as a fraction of the dropdown height
+        
         # State
         self.is_open = False
         self.hovered_index = -1
@@ -124,7 +125,7 @@ class DropDown(BaseComponent):
         option_surface = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
         option_surface.fill(bg_color)
         pygame.draw.rect(option_surface, self.border_color, 
-                        (0, 0, self.w, self.h), 4)
+                        (0, 0, self.w, self.h), max(1,int(self.border_size_fraction * self.h)))
         
         # Render option text
         text_surface = self.font.render(option, text_color if text_color else self.text_color)
