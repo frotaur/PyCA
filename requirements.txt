@@ -5,5 +5,5 @@ pygame
 pyperlin
 showtens
 torch
-torchenhanced
 torchvision
+torchenhanced

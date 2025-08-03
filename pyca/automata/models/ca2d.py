@@ -196,3 +196,6 @@ the sum of the values of its neighbors.
         Returns the name of the automaton.
         """
         return "2D Cellular Automaton"
+
+    def get_string_state(self):
+        return f"Rule: s:{self.get_rule_from_num(self.s_num)}, b:{self.get_rule_from_num(self.b_num)}"

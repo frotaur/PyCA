@@ -1,6 +1,5 @@
 from ..automaton import Automaton
 import torch
-from colorsys import hsv_to_rgb
 import pygame
 from easydict import EasyDict
 

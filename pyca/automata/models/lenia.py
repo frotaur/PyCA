@@ -1,8 +1,6 @@
-import torch,torch.nn,torch.nn.functional as F
-import numpy as np
+import torch,torch.nn.functional as F
 from ..utils.noise_gen import perlin,perlin_fractal
 from ..utils import LeniaParams
-from showtens import show_image
 from ..automaton import Automaton
 import pygame,os, random
 

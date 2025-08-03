@@ -59,6 +59,19 @@ class Camera:
             self.border.center = (width/2,height/2)
         self.updateFov()
 
+    def change_border(self, new_border):
+        """
+            Change the border size of the camera.
+            If None, no border will be drawn.
+        """
+        if(new_border is None):
+            self.border_size = None
+            self.border = None
+        else:
+            self.border_size = new_border
+            self.border = pygame.Rect(0,0,new_border[0],new_border[1])
+            self.border.center = (self.size.w/2,self.size.h/2)
+        self.updateFov()
 
     def center(self):
         self.position = pygame.Vector2(self.width / 2, self.height / 2)

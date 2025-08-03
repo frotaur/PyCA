@@ -1,65 +1,19 @@
 from .BaseComponent import BaseComponent
 from .SmartFont import SmartFont
 from .TextLabel import TextLabel
-import pygame
+import pygame, time
 from ..files import BASE_FONT_PATH
 from typing import Callable
 
 
-class InputBox(BaseComponent):
-    """
-        Basic input box, with configurable allow-list. Its state
-        is simply a string of the current text.
-    """
-
-    def __init__(self, fract_position, fract_size, init_text='',
-                 allowed_chars: Callable | None = None, bg_color=(50, 50, 50),
-                 text_color=(230, 230, 230),
-                 font_path: str=BASE_FONT_PATH) :
-        """
-        Initializes the input box.
-        
-        Args:
-            fract_position (tuple): Fractional position in [0,1] of the component (x, y).
-            fract_size (tuple): Fractional size in [0,1] of the input box.
-            text (str): Initial text in the input box.
-            allowed_chars (callable|None): Function that takes a character and returns True if it is allowed.
-            max_length (int|None): Maximum length of the input text. If None, no limit.
-            font_path (str): File path to the font to be used.
-        """
-        super().__init__(fract_position=fract_position, fract_size=fract_size)
-        self.text = init_text
-
-        self.font = SmartFont(font_path=font_path, fract_font_size=fract_size[0]*0.5)
-
-        self.allowed_chars = allowed_chars
-
-        # Colors
-        self.bg_color = bg_color
-        self.text_color = text_color
-        self.border_color = tuple(min(bg+30,255) for bg in bg_color) 
-        self.hover_color = tuple(min(bg+20,255) for bg in bg_color)
-
-    def render(self):
-        """
-        Renders the input box.
-        """
-        self.font.sH = self.sH
-
-        box_surface = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-        box_surface.fill(self.bg_color)
-        text_surface = self.font.render(self.text, True, self.text_color)
-        text_rect = text_surface.get_rect(center=box_surface.get_rect().center)
-        box_surface.blit(text_surface, text_rect)
-        return box_surface
-
 class InputField(BaseComponent):
     """
-        Basic input field, with configurable allow-list. Its state
-        is simply a string of the current text.
+        Basic input field, with an optional label as caption.
+        Same functionality as InputBox.
     """
     def __init__(self, fract_position, fract_size, label='', init_text='',
                  allowed_chars: Callable | None = None, max_length: int=None,
+                 bg_color=(50, 50, 50), text_color=(230, 230, 230), label_color=(230, 230, 230),
                  font_path: str=BASE_FONT_PATH) :
         """
         Initializes the input field.
@@ -75,19 +29,34 @@ class InputField(BaseComponent):
         """
         super().__init__(fract_position=fract_position, fract_size=fract_size)
         self.text = init_text
-        label_fraction_height = 0.3 # Fraction of height the label takes
+        # NOTE : since its a BaseComponent composed of sub-componenets, 
+        # we need to set the correct screen-fractions for the sub-components
+        # Ideally, we wouldn't need to do this (just express as fraction of the mother component),
+        # but we can't due to events reporting only screen-relative positions.
 
-        self.font = SmartFont(font_path=font_path, fract_font_size = label_fraction_height)
+        label_fraction_height = 0.3 # Fraction of height the label takes
+        label_margins = 0.12
+        self.font = SmartFont(font_path=font_path, fract_font_size = fract_size[0]*label_fraction_height, min_font_size=8, max_font_size=18)
 
         if(label):
-            self.label = TextLabel(label, fract_position=(0., 0.),fract_width=1.,
-                                   font=self.font)
-            self.input_f_size = (1-label_fraction_height, 1.)  # Adjust input size to account for label height
-            self.input_f_pos = (0., label_fraction_height)
+            self.label = TextLabel(label, fract_position=fract_position,fract_width=fract_size[1],
+                                   font=self.font, bg_color=(0,0,0,150), h_margin=label_margins,
+                                   color=label_color)
+            input_f_size = (1-label_fraction_height*(1+label_margins), 1.)  # Adjust input size to account for label height
+            input_f_pos = (0., label_fraction_height*(1+label_margins))  # Position input below the label
         else:
             self.label = None
-            self.input_f_size = (1., 1.)
-            self.input_f_pos = (0., 0.)
+            input_f_size = (1., 1.)
+            input_f_pos = (0., 0.)
+        
+        true_f_pos = (fract_position[0] + input_f_pos[0] * fract_size[1],
+                      fract_position[1] + input_f_pos[1] * fract_size[0])
+        true_f_size = (input_f_size[0] * self.f_size[0], input_f_size[1] * self.f_size[1])
+
+        self.input_box = InputBox(fract_position=true_f_pos, 
+                           fract_size=true_f_size, init_text=init_text,
+                           allowed_chars=allowed_chars, font_path=font_path,
+                           bg_color=bg_color,text_color=text_color)
         
         self.full_surface = None # Will hold both label and input
 
@@ -99,12 +68,12 @@ class InputField(BaseComponent):
     @property
     def value(self):
         """Get the current value of the input box."""
-        return self.text
+        return self.input_box.value
     
     @value.setter
     def value(self, new_value):
         """Set the value of the input box."""
-        self.text = new_value
+        self.input_box.value = new_value
     
     def handle_event(self, event):
         """
@@ -112,31 +81,12 @@ class InputField(BaseComponent):
         Returns True if the input was submitted (Enter key, or click away)
         False otherwise.
         """
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # Toggle active state if the user clicked on the input box
-            was_active = self.active
-            self.active = self.rect.collidepoint(event.pos)
-            return (was_active==True and self.active==False) # Return True if the user clicked away
-            
-        if event.type == pygame.KEYDOWN and self.active:        
-            if event.key == pygame.K_RETURN:
-                self.active = False
-                return True
-            elif event.key == pygame.K_BACKSPACE:
-                self.text = self.text[:-1]
-            else:
-                # Add character if it passes the filter and respects the max length
-                if self.allowed_chars(event.unicode) and (self.max_length is None or len(self.text) < self.max_length):
-                    self.text += event.unicode
+        return self.input_box.handle_event(event)
 
     def render(self):
-        """
-        Renders the input field and its label if present.
-        """
-        self.full_surface = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-        if self.label:
-            self.full_surface = self.label.draw(self.full_surface)
-        
+        # No need to render anything, rendering is in the subcomponents
+        pass
+
 
     def draw(self, screen):
         """
@@ -145,7 +95,135 @@ class InputField(BaseComponent):
             screen (pygame.Surface): The surface to draw on.
         """
         super().draw(screen)
-
-        screen.blit(self.full_surface, (self.x, self.y))
+        if self.label:
+            screen = self.label.draw(screen)
+        screen = self.input_box.draw(screen)
 
         return screen
+
+
+
+class InputBox(BaseComponent):
+    """
+        Basic input box, with configurable allow-list. Its state
+        is simply a string of the current text.
+    """
+
+    def __init__(self, fract_position, fract_size, init_text='',
+                 allowed_chars: Callable | None = None, max_length=None, bg_color=(50, 50, 50),
+                 text_color=(230, 230, 230),
+                 font_path: str=BASE_FONT_PATH) :
+        """
+        Initializes the input box.
+        
+        Args:
+            fract_position (tuple): Fractional position in [0,1] of the component (x, y).
+            fract_size (tuple): Fractional size in [0,1] of the input box.
+            text (str): Initial text in the input box.
+            allowed_chars (callable|None): Function that takes a character and returns True if it is allowed.
+            max_length (int|None): Maximum length of the input text. If None, no limit.
+            font_path (str): File path to the font to be used.
+        """
+        super().__init__(fract_position=fract_position, fract_size=fract_size)
+
+        self.font = SmartFont(font_path=font_path, fract_font_size=fract_size[0]*0.4, max_font_size=16, min_font_size=10)
+
+        # State
+        self.active = False 
+        self.text = init_text
+        self.max_length = max_length
+        self.allowed_chars = allowed_chars if allowed_chars is not None else lambda c: True 
+
+        # Colors
+        self.bg_color = bg_color
+        self.text_color = text_color
+        self.border_color = tuple(min(bg+30,255) for bg in bg_color) 
+        self.active_color = tuple(min(bg+20,255) for bg in bg_color)
+
+        # Surfaces
+        self.box_surface = None  # Will hold the input box surface
+        self.box_rect = None  # Will hold the input box rectangle
+        self.border_size_fraction = 0.07  # Border size as a fraction of the dropdown height
+
+    def render(self):
+        """
+        Renders the input box.
+        """
+        self.font.sH = self.sH
+
+        self.box_surface = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+        self.box_rect = self.box_surface.get_rect(topleft=(self.x, self.y))
+        if self.active:
+            bg_color = self.active_color
+        else:
+            bg_color = self.bg_color
+
+        self.box_surface.fill(bg_color)
+        pygame.draw.rect(self.box_surface, self.border_color, (0,0,self.w,self.h), max(1,int(self.h * self.border_size_fraction)))
+
+        text_surface = self.font.render(self.text, self.text_color)
+        text_rect = text_surface.get_rect(center=self.box_surface.get_rect().center)
+        self.box_surface.blit(text_surface, text_rect)
+
+        return self.box_surface
+
+    @property
+    def value(self):
+        """
+        Get the current value of the input box.
+        """
+        return self.text
+
+    @value.setter
+    def value(self, new_value):
+        """
+        Set the value of the input box.
+        """
+        if self.allowed_chars is None or all(self.allowed_chars(c) for c in new_value):
+            if self.max_length is None or len(new_value) <= self.max_length:
+                self.text = new_value
+            else:
+                raise ValueError(f"Input exceeds maximum length of {self.max_length}.")
+        else:
+            raise ValueError("Input contains disallowed characters.")
+    
+    def draw(self, screen : pygame.Surface):
+        """
+        Draws the input box on the given surface.
+        """
+        super().draw(screen)    
+        screen.blit(self.box_surface, (self.x, self.y))
+
+        return screen
+
+    def handle_event(self, event):
+        rerender = False
+        changed = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # Toggle active state if the user clicked on the input box
+            was_active = self.active
+            self.active = self.box_rect.collidepoint(event.pos)
+            changed = ((not self.active) and was_active) # If we just 'input' by clicking away 
+            if(was_active!=self.active): rerender = True
+            if((not was_active) and self.active):
+                self.text = ""  # Clear text when activated
+            
+        if event.type == pygame.KEYDOWN and self.active:        
+            if event.key == pygame.K_RETURN:
+                self.active = False
+                rerender = True
+                changed = True
+            elif event.key == pygame.K_BACKSPACE:
+                self.text = self.text[:-1]
+                rerender = True
+            else:
+                # Add character if it passes the filter and respects the max length
+                if self.allowed_chars(event.unicode) and (self.max_length is None or len(self.text) < self.max_length):
+                    self.text += event.unicode
+                rerender = True
+    
+        if rerender:
+            self.render()
+
+        return changed
+

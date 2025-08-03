@@ -9,13 +9,13 @@ import pygame, os, json
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import SmartFont, TextLabel, DropDown, InputField
+from .ui_components import SmartFont, TextLabel, DropDown, InputField, InputBox
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
 
 class MainWindow:
     """
-    Main window of PyCA application.Deals with the main GUI components,
+    Main window of PyCA application. Deals with the main GUI components,
     main pygame loop, and event handling and dispatching.
 
     Exposes an API of methods to modify stuff, such as giving the list of active automata,
@@ -38,8 +38,8 @@ class MainWindow:
 
         
         pygame.init()
-        self.text_f_size = 1./60
-        self.title_f_size = 1./45
+        self.text_f_size = 1./40
+        self.title_f_size = 1./37
 
         self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH)
         self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=BASE_FONT_PATH)
@@ -72,30 +72,54 @@ class MainWindow:
         # Text labels for description, help and automaton controls
         self._generate_and_place_left_texts()  
 
+        # FPS live label
+        fps_font = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH, base_sH=self.sH, 
+                             max_font_size=16, min_font_size=10)
+        self.fps_label = TextLabel(f"FPS: {self.fps}", fract_position=(0.94, 0.01), fract_width=0.3, font=fps_font, color=(230, 120, 120))
         # Dropdown for automaton selection
-        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=(0.85, 0.92), fract_size=(0.05, 0.15),open_upward=True)
+        drop_size = (0.05, 0.17)  # Fractional size of the dropdown
+        drop_pos = (1-drop_size[1]-0.015, 1-drop_size[0]-0.015)  # Position at the bottom right
+        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=drop_pos, fract_size=drop_size,open_upward=True)
         self.automaton_dropdown.selected = self._initial_automaton
 
-        self.input = InputField((0.85, 0.2), (0.1,0.15), label='Manamatest')
+        # Input boxes for FPS, Width and Height
+        fps_size = (0.07, 0.04)
+        boxes_size = (0.07, 0.06)
+        spacing = 7/1000
+        boxes_pos = (1.-fps_size[1]-3*spacing-boxes_size[1]*2, 0.05)
 
+        self.fps_box = InputField(fract_position=(boxes_pos[0], boxes_pos[1]), fract_size=fps_size, label="FPS",
+                                 init_text=str(self.fps), allowed_chars=lambda c: c.isdigit(), max_length=3,
+                                 font_path=BASE_FONT_PATH)
+        self.width_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+spacing, boxes_pos[1]), fract_size=boxes_size, label="Width",
+                                    init_text=str(self.W), allowed_chars=lambda c: c.isdigit(), max_length= 4,
+                                    font_path=BASE_FONT_PATH)
+        self.height_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+boxes_size[1]+2*spacing, boxes_pos[1]), fract_size=boxes_size, label="Height",
+                                     init_text=str(self.H), allowed_chars=lambda c: c.isdigit(), max_length=4,
+                                     font_path=BASE_FONT_PATH)
+        
+        # Live automaton label
+        self.auto_label = TextLabel(text = self.auto.get_string_state(),
+                                    fract_position=(0.02, 0.95), fract_width=0.8,color=(180,220,180),
+                                    h_margin=0.2, bg_color=(0,0,0,150), font=self.font_text)
+        
     def _generate_and_place_left_texts(self):
         """
         Generates and places the left text labels of the main GUI. Needs to do some hacking to get dynamic positions
         of the texts, because a TextLabel component's height cannot be computed before it is rendered (because of text wrapping).
         """
-        left_text_width = 0.35
         title_color = (230, 89, 89)
         description_color = (74, 101, 176)
         text_color = (230, 230, 230)
-        
+        bg_color = (0,0,0, 150)
         auto_description, auto_help = self.auto.get_help()
 
-        self.auto_name = TextLabel(self.auto.name(), fract_position = (0.005, 0.005), fract_width=left_text_width, font=self.font_title, color=title_color)
-        self.auto_text = TextLabel(auto_description,fract_position=(0.005,0.), fract_width=left_text_width,font=self.font_title, color=description_color)
-        self.help_title = TextLabel(INTERFACE_HELP['title'], fract_position=(0.005, 0.05), fract_width=left_text_width, font=self.font_title, color=title_color)
-        self.help_text = TextLabel(INTERFACE_HELP['content'], fract_position=(0.005, 0.1), fract_width=left_text_width, font=self.font_text, color=text_color)
-        self.auto_controls_title = TextLabel("Automaton Controls", fract_position=(0.005, 0.2), fract_width=left_text_width, font=self.font_title, color=title_color)
-        self.auto_controls_text = TextLabel(auto_help, fract_position=(0.005, 0.25), fract_width=left_text_width, font=self.font_text, color=text_color)
+        self.auto_name = TextLabel(self.auto.name(), fract_position = (0.005, 0.005), fract_width=0.2, font=self.font_title, color=title_color, bg_color=bg_color, h_margin=0.2)
+        self.auto_text = TextLabel(auto_description,fract_position=(0.005,0.), fract_width=0.35,font=self.font_text, color=description_color, bg_color=bg_color)
+        self.help_title = TextLabel(INTERFACE_HELP['title'], fract_position=(0.005, 0.05), fract_width=0.2, font=self.font_title, color=title_color, bg_color=bg_color, h_margin=0.2)
+        self.help_text = TextLabel(INTERFACE_HELP['content'], fract_position=(0.005, 0.1), fract_width=0.35, font=self.font_text, line_spacing=0.15, color=text_color, bg_color=bg_color)
+        self.auto_controls_title = TextLabel("Automaton Controls", fract_position=(0.005, 0.2), fract_width=0.2, font=self.font_title, color=title_color, bg_color=bg_color, h_margin=0.2)
+        self.auto_controls_text = TextLabel(auto_help, fract_position=(0.005, 0.25), fract_width=0.35, font=self.font_text, line_spacing=0.15, color=text_color, bg_color=bg_color)
 
         self.left_components = [
             self.auto_name,
@@ -194,8 +218,24 @@ class MainWindow:
             self.auto = self.load_automaton(selected)
             self._generate_and_place_left_texts() # Need to update the text labels
 
-
-    def game_loop(self):
+        if self.fps_box.handle_event(event):
+            try:
+                self.fps = int(self.fps_box.value)
+            except ValueError:
+                print(f"Invalid FPS value: {self.fps_box.value}. Must be a positive integer.")
+        if self.width_box.handle_event(event):
+            # TODO : find a way for this to be automatic in the automaton (i.e., by default resize and reset)
+            # And that way, we can override to do smart resizing
+            self.W = int(self.width_box.value)
+            print(f"Resizing automaton to width {self.W}")
+            self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new width
+            self.camera.change_border((self.W, self.H))  # Update the camera border size
+        if self.height_box.handle_event(event):
+            self.H = int(self.height_box.value)
+            self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new height
+            self.camera.change_border((self.W, self.H))  # Update the camera border size
+    
+    def main_loop(self):
         """
             Runs the PyCA main loop.
         """
@@ -225,15 +265,29 @@ class MainWindow:
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
             if(self.display_help):
-                for component in self.left_components:
-                    component.draw(self.screen)
-                self.automaton_dropdown.draw(self.screen)
-                self.input.draw(self.screen)
+                self.draw_help()
+
 
             pygame.display.flip()
             self.clock.tick(self.fps)
-
+            
         if(self.vid_writer is not None):
             self.vid_writer.release()
 
         pygame.quit()
+    
+    def draw_help(self):
+        """
+            Draws the help text on the screen.
+        """
+        for component in self.left_components:
+            component.draw(self.screen)
+        self.automaton_dropdown.draw(self.screen)
+        self.fps_label.draw(self.screen)
+        self.fps_box.draw(self.screen)
+        self.width_box.draw(self.screen)
+        self.height_box.draw(self.screen)
+        self.auto_label.draw(self.screen)
+
+        self.fps_label.text = f"FPS: {round(self.clock.get_fps())}"
+        self.auto_label.text = self.auto.get_string_state()

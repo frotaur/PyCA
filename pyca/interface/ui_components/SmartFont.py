@@ -4,7 +4,8 @@ class SmartFont:
     """
         To handle fonts more gracefully, especially under resize.
     """
-    def __init__(self, fract_font_size=1./20., font_path=None, font_name=None, base_sH=None):
+    def __init__(self, fract_font_size=1./20., font_path=None, font_name=None, base_sH=None, max_font_size=None,
+                 min_font_size=None):
         """
             Initializes SmartFont with font path or name, and fractional size. Note that the font
             requires the screen height to be set before it can be used for rendering. Either use
@@ -16,25 +17,24 @@ class SmartFont:
                 font_name (str, optional): Name of the font. If provided, overrides font_path.
                 base_sH (int, optional): Base screen height for calculating font size. If None, 
                     font will be unusable until sH is set.
+                max_font_size (int, optional): Maximum (absolute) font size. If provided, limits the font size.
+                min_font_size (int, optional): Minimum (absolute) font size. If provided, limits the font size.
         """
         self.font_path = font_path
         self.font_name = font_name
         self._f_size = fract_font_size
         
-        if(base_sH is not None):
-            self._size = int(base_sH * self._f_size)
-        else:
-            self._size = None
-        
         self._sH = base_sH
+        self.max_font_size = max_font_size
+        self.min_font_size = min_font_size
         self.font = self._create_font()
     
     def _create_font(self):
-        if(self._size is not None):
+        if(self.size is not None):
             if self.font_name:
-                return pygame.font.SysFont(self.font_name, self._size)
+                return pygame.font.SysFont(self.font_name, self.size)
             else:
-                return pygame.font.Font(self.font_path, self._size)
+                return pygame.font.Font(self.font_path, self.size)
         else:
             return None
 
@@ -43,6 +43,21 @@ class SmartFont:
             Uses the font to render text with specified color.
         """
         return self.font.render(text, True, color) if self.font else None
+
+    @property
+    def size(self):
+        """
+            Returns the actual font size (NOT FRACTIONAL!!)
+        """
+        if(self._sH is not None):
+            tar_size = int(self._sH * self._f_size)
+            if self.max_font_size is not None:
+                tar_size = min(tar_size, self.max_font_size)
+            if self.min_font_size is not None:
+                tar_size = max(tar_size, self.min_font_size)
+            return tar_size
+        else:
+            return None
 
     @property
     def sH(self):
@@ -56,7 +71,6 @@ class SmartFont:
         """
             Sets the screen height and updates the font size accordingly.
         """
-        self._size = int(new_sH * self._f_size)
         self._sH = new_sH
         self.font = self._create_font()
     

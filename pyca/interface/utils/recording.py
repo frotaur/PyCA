@@ -1,7 +1,6 @@
-import os, torch, cv2, numpy as np
-from showtens import show_image,save_image
+import os, torch, cv2
+from showtens import save_image
 import pygame
-import json
 
 def launch_video(size,fps,fourcc='avc1'):
     """

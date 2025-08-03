@@ -121,3 +121,10 @@ class Automaton:
         but can be overridden in subclasses to provide a more descriptive name.
         """
         return self.__class__.__name__
+    
+    def get_string_state(self):
+        """
+        Can be overriden to return a string that gives some live information
+        about the model. It is queried each draw call, and displayed on the screen.
+        """
+        return "Live stuff!"
