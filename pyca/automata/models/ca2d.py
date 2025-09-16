@@ -1,5 +1,4 @@
 from ..automaton import Automaton
-from ...interface import text
 import torch, pygame
 import torch.nn.functional as F
 import colorsys

@@ -3,7 +3,7 @@ import torch
 from textwrap import dedent
 import pygame
 from easydict import EasyDict
-
+from ..interface.ui_components.BaseComponent import BaseComponent
 
 AUTOMATAS = {}
 
@@ -49,7 +49,8 @@ class Automaton:
     def process_event(self, event, camera=None):
         """
         Processes a pygame event, if needed. Should be overriden to 
-        add interactivity to the automaton.
+        add interactivity to the automaton. Be sure to call super().process_event !!
+        It deals with focus management.
 
         Parameters:
         event : pygame.event
@@ -57,7 +58,9 @@ class Automaton:
         camera : Camera
             The camera object. Need for the call to self.get_mouse_state.
         """
-        pass
+        manager = BaseComponent.get_focus_manager()
+        if not manager.should_process_event(event, self):
+            return 
 
     @property
     def worldmap(self):

@@ -197,6 +197,7 @@ class InputBox(BaseComponent):
         return screen
 
     def handle_event(self, event):
+        super().handle_event(event)
         rerender = False
         changed = False
         if event.type == pygame.MOUSEBUTTONDOWN:

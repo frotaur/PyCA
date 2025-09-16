@@ -1,10 +1,18 @@
 import pygame
-
+from .GlobalFocusManager import GlobalFocusManager
 
 class BaseComponent:
     """
     Base class for UI components in the PyCA interface.
     """
+    _global_focus_manager = None
+
+    @classmethod
+    def get_focus_manager(cls):
+        if cls._global_focus_manager is None:
+            cls._global_focus_manager = GlobalFocusManager()
+
+        return cls._global_focus_manager
 
     def __init__(self,fract_position, fract_size, max_size=None):
         """
@@ -123,7 +131,8 @@ class BaseComponent:
     
     def handle_event(self, event: pygame.event.Event) -> bool:
         """
-        Handles an event for the component. Must be subclassed. It should return True
+        Handles an event for the component. Should be implement in subclasses.
+        For focus management, call the super-class!  It should return True
         if some important value of the component has changed. This is so the user can,
         in this case, update its state accordingly, and avoid unnecessary updates.
         
@@ -133,4 +142,17 @@ class BaseComponent:
         Returns:
             bool: True if some value of the component changed, False otherwise.
         """
-        raise NotImplementedError("Subclasses must implement this method.")
+        if not self.get_focus_manager().should_process_event(self, event):
+            return False
+
+    def request_keyboard_focus(self):
+        """
+        Requests keyboard focus for this component.
+        """
+        self.get_focus_manager().request_keyboard_focus(self)
+    
+    def release_keyboard_focus(self):
+        """
+        Releases keyboard focus for this component.
+        """
+        self.get_focus_manager().release_keyboard_focus(self)

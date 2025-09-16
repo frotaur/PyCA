@@ -9,7 +9,7 @@ import pygame, os, json
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import SmartFont, TextLabel, DropDown, InputField, InputBox
+from .ui_components import SmartFont, TextLabel, DropDown, InputField, InputBox, Button
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
 
@@ -102,6 +102,7 @@ class MainWindow:
         self.auto_label = TextLabel(text = self.auto.get_string_state(),
                                     fract_position=(0.02, 0.95), fract_width=0.8,color=(180,220,180),
                                     h_margin=0.2, bg_color=(0,0,0,150), font=self.font_text)
+        
         
     def _generate_and_place_left_texts(self):
         """
@@ -234,7 +235,8 @@ class MainWindow:
             self.H = int(self.height_box.value)
             self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new height
             self.camera.change_border((self.W, self.H))  # Update the camera border size
-    
+
+        
     def main_loop(self):
         """
             Runs the PyCA main loop.
@@ -291,3 +293,5 @@ class MainWindow:
 
         self.fps_label.text = f"FPS: {round(self.clock.get_fps())}"
         self.auto_label.text = self.auto.get_string_state()
+
+        self.button_test.draw(self.screen)
