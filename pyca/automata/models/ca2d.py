@@ -165,11 +165,11 @@ the sum of the values of its neighbors.
         mouse = self.get_mouse_state(camera)
 
         if mouse.left:
-            brush = self.get_brush_slice(mouse.y, mouse.x).to(self.device)
+            brush = self.get_brush_slice(mouse.x, mouse.y).to(self.device)
             self.world[brush] = torch.randint(0, 2, brush.shape,device=self.device,dtype=self.world.dtype)[brush]
 
         if mouse.right:
-            brush = self.get_brush_slice(mouse.y, mouse.x).to(self.device)
+            brush = self.get_brush_slice(mouse.x, mouse.y).to(self.device)
             self.world[brush] = 0
         
     def _toggle_init_mode(self):

@@ -30,8 +30,8 @@ class Automaton:
 
         self._changed_components = []
 
-        # Create coordinate grids
-        self.X, self.Y = torch.meshgrid(torch.arange(self.w), torch.arange(self.h), indexing='ij')
+        # Obtain (H,W) tensors, containing the x (i.e. width, or column index) and y (i.e. height, or row index) coordinates of each pixel
+        self.X, self.Y = torch.meshgrid(torch.arange(self.w), torch.arange(self.h), indexing='xy') 
     
     def __init_subclass__(cls, **kwargs):
             """
