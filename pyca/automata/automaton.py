@@ -29,6 +29,9 @@ class Automaton:
         self._components_fract_pos = (0.7, 0.15)
 
         self._changed_components = []
+
+        # Create coordinate grids
+        self.X, self.Y = torch.meshgrid(torch.arange(self.w), torch.arange(self.h), indexing='ij')
     
     def __init_subclass__(cls, **kwargs):
             """
@@ -81,14 +84,14 @@ class Automaton:
         """
         # Constants for component placement
         VERTICAL_SPACING = 0.01  # Fractional spacing between components
-        
+        HORIZONTAL_MARGIN = 0.01  # Fractional margin from the right edge
         current_y = self._components_fract_pos[1]  # Start at the specified y position
         x_position = self._components_fract_pos[0]  # Use the specified x position
         
         for component in self._components:
             # Set the component's fractional position
             component.f_pos = (x_position, current_y)
-            
+            component.f_size = (component.f_size[0], 1-x_position-HORIZONTAL_MARGIN)  # Set a fixed width for all components
             # Move to the next position (current y + component height + spacing)
             current_y += component.f_size[0] + VERTICAL_SPACING
 

@@ -4,4 +4,5 @@ from .DropDown import DropDown
 from .SmartFont import SmartFont
 from .InputField import InputField, InputBox
 from .Button import Button
-__all__ = ['BaseComponent', 'TextLabel', 'DropDown', 'SmartFont', 'InputField', 'InputBox', 'Button']
+from .Toggle import Toggle
+__all__ = ['BaseComponent', 'TextLabel', 'DropDown', 'SmartFont', 'InputField', 'InputBox', 'Button', 'Toggle']

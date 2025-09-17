@@ -18,6 +18,6 @@ def parse_args():
 
 if __name__ == '__main__':
     screen, world, device = parse_args()
-    window = MainWindow(screen, world, device)
+    window = MainWindow(screen, world, device,tablet_mode=True)
 
     window.main_loop()
