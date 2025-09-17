@@ -142,7 +142,7 @@ class BaseComponent:
         Returns:
             bool: True if some value of the component changed, False otherwise.
         """
-        if not self.get_focus_manager().should_process_event(self, event):
+        if not self.get_focus_manager().should_process_event(event, self):
             return False
 
     def request_keyboard_focus(self):
@@ -156,3 +156,21 @@ class BaseComponent:
         Releases keyboard focus for this component.
         """
         self.get_focus_manager().release_keyboard_focus(self)
+    
+    def am_focused(self):
+        """
+        Returns True if this component is currently focused, False otherwise.
+        """
+        return self.get_focus_manager().am_focused(self)
+
+    def on_focus_lost(self):
+        """
+        Called when the component loses focus. Can be overridden in subclasses.
+        """
+        pass
+
+    def on_focus_gained(self):
+        """
+        Called when the component gains focus. Can be overridden in subclasses.
+        """
+        pass

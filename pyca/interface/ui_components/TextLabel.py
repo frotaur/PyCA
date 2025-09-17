@@ -132,3 +132,13 @@ class TextLabel(BaseComponent):
             event (pygame.event.Event): The event to handle (optional)
         """
         return False
+
+    def compute_size(self, sH,sW):
+        """
+        Given the screen size, renders the text to generate self.size and self.f_size
+        
+        Args:
+            screen_size (tuple): Size of the screen (height, width).
+        """
+        self.set_screen_size(sH,sW)
+        self.render()

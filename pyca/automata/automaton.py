@@ -25,6 +25,10 @@ class Automaton:
 
         self._worldmap = torch.zeros((3, self.h, self.w), dtype=float)  # (3,H,W), contains a 2D 'view' of the CA world
     
+        self._components = []  # List of GUI components associated to this automaton
+        self._components_fract_pos = (0.7, 0.15)
+
+        self._changed_components = []
     
     def __init_subclass__(cls, **kwargs):
             """
@@ -34,6 +38,21 @@ class Automaton:
             super().__init_subclass__(**kwargs)
 
             AUTOMATAS[cls.__name__] = cls
+
+    def register_component(self, component:BaseComponent):
+        """
+        Registers a GUI component to this automaton. The componenents
+        will be rendered on the right side of the screen, and the events
+        will be handled automatically.
+
+        Parameters:
+        component : BaseComponent
+            The component to register.
+        """
+        assert isinstance(component, BaseComponent), "component must be an instance of BaseComponent"
+        self._components.append(component)
+
+        self._place_components(None)  # Place components correctly
 
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')
@@ -46,11 +65,58 @@ class Automaton:
         """
         return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
     
+    def draw_components(self, screen):
+        """
+        Draws all registered components to the screen.
+        """
+        for component in self._components:
+            screen = component.draw(screen)
+        
+        return screen
+
+    def _place_components(self, screen):
+        """
+            Called only once at the beginning. Puts the correct fractional positions
+            so that components are placed on a vertical column, starting at self._components_fract_pos.
+        """
+        # Constants for component placement
+        VERTICAL_SPACING = 0.01  # Fractional spacing between components
+        
+        current_y = self._components_fract_pos[1]  # Start at the specified y position
+        x_position = self._components_fract_pos[0]  # Use the specified x position
+        
+        for component in self._components:
+            # Set the component's fractional position
+            component.f_pos = (x_position, current_y)
+            
+            # Move to the next position (current y + component height + spacing)
+            current_y += component.f_size[0] + VERTICAL_SPACING
+
+    def _process_event_focus_check(self, event, camera=None):
+        """
+        Like process event, but checks first if we can handle the event, or
+        if it is being captured by (focused) component.
+        """
+        self._process_gui_event(event)
+        if not BaseComponent.get_focus_manager().should_process_event(event):
+            #Finish execution here !! 
+            return
+
+        self.process_event(event, camera)
+
+        self._changed_components = [] # Reset changed components after processing
+    
+    def set_components_fract_pos(self, pos):
+        """
+        Sets the fractional position of the start of the GUI components
+        """
+        self._components_fract_pos = pos
+        self._place_components(None)  # Re-place components correctly
+
     def process_event(self, event, camera=None):
         """
         Processes a pygame event, if needed. Should be overriden to 
-        add interactivity to the automaton. Be sure to call super().process_event !!
-        It deals with focus management.
+        add interactivity to the automaton.
 
         Parameters:
         event : pygame.event
@@ -58,9 +124,17 @@ class Automaton:
         camera : Camera
             The camera object. Need for the call to self.get_mouse_state.
         """
-        manager = BaseComponent.get_focus_manager()
-        if not manager.should_process_event(event, self):
-            return 
+        pass
+    
+    def _process_gui_event(self, event):
+        """
+        Internal. When implemented, will simply pass the event to all defined GUI components,
+        so they can handle it if needed. No need to override it if I do things correctly
+        """
+        
+        for component in self._components:
+            if(component.handle_event(event)):
+                self._changed_components.append(component)
 
     @property
     def worldmap(self):
@@ -81,6 +155,14 @@ class Automaton:
         """
         return pygame.surfarray.make_surface(self.worldmap)
     
+    @property
+    def changed_components(self):
+        """
+        Returns a list of components that have changed their state at the current event loop iteration.
+        It's likely you will want to do something with the value/state of the components in this list!
+        """
+        return self._changed_components
+
     def get_mouse_state(self, camera):
         """
         Helper function that returns the current mouse state. 

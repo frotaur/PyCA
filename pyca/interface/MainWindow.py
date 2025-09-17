@@ -9,7 +9,7 @@ import pygame, os, json
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import SmartFont, TextLabel, DropDown, InputField, InputBox, Button
+from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, InputBox, Button
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
 
@@ -97,13 +97,20 @@ class MainWindow:
         self.height_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+boxes_size[1]+2*spacing, boxes_pos[1]), fract_size=boxes_size, label="Height",
                                      init_text=str(self.H), allowed_chars=lambda c: c.isdigit(), max_length=4,
                                      font_path=BASE_FONT_PATH)
+
+        title_pos = (boxes_pos[0], boxes_pos[1]+boxes_size[0]+2*spacing)
+        self.automaton_controls_title = TextLabel("Automaton controls :", fract_position=title_pos, fract_width=0.2, font=self.font_title, color=(230, 89, 89), bg_color=(0,0,0,150), h_margin=0.2)
         
+        self.automaton_controls_title.compute_size(self.sH, self.sW)
+        
+        auto_components_fract_pos = (title_pos[0], title_pos[1]+self.automaton_controls_title.f_size[0]+spacing)
+        self.auto.set_components_fract_pos(auto_components_fract_pos)
+
         # Live automaton label
         self.auto_label = TextLabel(text = self.auto.get_string_state(),
                                     fract_position=(0.02, 0.95), fract_width=0.8,color=(180,220,180),
                                     h_margin=0.2, bg_color=(0,0,0,150), font=self.font_text)
-        
-        
+    
     def _generate_and_place_left_texts(self):
         """
         Generates and places the left text labels of the main GUI. Needs to do some hacking to get dynamic positions
@@ -153,7 +160,6 @@ class MainWindow:
         else:
             raise ValueError(f"Invalid automaton model: {automaton_name}. Must be one of {list(AUTOMATAS.keys())}.")
 
-
     @property
     def initial_automaton(self):    
         return self._initial_automaton
@@ -165,77 +171,18 @@ class MainWindow:
         else:
             raise ValueError(f"Invalid automaton model: {value}. Must be one of {list(AUTOMATAS.keys())}.")
 
-
     def handle_events(self):
         """
             Handles all events in the main loop.
         """
+
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
             
-            self.camera.handle_event(event)
+            self._base_events(event)
 
-            if event.type == pygame.KEYDOWN:
-                if(event.key == pygame.K_SPACE): # Space to start/stop the automaton
-                    self.stopped=not(self.stopped)
-                if(event.key == pygame.K_q):
-                    self.running=False
-                if(event.key == pygame.K_r): # Press 'R' to start/stop recording
-                    self.recording = not self.recording
-                    if(self.vid_writer is not None and (not self.recording)):
-                        # We enter here if we just stopped the recording
-                        self.vid_writer.release()
-                        self.vid_writer = None
-                    elif(self.recording):
-                        # We enter here if we just started the recording
-                        # TODO : MAKE LAUNCH VIDEO BETTER!!
-                        self.vid_writer = launch_video((self.H, self.W), self.video_fps, 'mp4v')
-                if(event.key == pygame.K_p):
-                    print_screen(self.auto.worldsurface)
-                if(event.key == pygame.K_s):
-                    self.auto.step()
-                if (event.key == pygame.K_h):
-                    self.display_help = not self.display_help
-                if (event.key == pygame.K_c):
-                    self.camera.resize(self.sW,self.sH)
-                    self.camera.zoom = min(self.sW/self.W,self.sH/self.H) # Reset zoom to full view
-                    self.camera.center()
-            
-            if event.type == pygame.VIDEORESIZE:
-                self.sW, self.sH = event.w, event.h
-                self.s_size = (self.sW, self.sH)
-                self.camera.resize(self.sW, self.sH)
-
-            self.auto.process_event(event, self.camera)
+            self.auto._process_event_focus_check(event, self.camera)
+            self.auto._process_gui_event(event)
             self._gui_events(event)
-    
-    def _gui_events(self,event):
-        """
-            Handles the base GUI events, for fps, world size and automaton selection.
-        """
-        if self.automaton_dropdown.handle_event(event):
-            selected = self.automaton_dropdown.selected
-            self.auto = self.load_automaton(selected)
-            self._generate_and_place_left_texts() # Need to update the text labels
-
-        if self.fps_box.handle_event(event):
-            try:
-                self.fps = int(self.fps_box.value)
-            except ValueError:
-                print(f"Invalid FPS value: {self.fps_box.value}. Must be a positive integer.")
-        if self.width_box.handle_event(event):
-            # TODO : find a way for this to be automatic in the automaton (i.e., by default resize and reset)
-            # And that way, we can override to do smart resizing
-            self.W = int(self.width_box.value)
-            print(f"Resizing automaton to width {self.W}")
-            self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new width
-            self.camera.change_border((self.W, self.H))  # Update the camera border size
-        if self.height_box.handle_event(event):
-            self.H = int(self.height_box.value)
-            self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new height
-            self.camera.change_border((self.W, self.H))  # Update the camera border size
-
         
     def main_loop(self):
         """
@@ -268,7 +215,7 @@ class MainWindow:
             
             if(self.display_help):
                 self.draw_help()
-
+            self.auto.draw_components(self.screen)
 
             pygame.display.flip()
             self.clock.tick(self.fps)
@@ -293,5 +240,84 @@ class MainWindow:
 
         self.fps_label.text = f"FPS: {round(self.clock.get_fps())}"
         self.auto_label.text = self.auto.get_string_state()
+        if(len(self.auto._components)>0):
+            self.automaton_controls_title.draw(self.screen)
+    
+    def _base_events(self,event):
+        """
+            Handles the base events, which are not automaton-specific.
+        """
+        if(not BaseComponent.get_focus_manager().should_process_event(event)):
+            print('do NOT process base event')
+            return
+        
+        if event.type == pygame.QUIT:
+            self.running = False
+        
+        self.camera.handle_event(event)
 
-        self.button_test.draw(self.screen)
+        if event.type == pygame.KEYDOWN:
+            if(event.key == pygame.K_SPACE): # Space to start/stop the automaton
+                self.stopped=not(self.stopped)
+            if(event.key == pygame.K_q):
+                self.running=False
+            if(event.key == pygame.K_r): # Press 'R' to start/stop recording
+                self.recording = not self.recording
+                if(self.vid_writer is not None and (not self.recording)):
+                    # We enter here if we just stopped the recording
+                    self.vid_writer.release()
+                    self.vid_writer = None
+                elif(self.recording):
+                    # We enter here if we just started the recording
+                    # TODO : MAKE LAUNCH VIDEO BETTER!!
+                    self.vid_writer = launch_video((self.H, self.W), self.video_fps, 'mp4v')
+            if(event.key == pygame.K_p):
+                print_screen(self.auto.worldsurface)
+            if(event.key == pygame.K_s):
+                self.auto.step()
+            if (event.key == pygame.K_h):
+                self.display_help = not self.display_help
+            if (event.key == pygame.K_c):
+                self.camera.resize(self.sW,self.sH)
+                self.camera.zoom = min(self.sW/self.W,self.sH/self.H) # Reset zoom to full view
+                self.camera.center()
+        
+        if event.type == pygame.VIDEORESIZE:
+            self.sW, self.sH = event.w, event.h
+            self.s_size = (self.sW, self.sH)
+            self.camera.resize(self.sW, self.sH)
+
+    def _gui_events(self,event):
+        """
+            Handles the base GUI events, for fps, world size and automaton selection.
+        """
+        if self.automaton_dropdown.handle_event(event):
+            selected = self.automaton_dropdown.selected
+            self.auto = self.load_automaton(selected)
+            self._generate_and_place_left_texts() # Need to update the text labels
+
+        if self.fps_box.handle_event(event):
+            try:
+                self.fps = int(self.fps_box.value)
+            except ValueError:
+                print(f"Invalid FPS value: {self.fps_box.value}. Must be a positive integer.")
+        
+        if self.width_box.handle_event(event):
+            # TODO : find a way for this to be automatic in the automaton (i.e., by default resize and reset)
+            # And that way, we can override to do smart resizing
+            if(self.width_box.value.strip() == ''):
+                self.width_box.value = str(self.W)
+                return
+            self.W = int(self.width_box.value)
+            print(f"Resizing automaton to width {self.W}")
+            self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new width
+            self.camera.change_border((self.W, self.H))  # Update the camera border size
+        
+        if self.height_box.handle_event(event):
+            if(self.height_box.value.strip() == ''):
+                self.height_box.value = str(self.W)
+                return
+            self.H = int(self.height_box.value)
+
+            self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new height
+            self.camera.change_border((self.W, self.H))  # Update the camera border size

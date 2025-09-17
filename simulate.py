@@ -1,4 +1,4 @@
-from pyca.interface import MainWindow
+from pyca.interface.MainWindow import MainWindow
 import argparse
 
 def parse_args():

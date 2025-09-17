@@ -2,7 +2,7 @@ from ..automaton import Automaton
 import torch, pygame
 import torch.nn.functional as F
 import colorsys
-
+from ...interface.ui_components import Button,InputBox
 
 class CA2D(Automaton):
     """
@@ -37,6 +37,11 @@ the sum of the values of its neighbors.
         self.decay_speed = 0.1
 
         self._worldmap = self._worldmap.to(device)
+
+        self.b1 = Button(text='CLICK',fract_position=(0., 0.), fract_size=(0.05, 0.1))
+        self.register_component(self.b1)
+        self.b2 = Button(text='ME',fract_position=(0., 0.1), fract_size=(0.05, 0.1))
+        self.register_component(self.b2)
 
     def change_highlight_color(self):
         """
@@ -106,6 +111,7 @@ the sum of the values of its neighbors.
         UP -> longer-lasting highlights
         DOWN -> shorter-lasting highlights
         """
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset()
@@ -123,6 +129,12 @@ the sum of the values of its neighbors.
                 self.decay_speed = max(self.decay_speed - 0.1 * self.decay_speed, 0.005)
             if event.key == pygame.K_DOWN:
                 self.decay_speed = min(0.1 * self.decay_speed + self.decay_speed, 3)
+
+        for component in self.changed_components:
+            if self.b1 == component:
+                print("Button 1 clicked!")
+            if self.b2 == component:
+                print("Button 2 clicked!")
 
     def change_num(self, s_num: int | str, b_num: int | str):
         """
