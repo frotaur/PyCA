@@ -5,4 +5,7 @@ from .SmartFont import SmartFont
 from .InputField import InputField, InputBox
 from .Button import Button
 from .Toggle import Toggle
-__all__ = ['BaseComponent', 'TextLabel', 'DropDown', 'SmartFont', 'InputField', 'InputBox', 'Button', 'Toggle']
+from .Slider import Slider, LabeledSlider
+
+
+__all__ = ['BaseComponent', 'TextLabel', 'DropDown', 'SmartFont', 'InputField', 'InputBox', 'Button', 'Toggle', 'Slider', 'LabeledSlider']

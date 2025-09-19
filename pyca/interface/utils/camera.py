@@ -159,6 +159,20 @@ class Camera:
 
         return abs_pos
 
+    def mouse_in_border(self, pos):
+        """
+            Returns True if the mouse is inside the world border, if set.
+            If no border is set, always returns True.
+        """
+        if(self.border is None):
+            return True
+        abs_pos = (int(pos[0]/self.zoom+self.fov.left), int(pos[1]/self.zoom+self.fov.top)) # Position in the screen
+        world_pos = (abs_pos[0] - self.border.left, abs_pos[1] - self.border.top)
+        if(world_pos[0]<0 or world_pos[0]>=self.border.width or world_pos[1]<0 or world_pos[1]>=self.border.height):
+            return False
+        
+        return True
+    
     def apply(self, surface : pygame.Surface, border=False):
         """
             Given a pygame surface, return a new surface which is the view of the camera.

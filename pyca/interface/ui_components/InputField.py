@@ -11,7 +11,7 @@ class InputField(BaseComponent):
         Basic input field, with an optional label as caption.
         Exact same as InputBox, but with a label on top.
     """
-    def __init__(self, fract_position, fract_size, label='', init_text='',
+    def __init__(self, fract_position=(0,0), fract_size=(0.1,0.1), label='', init_text='',
                  allowed_chars: Callable | None = None, max_length: int=None,
                  bg_color=(50, 50, 50), text_color=(230, 230, 230), label_color=(230, 230, 230),
                  font_path: str=BASE_FONT_PATH) :
@@ -84,7 +84,7 @@ class InputField(BaseComponent):
         return self.input_box.handle_event(event)
 
     def render(self):
-        # No need to render anything, rendering is in the subcomponents
+        # Sub-components render themselves
         pass
 
 
@@ -109,7 +109,7 @@ class InputBox(BaseComponent):
         is simply a string of the current text.
     """
 
-    def __init__(self, fract_position, fract_size, init_text='',
+    def __init__(self, fract_position=(0,0), fract_size=(0.05,0.1), init_text='',
                  allowed_chars: Callable | None = None, max_length=None, bg_color=(50, 50, 50),
                  text_color=(230, 230, 230),
                  font_path: str=BASE_FONT_PATH) :

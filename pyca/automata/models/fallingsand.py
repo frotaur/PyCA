@@ -8,7 +8,7 @@ class FallingSand(Automaton):
         Inefficient (sequential) implementation of the falling sand automaton.
     """
 
-    def __init__(self, size):
+    def __init__(self, size, device="cpu"):
         super().__init__(size)
         self.h, self.w = size
         self.size = size

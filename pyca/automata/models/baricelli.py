@@ -13,7 +13,7 @@ class Baricelli1D(Automaton):
         1D Baricelli cellular automaton. 
     """
 
-    def __init__(self, size, n_species : int=6, reprod_collision=False):
+    def __init__(self, size, n_species : int=6, reprod_collision=False, device='cpu'):
         """
             Params:
             size : 2-uple (H,W)

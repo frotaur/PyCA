@@ -4,7 +4,7 @@ import pygame
 
 
 class Toggle(Button):
-    def __init__(self, state1, state2, fract_position, fract_size, init_true=True,
+    def __init__(self, state1, state2, fract_position=(0,0), fract_size=(0.05,0.1), init_true=True,
                  state1_bg_color=(20, 80, 20), state2_bg_color=(80, 20, 20),
                  text_color=(230, 230, 230), font_path: str = BASE_FONT_PATH):
         """
@@ -43,6 +43,7 @@ class Toggle(Button):
         self.state2_border_color = tuple(min(bg+30, 255) for bg in state2_bg_color)
 
         self._set_aspect()
+    
     def _set_aspect(self):
         """
         Sets the button's appearance based on the current state.

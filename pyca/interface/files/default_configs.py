@@ -6,8 +6,13 @@
 
 
 DEFAULTS = {
-    "MultiLenia" : {
-        "param_path": "lenia_cool_params"
+    "Lenia" : {
+        "interest_files": "./demo_data/lenia_cool_params",
+        "save_dir": "./data/lenia_saved_params"
+    },
+    "MaCELenia" :{
+        "interest_files": "./demo_data/macelenia_cool_params",
+        "save_dir": "./data/macelenia_saved_params"
     },
     "NeuralCA" : {
         "models_folder": 'saved_models/NCA'

@@ -14,7 +14,7 @@ class BaseComponent:
 
         return cls._global_focus_manager
 
-    def __init__(self,fract_position, fract_size, max_size=None):
+    def __init__(self,fract_position=(0,0), fract_size=(0.1,0.1), max_size=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -128,8 +128,8 @@ class BaseComponent:
         This function should be subclassed, even if no special rendering is needed, in this case, just pass.
         """
         raise NotImplementedError("Subclasses must implement this method.")
-    
-    def handle_event(self, event: pygame.event.Event) -> bool:
+
+    def handle_event(self, event: pygame.event.Event, parent_mouse_pos=None) -> bool:
         """
         Handles an event for the component. Should be implement in subclasses.
         For focus management, call the super-class!  It should return True
@@ -138,12 +138,26 @@ class BaseComponent:
         
         Args:
             event (pygame.event.Event): The event to handle.
-        
+            parent_mouse_pos (tuple, optional): Position of mouse in the parent's coordinates.
+            Use with get_mouse_pos for collisions.
         Returns:
             bool: True if some value of the component changed, False otherwise.
         """
+
         if not self.get_focus_manager().should_process_event(event, self):
             return False
+    
+    def get_mouse_pos(self, event, parent_mouse_pos):
+        """
+        Converts a mouse position in 'parent' coordinates to local component coordinates.
+        
+        Args:
+            mouse_pos (tuple): Mouse position in 'parent' coordinates.
+        """
+        if(parent_mouse_pos is None):
+            parent_mouse_pos = event.pos if hasattr(event, 'pos') else None
+        
+        return (parent_mouse_pos[0]-self.x, parent_mouse_pos[1]-self.y) if parent_mouse_pos is not None else None
 
     def request_keyboard_focus(self):
         """

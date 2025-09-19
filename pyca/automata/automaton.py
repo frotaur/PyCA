@@ -26,6 +26,7 @@ class Automaton:
         self._worldmap = torch.zeros((3, self.h, self.w), dtype=float)  # (3,H,W), contains a 2D 'view' of the CA world
     
         self._components = []  # List of GUI components associated to this automaton
+        self._custom_size_flags =[]  # List of flags indicating if the component has a custom size
         self._components_fract_pos = (0.7, 0.15)
 
         self._changed_components = []
@@ -42,7 +43,7 @@ class Automaton:
 
             AUTOMATAS[cls.__name__] = cls
 
-    def register_component(self, component:BaseComponent):
+    def register_component(self, component:BaseComponent, custom_size=False):
         """
         Registers a GUI component to this automaton. The componenents
         will be rendered on the right side of the screen, and the events
@@ -51,10 +52,13 @@ class Automaton:
         Parameters:
         component : BaseComponent
             The component to register.
+        custom_size : bool
+            If True, preserves the component's set fractional size,
+            otherwise, will be resized.
         """
         assert isinstance(component, BaseComponent), "component must be an instance of BaseComponent"
         self._components.append(component)
-
+        self._custom_size_flags.append(custom_size)
         self._place_components(None)  # Place components correctly
 
     def step(self):
@@ -88,10 +92,11 @@ class Automaton:
         current_y = self._components_fract_pos[1]  # Start at the specified y position
         x_position = self._components_fract_pos[0]  # Use the specified x position
         
-        for component in self._components:
+        for i,component in enumerate(self._components):
             # Set the component's fractional position
             component.f_pos = (x_position, current_y)
-            component.f_size = (component.f_size[0], 1-x_position-HORIZONTAL_MARGIN)  # Set a fixed width for all components
+            if(not self._custom_size_flags[i]):
+                component.f_size = (component.f_size[0], 1-x_position-HORIZONTAL_MARGIN)  # Set a fixed width for all components
             # Move to the next position (current y + component height + spacing)
             current_y += component.f_size[0] + VERTICAL_SPACING
 
@@ -182,6 +187,7 @@ class Automaton:
             left : True if left mouse button is pressed (access also as mouse_state.left)
             right : True if right mouse button is pressed (access also as mouse_state.right)
             middle : True if middle mouse button is pressed (access also as mouse_state.middle)
+            inside : True if mouse is inside the CA world, False otherwise (access also as mouse_state.inside)
         """
         left, middle, right = pygame.mouse.get_pressed()
         mouse_x, mouse_y = camera.convert_mouse_pos(pygame.mouse.get_pos())
@@ -191,7 +197,7 @@ class Automaton:
         # If CTRL is pressed, force all mouse buttons to be considered not pressed
         if ctrl_pressed:
             left = middle = right = 0
-        return EasyDict({"x":mouse_x, "y":mouse_y, 'left': left==1, 'right': right==1, 'middle': middle==1})
+        return EasyDict({"x":mouse_x, "y":mouse_y, 'left': left==1, 'right': right==1, 'middle': middle==1, 'inside':camera.mouse_in_border(pygame.mouse.get_pos())})
 
 
     def get_help(self):

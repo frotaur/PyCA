@@ -15,7 +15,7 @@ class ElementaryCA(Automaton):
         1D Elementary Cellular Automata.
     """
 
-    def __init__(self, size, wolfram_num : int, random: bool = False):
+    def __init__(self, size, wolfram_num : int, random: bool = False, device="cpu"):
         """
             Parameters:
             size : 2-uple (H,W)

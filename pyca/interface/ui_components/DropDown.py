@@ -10,7 +10,7 @@ class DropDown(BaseComponent):
     Its state (self.selected) is simply a string. 
     """
 
-    def __init__(self, options, fract_position, fract_size, open_upward=False, 
+    def __init__(self, options, fract_position=(0.,0.), fract_size=(0.05,0.1), open_upward=False, 
                     bg_color=(50, 50, 50), text_color=(230, 230, 230), font_path: str=BASE_FONT_PATH):
         """
         Initializes the dropdown component.

@@ -5,7 +5,7 @@ import pygame
 
 
 class Button(BaseComponent):
-    def __init__(self, text, fract_position, fract_size, 
+    def __init__(self, text, fract_position=(0,0), fract_size=(0.05,0.1), 
                  bg_color=(50, 50, 50), text_color=(230, 230, 230), font_path: str=BASE_FONT_PATH):
         """
         Initializes the button component.

@@ -8,7 +8,7 @@ class TextLabel(BaseComponent):
     Represents a text label in the UI.
     """
 
-    def __init__(self, text, fract_position, fract_width, font: SmartFont, line_spacing=0., color=(255, 89, 89), bg_color=(0,0,0,0),
+    def __init__(self, text, font: SmartFont, fract_position=(0,0), fract_width=0.1, line_spacing=0., color=(255, 89, 89), bg_color=(0,0,0,0),
                  h_margin=0.):
         """
         Initializes the text label component.

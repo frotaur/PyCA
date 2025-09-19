@@ -5,6 +5,6 @@ from .reactiondiffusion import ReactionDiffusion, GrayScott, BelousovZhabotinsky
 from .lgca import LGCA
 from .fallingsand import FallingSand
 from .nca import NeuralCA
-from .lenia import MultiLenia
+from .lenia import Lenia, MaCELenia
 from .vonneumann import VonNeumann
 from .rule110 import Rule110Universality

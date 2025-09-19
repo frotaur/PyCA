@@ -67,7 +67,7 @@ class MainWindow:
         self.display_help = True
         self.vid_writer=None
 
-        self._initial_automaton = "CA2D"
+        self._initial_automaton = "MaCELenia"
 
 
         ## Left Panel Base Component
@@ -260,9 +260,8 @@ class MainWindow:
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
             if(self.display_help):
-                self.draw_help()
                 self.auto.draw_components(self.screen)
-
+                self.draw_help()
             elif(self.tablet_mode):
                 self.hide_show.draw(self.screen) # Always draw the hide/show button in tablet mode
 
@@ -280,7 +279,6 @@ class MainWindow:
         """
         for component in self.left_components:
             component.draw(self.screen)
-        self.automaton_dropdown.draw(self.screen)
         self.fps_label.draw(self.screen)
         self.fps_box.draw(self.screen)
         self.width_box.draw(self.screen)
@@ -289,12 +287,15 @@ class MainWindow:
 
         self.fps_label.text = f"FPS: {round(self.clock.get_fps())}"
         self.auto_label.text = self.auto.get_string_state()
+
         if(len(self.auto._components)>0):
             self.automaton_controls_title.draw(self.screen)
 
         if(self.tablet_mode):
             for component in self.tablet_gui_components:
                 component.draw(self.screen)
+    
+        self.automaton_dropdown.draw(self.screen)
 
     def _base_events(self,event):
         """
@@ -323,9 +324,9 @@ class MainWindow:
                 elif(self.recording):
                     # We enter here if we just started the recording
                     # TODO : MAKE LAUNCH VIDEO BETTER!!
-                    self.vid_writer = launch_video((self.H, self.W), self.video_fps, 'mp4v')
+                    self.vid_writer = launch_video((self.H, self.W), self.video_fps, 'mp4v', vid_name=f'{self.auto.name()}')
             if(event.key == pygame.K_p):
-                print_screen(self.auto.worldsurface)
+                print_screen(self.auto.worldsurface, img_name=f'{self.auto.name()}')
             if(event.key == pygame.K_s):
                 self.auto.step()
             if (event.key == pygame.K_h):
