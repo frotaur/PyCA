@@ -7,15 +7,19 @@
 
 DEFAULTS = {
     "Lenia" : {
-        "interest_files": "./demo_data/lenia_cool_params",
+        "interest_files": "./demo_data/demo_lenia",
         "save_dir": "./data/lenia_saved_params"
     },
     "MaCELenia" :{
-        "interest_files": "./demo_data/macelenia_cool_params",
+        "interest_files": "./demo_data/demo_macelenia",
         "save_dir": "./data/macelenia_saved_params"
     },
+    "MaCELeniaXChan" :{
+        "interest_files": "./demo_data/demo_macelenia_xchan",
+        "save_dir": "./data/macelenia_xchan_saved_params"
+    },
     "NeuralCA" : {
-        "models_folder": 'saved_models/NCA'
+        "models_folder": './demo_data/NCA_models'
     },
     "VonNeumann" : {
         "element_size": 9

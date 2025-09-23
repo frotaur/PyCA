@@ -16,7 +16,6 @@ class MaCELenia(Lenia):
     def __init__(
         self,
         size,
-        dt=0.1,
         num_channels=3,
         params=None,
         state_init=None,
@@ -29,7 +28,6 @@ class MaCELenia(Lenia):
         """
         Args:
             size : tuple, (B,H,W) or (H,W) of ints, size of the automaton
-            dt : float, unused in this version of MaCELenia, but useful for the asymptotic version
             num_channels : int, number of channels
             params : dict, parameters of the automaton
             state_init : tensor, initial state of the automaton
@@ -43,7 +41,7 @@ class MaCELenia(Lenia):
 
         super().__init__(
             size,
-            dt=dt,  # dt does not matter this MaCE update
+            dt=0.1,  # dt does not matter this MaCE update
             num_channels=num_channels,
             params=params,
             state_init=state_init,

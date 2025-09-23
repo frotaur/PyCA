@@ -5,11 +5,12 @@
     Exposes an API of methods to modify stuff, such as giving the list of active automata,
     running the loop, and default values.
 """
-import pygame, os, json
+import pygame
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, Button, Toggle
+from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, Button, MultiToggle
+from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
 
@@ -37,7 +38,6 @@ class MainWindow:
         self.video_fps=60 # Saved video FPS
         self.tablet_mode = tablet_mode
 
-
         pygame.init()
         self.text_f_size = 1./40
         self.title_f_size = 1./37
@@ -64,7 +64,7 @@ class MainWindow:
         self.running = True
         self.stopped = True
         self.recording = False
-        self.display_help = True
+        self.display_help = HelpEnum() # 'ALL' by default
         self.vid_writer=None
 
         self._initial_automaton = "MaCELenia"
@@ -104,8 +104,8 @@ class MainWindow:
         next_pos = (next_pos[0]+BUTTONS_SIZE[1]+W_SPACING, next_pos[1])
         self.step = Button(text="Step", fract_position=next_pos, fract_size=BUTTONS_SIZE)
         next_pos = (next_pos[0]+BUTTONS_SIZE[1]+W_SPACING, next_pos[1])
-        self.hide_show = Toggle(state1="Hide", state2="Show", fract_position=next_pos, fract_size=BUTTONS_SIZE,
-                       state1_bg_color=(100, 100, 100), state2_bg_color=(20, 20, 80))
+        self.hide_show = MultiToggle(states=["Hide Some", "Hide All", "Show"], fract_position=next_pos, fract_size=BUTTONS_SIZE,
+                       state_bg_colors=[(100, 100, 100), (20, 20, 80), (80, 20, 20)])
         # For now, cam reset not needed as we can't move the camera in tablet mode
         # self.cam_reset = Button(text="Center", fract_position=next_pos, fract_size=BUTTONS_SIZE)
         next_pos = (start_position[0], next_pos[1]+BUTTONS_SIZE[0]+H_SPACING)
@@ -259,9 +259,10 @@ class MainWindow:
                 add_frame(self.vid_writer, world_surface)
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
-            if(self.display_help):
-                self.auto.draw_components(self.screen)
+            if(self.display_help.left_pane):
                 self.draw_help()
+            if(self.display_help.right_pane):
+                self.auto.draw_components(self.screen)
             elif(self.tablet_mode):
                 self.hide_show.draw(self.screen) # Always draw the hide/show button in tablet mode
 
@@ -330,7 +331,7 @@ class MainWindow:
             if(event.key == pygame.K_s):
                 self.auto.step()
             if (event.key == pygame.K_h):
-                self.display_help = not self.display_help
+                self.display_help.toggle()
             if (event.key == pygame.K_c):
                 self.camera.resize(self.sW,self.sH)
                 self.camera.zoom = min(self.sW/self.W,self.sH/self.H) # Reset zoom to full view
@@ -382,7 +383,7 @@ class MainWindow:
             if(self.step.handle_event(event)):
                 self.auto.step()
             if(self.hide_show.handle_event(event)):
-                self.display_help = not self.display_help
+                self.display_help.toggle()
             # if(self.cam_reset.handle_event(event)):
             #     self.camera.resize(self.sW,self.sH)
             #     self.camera.zoom = min(self.sW/self.W,self.sH/self.H) # Reset zoom to full view
