@@ -13,12 +13,14 @@ def parse_args():
     parser.add_argument('-d', '--device', type=str, default='cpu',
                       help='Device to run on: "cuda" or "cpu" (default: cpu)')
 
+    parser.add_argument('-t', '--tablet_mode', action='store_true',
+                      help='Enable tablet mode (default: False)')
     args = parser.parse_args()
-    return tuple(args.screen), tuple(args.world), args.device
+    return tuple(args.screen), tuple(args.world), args.device, args.tablet_mode
 
 if __name__ == '__main__':
-    screen, world, device = parse_args()
-    window = MainWindow(screen, world, device,tablet_mode=False)
-    
+    screen, world, device, tablet_mode = parse_args()
+    window = MainWindow(screen, world, device, tablet_mode=tablet_mode)
+
     window.main_loop()
     

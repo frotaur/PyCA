@@ -81,7 +81,7 @@ class InputField(BaseComponent):
         Returns True if the input was submitted (Enter key, or click away)
         False otherwise.
         """
-        return self.input_box.handle_event(event)
+        return self.input_box._handle_event(event)
 
     def render(self):
         # Sub-components render themselves
@@ -94,10 +94,9 @@ class InputField(BaseComponent):
         Args:
             screen (pygame.Surface): The surface to draw on.
         """
-        super().draw(screen)
         if self.label:
-            screen = self.label.draw(screen)
-        screen = self.input_box.draw(screen)
+            screen = self.label._draw(screen)
+        screen = self.input_box._draw(screen)
 
         return screen
 
@@ -192,13 +191,11 @@ class InputBox(BaseComponent):
         """
         Draws the input box on the given surface.
         """
-        super().draw(screen)    
         screen.blit(self.box_surface, (self.x, self.y))
 
         return screen
 
     def handle_event(self, event):
-        super().handle_event(event)
         rerender = False
         changed = False
 

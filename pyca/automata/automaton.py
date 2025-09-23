@@ -77,7 +77,7 @@ class Automaton:
         Draws all registered components to the screen.
         """
         for component in self._components:
-            screen = component.draw(screen)
+            screen = component._draw(screen)
         
         return screen
 
@@ -105,7 +105,7 @@ class Automaton:
         Like process event, but checks first if we can handle the event, or
         if it is being captured by (focused) component.
         """
-        self._process_gui_event(event)
+        self._process_gui_event(event) # Always try to process GUI events
         if not BaseComponent.get_focus_manager().should_process_event(event):
             #Finish execution here !! 
             return
@@ -141,7 +141,7 @@ class Automaton:
         """
         
         for component in self._components:
-            if(component.handle_event(event)):
+            if(component._handle_event(event)):
                 self._changed_components.append(component)
 
     @property
@@ -222,3 +222,21 @@ class Automaton:
         about the model. It is queried each draw call, and displayed on the screen.
         """
         return "Live stuff!"
+
+    def toggle_components(self):
+        """
+        Toggles the visibility of all registered components.
+        """
+        for component in self._components:
+            component.toggle_visibility()
+
+    def set_components_visibility(self, visible:bool):
+        """
+        Sets the visibility of all registered components.
+
+        Parameters:
+        visible : bool
+            If True, shows all components. If False, hides all components.
+        """
+        for component in self._components:
+            component.visible = visible 

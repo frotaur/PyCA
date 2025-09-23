@@ -31,9 +31,12 @@ class GlobalFocusManager:
             component.on_focus_lost()
         
     def should_process_event(self, event, requester=None):
-        # NOTE : This is not the best, as also 'automaton' classes ask thsi question, even though they are
+        # NOTE : This is not the best, as also 'automaton' classes ask this question, even though they are
         # not UI components. For now I put requester = None, if not given, will always return False if focused somewhere.
         if event.type in [pygame.KEYDOWN, pygame.KEYUP]: #  If it's a keyboard event
-            return self.focused_component == requester # Allow only if this component is focused, or if no component is focused
+            if(self.focused_component is None):\
+                return True  # No component is focused, allow all keyboard events
+            else:
+                return self.focused_component == requester # Allow only if this component is focused
         else:
             return True  # Non-keyboard events are always processed

@@ -142,7 +142,7 @@ class TotalisticCA1D(Automaton):
         Totalistic means that the output state of a cell depends only on the sum of the states of the neighborhood.
     """
 
-    def __init__(self, size, wolfram_num: int, r=1, k=2, random=False):
+    def __init__(self, size, wolfram_num: int, r=1, k=2, random=False, device='cpu'):
         """
             Parameters :
             size : 2-uple (H,W)

@@ -45,10 +45,11 @@ class TextLabel(BaseComponent):
     @text.setter
     def text(self, new_text):
         """
-        Sets the text of the label and re-renders it.
+        Sets the text of the label and re-renders it (if possible). 
         """
         self._text = new_text
-        self.render()
+        if(self.sH is not None):
+            self.render()
     
     def render(self):
         """
@@ -108,8 +109,6 @@ class TextLabel(BaseComponent):
         Efficiently draws pre-rendered text lines to the screen.
         Lines that exceed the component height are clipped.
         """
-        super().draw(screen)
-        
         # Simply blit the pre-rendered lines
         y_offset = self.margin*self.font.height
         line_height = self.font.height*(1+self.line_spacing)

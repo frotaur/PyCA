@@ -68,7 +68,6 @@ class Button(BaseComponent):
         """
         Draws the button component to the screen.
         """
-        super().draw(screen)
         
         # Draw button
         if self.button_surface:

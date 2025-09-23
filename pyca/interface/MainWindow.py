@@ -9,7 +9,7 @@ import pygame
 from importlib.resources import files
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, Button, MultiToggle
+from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, Button, MultiToggle, Toggle
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
@@ -69,12 +69,13 @@ class MainWindow:
 
         self._initial_automaton = "MaCELenia"
 
-
-        ## Left Panel Base Component
+        ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
+        self.right_components = None
         self.extra_components_pos = (0,0) 
-        self._generate_left_base_gui()
+        self._generate_right_base_gui()
         if(self.tablet_mode):
+            self.tablet_gui_components = None
             self._generate_tablet_gui(start_position=self.extra_components_pos)
         self._generate_auto_controls_title(start_position=self.extra_components_pos)
 
@@ -82,13 +83,8 @@ class MainWindow:
         self.auto = self.load_automaton(self._initial_automaton)
 
         # Text labels for description, help and automaton controls
+        self.left_components = None
         self._generate_and_place_left_texts()  
-
-        # Live automaton label
-        self.auto_label = TextLabel(text = self.auto.get_string_state(),
-                                    fract_position=(0.02, 0.95), fract_width=0.8,color=(180,220,180),
-                                    h_margin=0.2, bg_color=(0,0,0,150), font=self.font_text)
-    
 
         
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
@@ -117,9 +113,9 @@ class MainWindow:
 
         self.extra_components_pos = (next_pos[0], next_pos[1])
     
-    def _generate_left_base_gui(self):
+    def _generate_right_base_gui(self):
         """
-            Generates the base GUI which go on the left side of the window
+            Generates the base GUI which go on the right side of the window
         """
         # FPS live label
         fps_font = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH, base_sH=self.sH, 
@@ -148,6 +144,8 @@ class MainWindow:
                                      font_path=BASE_FONT_PATH)
 
         self.extra_components_pos = (boxes_pos[0], boxes_pos[1]+boxes_size[0]+2*spacing)
+
+        self.right_components = [self.fps_label, self.fps_box, self.width_box, self.height_box, self.automaton_dropdown]
 
     def _generate_auto_controls_title(self, start_position):
         self.automaton_controls_title = TextLabel("Automaton controls :", fract_position=start_position, fract_width=0.2, font=self.font_title, color=(230, 89, 89), bg_color=(0,0,0,150), h_margin=0.2)
@@ -187,7 +185,14 @@ class MainWindow:
             component.f_pos = (component.f_pos[0], fractional_y_position)
             component.render()
             fractional_y_position += component.f_size[0] # Add the now correct height to the next component's position
-    
+        
+        # Live automaton label
+        self.auto_label = TextLabel(text = self.auto.get_string_state(),
+                                    fract_position=(0.02, 0.95), fract_width=0.8,color=(180,220,180),
+                                    h_margin=0.2, bg_color=(0,0,0,150), font=self.font_text)
+        
+        self.left_components.append(self.auto_label)
+
     def load_automaton(self, automaton_name):
         """
             Loads and returns the specified automaton model.
@@ -202,6 +207,8 @@ class MainWindow:
             auto = AUTOMATAS[automaton_name]((self.H,self.W),**defaults, device=self.device)
             auto.set_components_fract_pos(self.extra_components_pos)
             
+            self.automaton_controls_title.visible = len(auto._components)>0 and self.display_help.right_pane
+
             return auto
         else:
             raise ValueError(f"Invalid automaton model: {automaton_name}. Must be one of {list(AUTOMATAS.keys())}.")
@@ -223,9 +230,7 @@ class MainWindow:
         """
 
         for event in pygame.event.get():
-            
             self._base_events(event)
-
             self.auto._process_event_focus_check(event, self.camera)
             self.auto._process_gui_event(event)
             self._gui_events(event)
@@ -259,12 +264,10 @@ class MainWindow:
                 add_frame(self.vid_writer, world_surface)
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
-            if(self.display_help.left_pane):
-                self.draw_help()
-            if(self.display_help.right_pane):
-                self.auto.draw_components(self.screen)
-            elif(self.tablet_mode):
-                self.hide_show.draw(self.screen) # Always draw the hide/show button in tablet mode
+
+            self.auto.draw_components(self.screen)
+            self.draw_help()
+
 
             pygame.display.flip()
             self.clock.tick(self.fps)
@@ -279,24 +282,24 @@ class MainWindow:
             Draws the help text on the screen.
         """
         for component in self.left_components:
-            component.draw(self.screen)
-        self.fps_label.draw(self.screen)
-        self.fps_box.draw(self.screen)
-        self.width_box.draw(self.screen)
-        self.height_box.draw(self.screen)
-        self.auto_label.draw(self.screen)
+            component._draw(self.screen)
 
+        self.auto_label.text = self.auto.get_string_state() # Update live automaton label
         self.fps_label.text = f"FPS: {round(self.clock.get_fps())}"
-        self.auto_label.text = self.auto.get_string_state()
 
-        if(len(self.auto._components)>0):
-            self.automaton_controls_title.draw(self.screen)
 
         if(self.tablet_mode):
             for component in self.tablet_gui_components:
-                component.draw(self.screen)
-    
-        self.automaton_dropdown.draw(self.screen)
+                component._draw(self.screen)
+
+        if(self.tablet_mode):
+            self.hide_show._draw(self.screen) # Always draw the hide/show button in tablet mode
+
+
+        self.automaton_controls_title._draw(self.screen)
+
+        for component in self.right_components:
+            component._draw(self.screen)
 
     def _base_events(self,event):
         """
@@ -331,7 +334,7 @@ class MainWindow:
             if(event.key == pygame.K_s):
                 self.auto.step()
             if (event.key == pygame.K_h):
-                self.display_help.toggle()
+                self._hidden_pressed()
             if (event.key == pygame.K_c):
                 self.camera.resize(self.sW,self.sH)
                 self.camera.zoom = min(self.sW/self.W,self.sH/self.H) # Reset zoom to full view
@@ -346,18 +349,18 @@ class MainWindow:
         """
             Handles the base GUI events, for fps, world size and automaton selection.
         """
-        if self.automaton_dropdown.handle_event(event):
+        if self.automaton_dropdown._handle_event(event):
             selected = self.automaton_dropdown.selected
             self.auto = self.load_automaton(selected)
             self._generate_and_place_left_texts() # Need to update the text labels
 
-        if self.fps_box.handle_event(event):
+        if self.fps_box._handle_event(event):
             try:
                 self.fps = int(self.fps_box.value)
             except ValueError:
                 print(f"Invalid FPS value: {self.fps_box.value}. Must be a positive integer.")
         
-        if self.width_box.handle_event(event):
+        if self.width_box._handle_event(event):
             # TODO : find a way for this to be automatic in the automaton (i.e., by default resize and reset)
             # And that way, we can override to do smart resizing
             if(self.width_box.value.strip() == ''):
@@ -368,7 +371,7 @@ class MainWindow:
             self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new width
             self.camera.change_border((self.W, self.H))  # Update the camera border size
         
-        if self.height_box.handle_event(event):
+        if self.height_box._handle_event(event):
             if(self.height_box.value.strip() == ''):
                 self.height_box.value = str(self.W)
                 return
@@ -378,13 +381,25 @@ class MainWindow:
             self.camera.change_border((self.W, self.H))  # Update the camera border size
         
         if(self.tablet_mode):
-            if(self.play_pause.handle_event(event)):
+            if(self.play_pause._handle_event(event)):
                 self.stopped = not self.stopped
-            if(self.step.handle_event(event)):
+            if(self.step._handle_event(event)):
                 self.auto.step()
             if(self.hide_show.handle_event(event)):
-                self.display_help.toggle()
+                self._hidden_pressed()
+                    
+
             # if(self.cam_reset.handle_event(event)):
             #     self.camera.resize(self.sW,self.sH)
             #     self.camera.zoom = min(self.sW/self.W,self.sH/self.H) # Reset zoom to full view
             #     self.camera.center()
+
+    def _hidden_pressed(self):
+        self.display_help.toggle()
+        for component in self.right_components:
+            component.visible = self.display_help.right_pane
+            self.auto.set_components_visibility(self.display_help.right_pane)
+
+            self.automaton_controls_title.visible = (self.display_help.right_pane and len(self.auto._components)>0)
+        for component in self.left_components:
+            component.visible = self.display_help.left_pane

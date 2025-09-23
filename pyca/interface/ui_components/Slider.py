@@ -137,9 +137,7 @@ class Slider(BaseComponent):
     def draw(self, screen: pygame.Surface) -> pygame.Surface:
         """
         Draws the slider component to the screen.
-        """
-        super().draw(screen)
-        
+        """        
         if self.slider_surface:
             screen.blit(self.slider_surface, (self.x, self.y))
         
@@ -354,13 +352,12 @@ class LabeledSlider(BaseComponent):
         Returns:
             pygame.Surface: The screen with the component drawn on it.
         """
-        super().draw(screen)
         # Draw slider and label
         self.full_surface.fill((0, 0, 0, 0))  # Clear with transparent
         if(self.title):
-            surface = self.title.draw(self.full_surface)
-        surface = self.slider.draw(self.full_surface)
-        surface = self.label.draw(surface)
+            surface = self.title._draw(self.full_surface)
+        surface = self.slider._draw(self.full_surface)
+        surface = self.label._draw(surface)
         
         screen.blit(surface, (self.x, self.y))
         

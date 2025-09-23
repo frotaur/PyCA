@@ -29,13 +29,15 @@ class BaseComponent:
 
         self.max_size = max_size if max_size else (float('inf'), float('inf'))
 
+        self.visible = True
+
     @property
     def size(self):
         """
         Returns the size of the component based on the screen size and fractional size.
         """
         if(self.sH is None or self.sW is None):
-            print("Warning: screen size not set. Returning 0,0.")
+            print(f"Warning: screen size not set. Returning 0,0. in {self.__class__.__name__}")
             return (0,0)
     
         return (min(int(self.sH * self.f_size[0]), self.max_size[0]), min(int(self.sW * self.f_size[1]), self.max_size[1]))
@@ -64,7 +66,7 @@ class BaseComponent:
         in the future, feels a bit too mixed.
         """
         if(self.sH is None or self.sW is None):
-            print("Warning: screen size not set. Returning 0,0.")
+            print(f"Warning: screen size not set. Returning 0,0. in {self.__class__.__name__}")
             return (0,0)
         
         return (int(self.sW * self.f_pos[0]), int(self.sH * self.f_pos[1]))
@@ -95,13 +97,30 @@ class BaseComponent:
         """
         self.sH, self.sW = h, w
 
+    def _draw(self, screen):
+        """
+        Method to actually call to draw the component, setting screen size and checking visibility.
+
+
+        TODO: In the future, this code should automatically be pre-pended to draw. 
+        This can be done with __init_subclass__, but for now, I leave it like this.
+        """
+        if not self.visible:
+            return screen
+        
+        newW, newH = screen.get_size()
+        if self.sW != newW or self.sH != newH:
+            self.set_screen_size(newH, newW)
+            self.render()
+        
+        return self.draw(screen)
+    
     def draw(self, screen : pygame.Surface) -> pygame.Surface:
         """
         Draws the component on the given screen. Must be subclassed.
-        This basic method only updates screen size, and calls the 'render'
-        method if the screen size has changed. In the subclass, simply call
-        super().draw(screen), and then use whatever is prepared in the render method
-        to draw the component.
+        When called, screen size is automatically updated, and the 'render'
+        method is called if the screen size changed. In this method, use 
+        whatever is prepared in the render method to draw the component.
         
         Args:
             screen (pygame.Surface): Screen surface.
@@ -109,12 +128,8 @@ class BaseComponent:
         Returns:
             pygame.Surface: The screen with the component drawn on it.
         """
-        newW, newH = screen.get_size()
-        if self.sW != newW or self.sH != newH:
-            self.set_screen_size(newH, newW)
-            self.render()
 
-        return screen
+        raise NotImplementedError("Subclasses must implement this method.")
     
     def render(self):
         """
@@ -129,12 +144,34 @@ class BaseComponent:
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+    def _handle_event(self, event, parent_mouse_pos=None):
+        """
+        This function should be called on to handle an event. It should
+        NOT be overridden, instead, override handle_event to add custom event handling.
+
+        TODO: In the future, this code should automatically be pre-pended to handle_event.
+        This can be done with __init_subclass__, but for now, I leave it like this.
+        """
+        if not self.visible:
+            return False
+        
+        # Ideally, I could check focus here and return if not focused, but in practice,
+        # I cannot do it... Indeed, it would break nested components, as the parent
+        # may not have focus, but the child may. In this case, we would return early,
+        # and the child would never get the event. So, I leave it to the component itself
+        # to check if it is focused or not, if needed. Maybe I will figure out a better way in the future.
+
+        if(parent_mouse_pos is None):
+            return self.handle_event(event) # Retrocompatible with handle_event without parent pos
+        else:
+            return self.handle_event(event, parent_mouse_pos)
+
     def handle_event(self, event: pygame.event.Event, parent_mouse_pos=None) -> bool:
         """
         Handles an event for the component. Should be implement in subclasses.
-        For focus management, call the super-class!  It should return True
-        if some important value of the component has changed. This is so the user can,
-        in this case, update its state accordingly, and avoid unnecessary updates.
+        It should return True if some important value of the component has changed. 
+        This is so the user can, in this case, update its state accordingly, 
+        and avoid unnecessary updates.
         
         Args:
             event (pygame.event.Event): The event to handle.
@@ -143,10 +180,10 @@ class BaseComponent:
         Returns:
             bool: True if some value of the component changed, False otherwise.
         """
-
-        if not self.get_focus_manager().should_process_event(event, self):
-            return False
+        return False
     
+
+        
     def get_mouse_pos(self, event, parent_mouse_pos):
         """
         Converts a mouse position in 'parent' coordinates to local component coordinates.
@@ -188,3 +225,9 @@ class BaseComponent:
         Called when the component gains focus. Can be overridden in subclasses.
         """
         pass
+
+    def toggle_visibility(self):
+        """
+        Toggles the visibility state of the component.
+        """
+        self.visible = not self.visible

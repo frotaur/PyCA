@@ -138,9 +138,7 @@ class DropDown(BaseComponent):
     def draw(self, screen: pygame.Surface) -> pygame.Surface:
         """
         Draws the dropdown component to the screen.
-        """
-        super().draw(screen)
-        
+        """        
         # Draw main dropdown button
         screen.blit(self.dropdown_surface, (self.x, self.y))
         

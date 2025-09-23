@@ -25,8 +25,11 @@ DEFAULTS = {
         "element_size": 9
     },
     "TotalisticCA1D" : {
-        "rule": 1203,
+        "wolfram_num": 1203,
         "k": 3,
         "r": 3
     },
+    "ElementaryCA": {
+        "wolfram_num": 30
+    }
 }

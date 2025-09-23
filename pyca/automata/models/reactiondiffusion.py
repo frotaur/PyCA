@@ -110,7 +110,8 @@ class ReactionDiffusion(Automaton):
         self.reagent_mask = torch.zeros((self.num_reagents),dtype=torch.bool,device=device)
         self.reagent_mask[self.selected_reagent] = True
 
-        # self.stepnum=1
+        self.stepnum=1
+        self.renormalize = None
     def reset(self):
         self.u = torch.zeros((self.num_reagents,self.Nh,self.Nw),dtype=torch.float, device=self.device) # (num_reagents,N_h,N_w), concentration of reagents
         x = torch.linspace(-self.w/2, self.w/2, steps=self.Nw).unsqueeze(0).repeat(self.Nh, 1)
