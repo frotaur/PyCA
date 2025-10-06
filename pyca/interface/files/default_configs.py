@@ -10,6 +10,10 @@ DEFAULTS = {
         "interest_files": "./demo_data/demo_lenia",
         "save_dir": "./data/lenia_saved_params"
     },
+    "FlowLenia" : {
+        "interest_files": "./demo_data/demo_macelenia",
+        "save_dir": "./data/flowlenia_saved_params"
+    },
     "MaCELenia" :{
         "interest_files": "./demo_data/demo_macelenia",
         "save_dir": "./data/macelenia_saved_params"
