@@ -1,4 +1,5 @@
 from pyca.interface.MainWindow import MainWindow
+from pyca.interface.WindowBench import WindowBench
 import argparse
 
 def parse_args():
@@ -20,7 +21,7 @@ def parse_args():
 
 if __name__ == '__main__':
     screen, world, device, tablet_mode = parse_args()
-    window = MainWindow(screen, world, device, tablet_mode=tablet_mode)
+    window = WindowBench(screen, world, device, tablet_mode=tablet_mode)
 
     window.main_loop()
     

@@ -121,12 +121,10 @@ the sum of the values of its neighbors.
         """
         Updates the worldmap with the current state of the automaton.
         """
-        echo = torch.clamp(self._worldmap - self.decay_speed * self.highlight_color[:, None, None], min=0, max=1).to(
-            self.device
-        )
+        echo = torch.clamp(self._worldmap - self.decay_speed * self.highlight_color[:, None, None], min=0, max=1)
         self._worldmap = torch.clamp(
             self.world[None, :, :].expand(3, -1, -1).to(dtype=torch.float) + echo, min=0, max=1
-        ).to(self.device)
+        )
 
     def process_event(self, event, camera=None):
         """
