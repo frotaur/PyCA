@@ -27,6 +27,7 @@ class ElementaryCA(Automaton):
         """
         super().__init__(size)
         # Below here I do what I need to do to initialize the automaton
+        wolfram_num = 90
         self.rule = self.convert_wolfram_num(wolfram_num) # (8,) tensor, rule[i] is 0 if the i'th neighborhood yields 0, 1 otherwise
 
         self.world = torch.zeros((self.w),dtype=torch.int) # Vector of W elements
@@ -51,6 +52,7 @@ class ElementaryCA(Automaton):
             if(event.key == pygame.K_n): #Pressed the letter n
                 # Picks a random rule
                 rule = torch.randint(0,256,(1,)).item()
+                rule = 90
                 self.change_num(rule)
                 print('rule : ', rule)
             if(event.key == pygame.K_c):

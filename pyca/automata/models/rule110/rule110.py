@@ -11,6 +11,10 @@ import torch
 import numpy as np
 from pathlib import Path
 from importlib.resources import files
+import re, torchvision
+from torchvision import transforms
+import torch.nn.functional as F
+import time
 
 class Rule110Universality(Automaton):
     """
@@ -31,7 +35,6 @@ class Rule110Universality(Automaton):
         # Below here I do what I need to do to initialize the automaton
         self.rule = self.convert_wolfram_num(110) # (8,) tensor, rule[i] is 0 if the i'th neighborhood yields 0, 1 otherwise
 
-
         self.max_tape_symbols = 6
 
         # load dictionaries and glider patterns
@@ -45,7 +48,6 @@ class Rule110Universality(Automaton):
         #set up world parameters
         self.offset = 100 # margin to circumvent coarse graining missing a pattern cut in half at the border
         self.world = torch.zeros((self.w+2*self.offset),dtype=torch.int) # Vector of W elements
-        #self.render_size =  60 if self.h <= 600 else int(60*(self.h//600))
         self.render_size =  210
         self.worlds = torch.ones((self.render_size, self.w+2*self.offset), dtype=torch.int) # Vector of (render_size, W) elements
         self.time = 0 # Current time step, to keep track for plotting the full evolution
@@ -53,6 +55,8 @@ class Rule110Universality(Automaton):
 
         self.left_pressed=False
         self.right_pressed=False
+
+        self.update_interval = 4200 #has to be a multiple fo 210
 
         self.reset(random=False)
         
@@ -97,11 +101,20 @@ class Rule110Universality(Automaton):
 
     def generate_random_cyclic_tag_system(self):
         num_appendants = random.choice([1,2,3,4])
-        self.cyclic_tag = [self.generate_appendnt_6() for _ in range(num_appendants)]
+        num_empty_appendants = random.choice([0,1,2])
+        self.cyclic_tag = [self.generate_appendnt_6() for _ in range(num_appendants)]+ ['' for _ in range(num_empty_appendants)]
+        first_nonempty = self.cyclic_tag[0]
+
+        self.cyclic_tag = self.cyclic_tag[1:]
+        random.shuffle(self.cyclic_tag)
+        self.cyclic_tag = [first_nonempty] + self.cyclic_tag
+        
         print("Random cyclic tag system is: ", self.cyclic_tag)
         self.init_cyclic_tag_data()
 
     def init_cyclic_tag_data(self):
+        self.cyclic_tag_text = [a if len(a)>0 else "''" for a in self.cyclic_tag]
+
         self.max_appendant_len = max(len(a) for a in self.cyclic_tag)
         self.min_appendant_len = min(len(a) for a in self.cyclic_tag)
 
@@ -113,13 +126,16 @@ class Rule110Universality(Automaton):
         self.num_empty = self.cyclic_tag.count("")
         self.num_non_empty = len(self.cyclic_tag)-self.num_empty
 
-        self.long_ossifier_distance =  int((76*self.num_ys+80*self.num_ns+60*self.num_non_empty+43*self.num_empty)//4)*4*12+3    #to be double-checked, is from Cooks paper concrete view of rule 110 computation 
+        self.long_ossifier_distance =  int((76*self.num_ys+80*self.num_ns+60*self.num_non_empty+43*self.num_empty)//4)*4*2+3    #to be double-checked, is from Cooks paper concrete view of rule 110 computation   #to be double-checked, is from Cooks paper concrete view of rule 110 computation 
 
     def load_patterns(self):
         self.dict_yn = json.load(open('pyca/automata/utils/rule110/dict_yn.json', 'r'))
         self.dict_rl = json.load(open('pyca/automata/utils/rule110/dict_rl.json', 'r'))
         self.dict_oss = {0: (1, 1), 1: (2, 0), 2:(0, 0)} #dictionary for ossifiers; example: if last appended ossifier is O[1], then what gets prepended is 0[2]+0*ether+(short or long distance * ether) 
         self.gliders = json.load(open('pyca/automata/utils/rule110/gliders.json', 'r'))
+        self.dict_sc_sl = json.load(open('pyca/automata/utils/rule110/dict_sc_sl.json', 'r'))
+        self.dict_sl_rl = json.load(open('pyca/automata/utils/rule110/dict_sl_rl.json', 'r'))
+        self.dict_sl_sl = json.load(open('pyca/automata/utils/rule110/dict_sl_sl.json', 'r'))
 
         self.ether = self.gliders['ether']
         self.str_ether = self.to_str(self.ether)
@@ -133,37 +149,13 @@ class Rule110Universality(Automaton):
         self.O = self.gliders['O']
         self.strO = ["".join(str(s) for s in o) for o in self.gliders['O']]
         self.RL = self.gliders['RL']
+        self.strRL = ["".join(str(s) for s in rl) for rl in self.gliders['RL']]
+        self.SL = self.gliders['SL']
         self.strE = ["".join(str(s) for s in e) if len(e)> 20 else "".join(str(s) for s in e+self.ether) for e in self.gliders['E']]
-        self.Ymiddle = [[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0],
-           [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
-           [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-           [0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1],
-           [0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
-           [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1],
-           [1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-           [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0]]
-        self.Nmiddle = [[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1],
-           [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
-           [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1],
-           [0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-           [0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0],
-           [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
-           self.ether+[1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1]]
-        self.Nouter =  [[[1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0], [0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]],
-          [[1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0], [0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1]],
-          [[1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1], [0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1]],
-          [[1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1], [1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]],
-          [[0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1], [0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0]],
-          [[0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1], [1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0]],
-          [[1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1]],
-          [[1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0], [0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]]]
-        self.Youter =  [[[1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0], [1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0]],
-          [[1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0], [1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1]],
-          [[1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1], [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0]],
-          [[1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1], [0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1]],
-          [[0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1], [0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1]],
-          [[1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1], [0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0]],
-          [[0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1], [1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0]]]
+        self.Ymiddle = self.gliders['Ymiddle']
+        self.Nmiddle = self.gliders['Nmiddle']
+        self.Nouter = self.gliders['Nouter']
+        self.Youter = self.gliders['Youter']
 
         self.Y_middle_torch = [torch.tensor(e, dtype=torch.uint8) for e in self.pad_patterns(self.Ymiddle)]
         self.Y_outer_torch = [[torch.tensor(e1, dtype=torch.uint8), torch.tensor(e2, dtype=torch.uint8)] for e1, e2 in self.Youter]
@@ -191,12 +183,18 @@ class Rule110Universality(Automaton):
     def to_str(self, config):
         return "".join(str(s) for s in config)
 
+    def encode_short_raw_leader(self, e_i):
+        rl_i, num_ethers = self.dict_sl[str(e_i)]
+        config=self.ether*num_ethers+self.SL[rl_i]
+        return config, (rl_i+9)%30
+
     def encode_raw_leader(self, e_i):
         rl_i, num_ethers = self.dict_rl[str(e_i)]
         config=self.ether*num_ethers+self.RL[rl_i]
         return config, (rl_i+22)%30
 
     def encode_appendant(self, yn_seq, leader_i):
+        #returns a configuration encoding a psecific appendant, and the phase of the last standard component SC
         assert (len(yn_seq)%6)==0
         config = []
         
@@ -214,6 +212,63 @@ class Rule110Universality(Automaton):
 
         return config, i
 
+    def encode_cyclic_tag(self, num_cyclic_tag):
+        config=[]
+        cyclic_tag = self.cyclic_tag*num_cyclic_tag
+        e_i = self.last_e_glider_index
+
+        appendant = cyclic_tag[0]
+
+        #print("last e glider index: ", e_i)
+        a, e_i = self.encode_appendant(appendant, leader_i=e_i)  #we assume first appendant is always non-empty
+        config+=a+8*self.ether
+
+
+        for appendant_prev, appendant_now in zip(cyclic_tag, cyclic_tag[1:]):
+            #print("app_prev: ", appendant_prev)
+            #print("app_now: ", appendant_now)
+            if appendant_prev == "" and appendant_now == "":
+                #print("empty", "empty", e_i)
+                e_i, num_ethers = self.dict_sl_sl[str(e_i)]
+                config+=self.ether*num_ethers+self.SL[e_i]
+            elif appendant_prev != "" and appendant_now == "":
+                #print("non-empty", "empty", e_i)
+                e_i, num_ethers = self.dict_sc_sl[str(e_i)]
+                config+=self.ether*num_ethers+self.SL[e_i]
+            elif appendant_prev == "" and appendant_now != "":
+                #print("empty", "non-empty", e_i)
+                rl_i, num_ethers = self.dict_sl_rl[str(e_i)]
+                config+=self.ether*num_ethers+self.RL[rl_i]
+                e_i = (rl_i+22)%30
+                a, e_i = self.encode_appendant(appendant, leader_i=e_i)
+                config+=a+8*self.ether
+            elif appendant_prev != "" and appendant_now != "":
+                #print("non-empty", "non-empty", e_i)
+                rl_i, num_ethers = self.dict_rl[str(e_i)]
+                config+=self.ether*num_ethers+self.RL[rl_i]
+                e_i = (rl_i+22)%30
+                a, e_i = self.encode_appendant(appendant, leader_i=e_i)
+                config+=a+8*self.ether
+            #print()
+
+
+        #now we have to append raw leader for the next round of cyclic tag
+        appendant = cyclic_tag[-1]
+        if appendant == "":
+            #print("empty", e_i)
+            rl_i, num_ethers = self.dict_sl_rl[str(e_i)]
+            config+=self.ether*num_ethers+self.RL[rl_i]
+            e_i = (rl_i+22)%30
+        else:
+            #print("non-empty", e_i)
+            rl_i, num_ethers = self.dict_rl[str(e_i)]
+            config+=self.ether*num_ethers+self.RL[rl_i]
+            e_i = (rl_i+22)%30
+
+        self.last_e_glider_index = e_i
+        #print("last e glider index: ", self.last_e_glider_index)
+        return config
+
     def encode_tape(self):
         config=3*self.ether
         for C in self.init_tape:
@@ -221,31 +276,18 @@ class Rule110Universality(Automaton):
                 config+=self.ether+self.Y[0]+6*self.ether
             if C == "N":
                 config+=self.ether+self.N[0]+7*self.ether
-        leader_index=2
-        config+=4*self.ether+self.L[leader_index]
         
-        return config, (leader_index+18)%30
-
-    def encode_cyclic_tag(self, num_cyclic_tag):
-        config=[]
-        cyclic_tag = self.cyclic_tag*num_cyclic_tag
-        e_i = self.last_e_glider_index
-        for appendant in cyclic_tag:
-            a, e_i = self.encode_appendant(appendant, leader_i=e_i)
-            config+=a+8*self.ether
-            l, e_i = self.encode_raw_leader(e_i)
-            config+=l
-        self.last_e_glider_index = e_i
+        
         return config
 
     def encode_ossifiers(self, num_ossifiers):
         oss_index, num_ether = self.dict_oss[self.oss_index]
         ossifiers = self.O[oss_index]+self.ether*(num_ether+self.long_ossifier_distance)
-        print("new oss index: ", oss_index)
+        #print("new oss index: ", oss_index)
         for o in range(num_ossifiers-1):
             oss_index, num_ether = self.dict_oss[oss_index]
-            print("new oss index: ", oss_index)
-            ossifiers = self.O[oss_index]+self.ether*(num_ether+self.short_ossifier_distance)+ossifiers
+            #print("new oss index: ", oss_index)
+            ossifiers = self.O[oss_index]+self.ether*(num_ether+self.long_ossifier_distance)+ossifiers
         self.oss_index = oss_index
         return ossifiers
 
@@ -321,11 +363,14 @@ class Rule110Universality(Automaton):
             maxr = None
         return minl, maxr
 
-    def get_init_hidden_world(self):
+    def init_hidden_world(self):
         #computes the closest safe distance of the first ossifier, this depends on the length of the appendants and the first occurrence of Y + some margin for each tabe symbol
         r_tape_seq = self.init_tape[::-1]
         mask = [int(i =="Y") for i in r_tape_seq]
-        first_appendant_index = list(np.array(mask)*np.array([int(len(i)>0) for i in (self.cyclic_tag*len(self.init_tape))[:len(self.init_tape)]])).index(1) #finds the first instance of a non-empty appendant hitting a Y to determine the distance of the first batch of ossifiers
+        try:
+            first_appendant_index = list(np.array(mask)*np.array([int(len(i)>0) for i in (self.cyclic_tag*len(self.init_tape))[:len(self.init_tape)]])).index(1) #finds the first instance of a non-empty appendant hitting a Y to determine the distance of the first batch of ossifiers
+        except ValueError:
+            print("This is not an admissible cyclic tag since nothing will get appended to the tape")
         first_ossifier_distance = len(self.init_tape)*28+self.max_appendant_len*150*first_appendant_index+139
         self.short_ossifier_distance = 67
 
@@ -336,16 +381,21 @@ class Rule110Universality(Automaton):
         ossifiers = self.O[oss_index]+self.ether*first_ossifier_distance
         for _ in range(num_oss-1):
             oss_index, num_ether = self.dict_oss[oss_index]
-            print("new oss index: ", oss_index)
+            #print("new oss index: ", oss_index)
             ossifiers = self.O[oss_index]+self.ether*(num_ether+self.short_ossifier_distance)+ossifiers
 
+        oss_index, num_ether = self.dict_oss[oss_index]
+        ossifiers = self.O[oss_index]+self.ether*(num_ether+self.long_ossifier_distance)+ossifiers
+
         ossifiers = 3*self.ether+ossifiers
+        self.oss_index = oss_index
 
 
         #encode tape symbols        
-        tape_config, e_i = self.encode_tape()
-        self.last_e_glider_index = e_i
-        self.oss_index = oss_index
+        tape_config = self.encode_tape()
+        leader_index=2
+        tape_config+=4*self.ether+self.L[leader_index]
+        self.last_e_glider_index = (leader_index+18)%30
 
         tape_center = len(ossifiers)+len(tape_config)//2
         self.left_tape_end = len(ossifiers)
@@ -354,7 +404,7 @@ class Rule110Universality(Automaton):
         #encode cyclic tag system
         num_cyclic_tag = int(self.w//(self.total_num_of_symbols*600))+1
         print(f"appending {num_cyclic_tag} of tag systems")
-        cyclic_tag_config = self.encode_cyclic_tag(1)
+        cyclic_tag_config = self.encode_cyclic_tag(num_cyclic_tag)
         init_config = 3*self.ether+ossifiers+tape_config+cyclic_tag_config+3*self.ether
 
 
@@ -363,45 +413,63 @@ class Rule110Universality(Automaton):
         self.action_window = (len(ossifiers), len(ossifiers)+len(tape_config))
         
     def update_hidden_world(self):
-        str_fc = self.to_str(self.hidden_world.cpu().numpy())
-        l_raw_final_config = self.left_hard_crop(str_fc)
+        self.str_c = self.to_str(self.hidden_world.cpu().numpy())
+
+        #checking whether ossifiers are intact and cropping garbage gliders
+        l_raw_final_config = self.left_hard_crop(self.str_c)
         if not self.starts_with_ossifier(self.to_str(l_raw_final_config)): 
-            print("skipping update ", self.time)
-            return #the leftmost ossifier is just in the middle of a collision, better to skip this update and wait for the ossifier to stabilize
-        
-        
-        i = len(str_fc)-len(l_raw_final_config)
-        r_raw_final_config = self.right_crop  (str_fc)
-        j = len(r_raw_final_config)
+            #print("skipping update ", self.time)
+            return False #the leftmost ossifier is just in the middle of a collision, better to skip this update and wait for the ossifier to stabilize
 
-        l, r = self.get_tape_ends(str_fc)
-        if not l:
-            l = self.world_center
-            r = self.world_center
+        left_offset = len(self.str_c)-len(l_raw_final_config)
+        r_raw_final_config = self.right_crop(self.str_c)
+        right_offset = len(r_raw_final_config)
 
-        l = l-i
-     
-        cropped_center_index = self.world_center-i
+        
+        left_offset = len(self.str_c)-len(l_raw_final_config)  
+        cropped_center_index = self.world_center-left_offset
+
         cropped_config = self.right_crop(self.to_str(l_raw_final_config))
+        str_cropped_config = self.to_str(cropped_config)
 
-        if l < int(np.round(2.5*self.w)):
-            #prolonging config to the left
-            print("updating left ", self.time)
-            ossifiers = self.encode_ossifiers(self.min_appendant_len)
-            cropped_config = ossifiers+cropped_config
-            cropped_center_index+=len(ossifiers)
-            
-            
-        if j-r < int(np.round(2.5*self.w)):
-            # prolonging config to the right
-            print("updating right ", self.time)
+        #find the all raw leaders
+        rl = []
+        for s in self.strRL:
+            if s in self.str_c:
+                rl += [m.start() for m in re.finditer(s, self.str_c)]
+
+        
+        #checking whether there is enough raw leaders to the right and that there is enough space from world center to the right edge of the world
+        if len(rl) < 2 or right_offset-self.world_center < int(np.round(2.5*self.w)):
+            print("prolonging right raw leaders: ", len(rl))
+            print("prolonging right edge world", right_offset-self.world_center < int(np.round(2.5*self.w)))
             cyclic_tag_config = self.encode_cyclic_tag(1)
             cropped_config+=cyclic_tag_config
+        
 
-        cropped_config = int(self.h//7)*self.ether+cropped_config+int(self.h//7)*self.ether
+        ossifiers = []
+        for o in self.strO:
+            if o in str_cropped_config:
+                ossifiers += [m.start() for m in re.finditer(o, str_cropped_config)]
 
-        self.world_center = cropped_center_index+len(int(self.h//7)*self.ether)
-        self.hidden_world = torch.tensor(cropped_config, dtype=torch.int)
+        print("Number of ossifiers: ", len(ossifiers))
+
+
+        #checking whether there is enough ossifiers to the left and that there is enough space from world center to the left edge of the world
+        if len(ossifiers) < 2 or cropped_center_index < int(np.round(2.5*self.w)):
+            print("prolonging left ossifiers: ", len(ossifiers))
+            print("prolonging left edge world", cropped_center_index < int(np.round(2.5*self.w)))
+            ossifiers = self.encode_ossifiers(2)
+            cropped_config = ossifiers+cropped_config
+            cropped_center_index+=len(ossifiers)
+
+        old_center = self.world_center
+        cropped_config = int(self.update_interval//10)*self.ether+cropped_config+int(self.update_interval//10)*self.ether
+
+        self.world_center = cropped_center_index+len(int(self.update_interval//10)*self.ether)
+        self.hidden_world = torch.tensor(cropped_config, dtype=torch.int) 
+
+        return True
 
     def update_tape_position(self):
         str_fc = self.to_str(self.hidden_world.cpu().numpy())
@@ -446,7 +514,7 @@ class Rule110Universality(Automaton):
 
         
         # Write cyclic tag 
-        label_surface = self.font.render(f'Cyclic tag: {", ".join(self.cyclic_tag)}', True, self.label_color)
+        label_surface = self.font.render(f'Cyclic tag: {", ".join(self.cyclic_tag_text)}', True, self.label_color)
         label_rect = label_surface.get_rect(bottomright=(self.w-10, 0+self.text_size))
 
         padding = 5
@@ -459,7 +527,7 @@ class Rule110Universality(Automaton):
         pygame.draw.rect(state_view, (0, 0, 0), background_rect)
         state_view.blit(label_surface, label_rect)
 
-        label_surface = self.font.render(f'Cyclic tag: {", ".join(self.cyclic_tag)}', True, self.label_color)
+        label_surface = self.font.render(f'Cyclic tag: {", ".join(self.cyclic_tag_text)}', True, self.label_color)
         label_rect = label_surface.get_rect(bottomright=(self.w-10, 0+self.text_size))
 
         # Write init tape
@@ -477,81 +545,118 @@ class Rule110Universality(Automaton):
 
         return state_view
 
-    def coarse_grain(self, M):
-        rows, cols = M.shape
-        #print(f"Shape of M: {rows}x{cols}")
-        newM = M.clone()
 
-        #Match ether
+    def coarse_grain(self, M):
+        """
+        Eliminate ALL pattern loops using vectorized comparisons.
+        Should be significantly faster by avoiding loops over pattern lists.
+        """
+        start_total = time.time()
+        rows, cols = M.shape
+        
+        start_time = time.time()
+        newM = M.clone()
+        clone_time = time.time() - start_time
+
+        # ETHER - keep as is (only 1 pattern, no loop to optimize)
+        start_time = time.time()
         windows = M.unfold(1, self.ether_pattern_len, 1)
         matches = (windows == self.ether_pattern.view(1, 1, -1)).all(dim=2)
-        # Iterate over the rows with the given step
         for j in range(self.ether_pattern_len):
-            newM[:, j:cols-self.ether_pattern_len+j+1] = torch.where(matches & (newM[:, j:cols-self.ether_pattern_len+j+1] == 1), 2, newM[:, j:cols-self.ether_pattern_len+j+1])
-        
+            newM[:, j:cols-self.ether_pattern_len+j+1] = torch.where(
+                matches & (newM[:, j:cols-self.ether_pattern_len+j+1] == 1), 
+                2, 
+                newM[:, j:cols-self.ether_pattern_len+j+1]
+            )
+        ether_time = time.time() - start_time
 
-        #Match outer N components
-        Mroll = torch.roll(M, -115, 1)
-        windows1 = M.unfold(1, self.n_outer_pattern_len, 1)
-        windows2 = Mroll.unfold(1, self.n_outer_pattern_len, 1)
-        matches = torch.zeros(windows1.shape[0], windows1.shape[1], dtype=torch.bool)
-        for pattern1, pattern2 in self.N_outer_torch:
-            matches |= ((windows1 == pattern1.view(1, 1, -1)).all(dim=2) * (windows2 == pattern2.view(1, 1, -1)).all(dim=2))
-        # Iterate over the rows with the given step
-        offset = 130
-        for j in range(self.n_outer_pattern_len+offset):
-            newM[:, j:cols-self.n_outer_pattern_len-offset+j+1] = torch.where(matches[:,:-offset] & (newM[:, j:cols-self.n_outer_pattern_len-offset+j+1] <= 1), newM[:, j:cols-self.n_outer_pattern_len-offset+j+1]+3, newM[:, j:cols-self.n_outer_pattern_len-offset+j+1])
+        # N OUTER - VECTORIZED pattern comparison
+        start_time = time.time()
+        if len(self.N_outer_torch) > 0:
+            Mroll = torch.roll(M, -115, 1)
+            windows1 = M.unfold(1, self.n_outer_pattern_len, 1)
+            windows2 = Mroll.unfold(1, self.n_outer_pattern_len, 1)
+            
+            # Stack all patterns for vectorized comparison
+            patterns1 = torch.stack([p[0] for p in self.N_outer_torch])  # Shape: (num_patterns, pattern_len)
+            patterns2 = torch.stack([p[1] for p in self.N_outer_torch])
+            
+            # Vectorized comparison: compare windows against ALL patterns at once
+            # windows1: (rows, num_windows, pattern_len)
+            # patterns1: (num_patterns, pattern_len)
+            matches1 = (windows1.unsqueeze(2) == patterns1.unsqueeze(0).unsqueeze(0)).all(dim=3)  # (rows, num_windows, num_patterns)
+            matches2 = (windows2.unsqueeze(2) == patterns2.unsqueeze(0).unsqueeze(0)).all(dim=3)
+            
+            # Combine matches: any pattern matching gives True
+            matches = (matches1 & matches2).any(dim=2)  # (rows, num_windows)
+            
+            # Apply optimized coloring
+            offset = 130
+            if matches.shape[1] > offset:
+                effective_matches = matches[:, :-offset]
+                match_positions = torch.nonzero(effective_matches, as_tuple=False)
+                
+                for row_idx, col_idx in match_positions:
+                    start_col = col_idx.item()
+                    end_col = min(start_col + self.n_outer_pattern_len + offset, cols)
+                    region = newM[row_idx, start_col:end_col]
+                    mask = region <= 1
+                    newM[row_idx, start_col:end_col] = region + torch.where(mask, 3, 0)
+        n_outer_time = time.time() - start_time
 
+        # N MIDDLE - VECTORIZED pattern comparison
+        start_time = time.time()
+        if len(self.N_middle_torch) > 0:
+            windows = M.unfold(1, self.n_middle_pattern_len, 1)
+            
+            # Stack all N middle patterns
+            n_middle_patterns = torch.stack(self.N_middle_torch)  # Shape: (num_patterns, pattern_len)
+            
+            # Vectorized comparison against ALL patterns at once
+            # windows: (rows, num_windows, pattern_len)  
+            # n_middle_patterns: (num_patterns, pattern_len)
+            pattern_matches = (windows.unsqueeze(2) == n_middle_patterns.unsqueeze(0).unsqueeze(0)).all(dim=3)  # (rows, num_windows, num_patterns)
+            matches = pattern_matches.any(dim=2)  # (rows, num_windows) - True if ANY pattern matches
+            
+            # Apply optimized coloring
+            l_offset = 50
+            r_offset = 40
+            if matches.shape[1] > l_offset + r_offset:
+                effective_matches = matches[:, l_offset:-r_offset]
+                match_positions = torch.nonzero(effective_matches, as_tuple=False)
+                
+                for row_idx, col_idx in match_positions:
+                    start_col = col_idx.item()
+                    end_col = min(start_col + self.n_middle_pattern_len + l_offset + r_offset, cols)
+                    region = newM[row_idx, start_col:end_col]
+                    mask = region <= 1
+                    newM[row_idx, start_col:end_col] = region + torch.where(mask, 3, 0)
+        n_middle_time = time.time() - start_time
 
+        total_time = time.time() - start_total
         
-        #Match middle N components
-        windows = M.unfold(1, self.n_middle_pattern_len, 1)
-        matches = torch.zeros(windows.shape[0], windows.shape[1], dtype=torch.bool)
-        for pattern in self.N_middle_torch:
-            matches |= (windows == pattern).all(dim=2)
-        # Iterate over the rows with the given step
-        l_offset = 50
-        r_offset = 40
-        offset = l_offset+r_offset
-        for j in range(self.n_middle_pattern_len+offset):
-            newM[:, j:cols-self.n_middle_pattern_len-offset+j+1] = torch.where(matches[:,l_offset:-r_offset] & (newM[:, j:cols-self.n_middle_pattern_len-offset+j+1] <= 1), newM[:, j:cols-self.n_middle_pattern_len-offset+j+1]+3, newM[:, j:cols-self.n_middle_pattern_len-offset+j+1])
-        
-
-        #Match middle Y components
-        windows = M.unfold(1, self.y_middle_pattern_len, 1)
-        matches = torch.zeros(windows.shape[0], windows.shape[1], dtype=torch.bool)
-        for pattern in self.Y_middle_torch:
-            matches |= (windows == pattern).all(dim=2)
-
-        matches = matches & (newM[:, :cols-self.y_middle_pattern_len+1]<3)
-        # Iterate over the rows with the given step
-        l_offset = 50
-        r_offset = 40
-        offset = l_offset+r_offset
-        for j in range(self.y_middle_pattern_len+offset):
-            newM[:, j:cols-self.y_middle_pattern_len-offset+j+1] = torch.where(matches[:,l_offset:-r_offset] & (newM[:, j:cols-self.y_middle_pattern_len-offset+j+1] == 1), 5, newM[:, j:cols-self.y_middle_pattern_len-offset+j+1])
-        
-        
-        #Match outer Y components
-        Mroll = torch.roll(M, -135, 1)
-        windows1 = M.unfold(1, self.y_outer_pattern_len, 1)
-        windows2 = Mroll.unfold(1, self.y_outer_pattern_len, 1)
-        matches = torch.zeros(windows1.shape[0], windows1.shape[1], dtype=torch.bool)
-        for pattern1, pattern2 in self.Y_outer_torch:
-            matches |= ((windows1 == pattern1.view(1, 1, -1)).all(dim=2) * (windows2 == pattern2.view(1, 1, -1)).all(dim=2))
-        # Iterate over the rows with the given step
-        offset = 150
-        for j in range(self.y_outer_pattern_len+offset):
-            newM[:, j:cols-self.y_outer_pattern_len-offset+j+1] = torch.where(matches[:,:-offset] & (newM[:, j:cols-self.y_outer_pattern_len-offset+j+1] == 1), 5, newM[:, j:cols-self.y_outer_pattern_len-offset+j+1])
+        #print(f"=== COARSE GRAIN TIMING (No pattern loops) ===")
+        #print(f"Matrix size: {rows}x{cols}")
+        #print(f"Clone time:    {clone_time:.4f}s")
+        #print(f"Ether time:    {ether_time:.4f}s") 
+        #print(f"N outer time:  {n_outer_time:.4f}s")
+        #print(f"N middle time: {n_middle_time:.4f}s")
+        #print(f"TOTAL TIME:    {total_time:.4f}s")
+        #print(f"Speedup vs original: {0.45/total_time:.1f}x")
+        #print("=" * 50)
 
         return newM
-       
+
     def process_event(self, event, camera=None):
         """
             SET HEIGHT: 2000, WIDTH: 2500
-            N -> new random tape and cyclic tag
-            A -> jump left to the next tape symbol
-            D -> jump right to the next tape symbol
+            <-  move left
+            ->  move right
+            A   jump left to the next tape symbol
+                 (when red arrow appears)
+            D   jump right to the next tape symbol
+                 (when red arrow appears)
+            N   new random tape and cyclic tag
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_n):
@@ -620,42 +725,36 @@ class Rule110Universality(Automaton):
         """
             Resets the automaton to the initial state.
         """
-        self._worldmap = torch.zeros((3,self.h,self.w-1))
+        self.hidden_worldmap = torch.zeros((3,self.h,self.w-1))
+        self._worldmap = torch.zeros((3,self.h,self.w))
         self.time=0
 
         if(random):
             num_tape_symbols = np.random.randint(1, self.max_tape_symbols) # Pick a random number of tape symbols
             rand_tape = np.random.randint(0,2, num_tape_symbols)           # Pick random tape symbols
-            if 1 not in rand_tape:                                         # Make sure there is at least one 1 on the tape
+            if 1 not in rand_tape:                                         # Make sure there is at least one Y on the tape
                 index = np.random.randint(0, num_tape_symbols)
                 rand_tape[index] = 1
             
             self.init_tape = "".join(['Y' if i==1 else 'N' for i in rand_tape])
             self.generate_random_cyclic_tag_system()
-            self.get_init_hidden_world()
+            self.init_hidden_world()
             self.world = self.hidden_world[self.world_center-int(self.w//2):self.world_center+int(self.w//2)]
         else:
-            self.init_tape = 'YN'
-            self.cyclic_tag = ["YYYYNY"]
+            self.init_tape = 'YYNY'
+            self.cyclic_tag = ["YYYNNN", "NNNNYY", ""]
             self.init_cyclic_tag_data()
             #self.generate_random_cyclic_tag_system()
-            self.get_init_hidden_world()
+            self.init_hidden_world()
             self.world = self.hidden_world[self.world_center-int(self.w//2):self.world_center+int(self.w//2)]
-     
-    def draw(self):
-        # Draw should be called each step
-        # We update the _worldmap tensor with the current state of the automaton
-        # self._worldmap is a (3,H,W) tensor, which should be seen as an RGB image.
-        # self.world is a (W,) array, but we want to set a (3,W) array, so we should duplicate the wrold.
-        for i in range(self.render_size):
-            self._worldmap[:, (self.time-(self.render_size-i)) % self.h, :] = self.colors[self.worlds[i, self.offset:-self.offset-1]].T         
+           
             
     def step(self):
         """
             Steps the automaton one timestep, recording the state of the world in self.world.
         """
 
-
+        self.updated_rows = []
 
         # One way to do it (which is not parallized ):
 
@@ -667,21 +766,33 @@ class Rule110Universality(Automaton):
             self.world = self.hidden_world[self.world_center-int(self.w//2)-self.offset:self.world_center+int(self.w//2)+self.offset]
             self.worlds[i, :] = self.world
             self.time += 1
+
+
+        for i in range(self.render_size):
+            row_idx = (self.time - (self.render_size - i)) % self.h
+            self.updated_rows.append(row_idx)
+
         self.worlds = self.coarse_grain(self.worlds)
         self.update_tape_position()
 
-        if not self.time%(210*int(self.h//210)):
-            self.update_hidden_world()
+        update_interval = self.update_interval
 
+        if not self.time%(update_interval):
+            #print("size of hidden world: ", self.w, self.h, self.hidden_world.shape)
+            updated = self.update_hidden_world()
+            if updated:
+                update_interval = self.update_interval
+            else:
+                update_interval = 210
 
+    def draw(self):
+        # Draw should be called each step
+        # We update the _worldmap tensor with the current state of the automaton
+        # self._worldmap is a (3,H,W) tensor, which should be seen as an RGB image.
+        # self.world is a (W,) array, but we want to set a (3,W) array, so we should duplicate the wrold.
+        for i in range(self.render_size):
+            self.hidden_worldmap[:, (self.time-(self.render_size-i)) % self.h, :] = self.colors[self.worlds[i, self.offset:-self.offset-1]].T   
 
-
-
-"""
-TODO:
-- zjistit, kde je bottleneck a zrychlit program (asi pri kropovani a odsekavani garbage glideru)
-- kdyz uz budu trackovat (posledni_symbol_pasky, prvni_symbol_pasky) a muj center world bude mensi nez prvni symbol pasky, tak nabidnout velkou spiku doprava, abych mohla k prvnimu symbolu pasky poskocit
-- implementovat short raw leadera, ktery je nutny k repre prazdnych appendantu (pak budu muset zmenit, ze long distance bude mezi kazdymi dvema ossificatory!)
-"""
+        self._worldmap = self.hidden_worldmap
 
 
