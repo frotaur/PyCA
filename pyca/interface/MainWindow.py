@@ -8,6 +8,8 @@
 import pygame
 from importlib.resources import files
 
+import pygame_gui
+
 from pyca.interface import Camera, launch_video, print_screen, add_frame
 from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, Button, MultiToggle, Toggle
 from .utils.help_enum import HelpEnum
@@ -42,8 +44,9 @@ class MainWindow:
         self.text_f_size = 1./40
         self.title_f_size = 1./37
 
-        self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH)
-        self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=BASE_FONT_PATH)
+        # self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH)
+        # self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=BASE_FONT_PATH)
+        self.ui_manager =  pygame_gui.UIManager((self.sW, self.sH))
 
         programIcon = pygame.image.load(str(files(f'{__package__}.files') / 'icon.png'))
         pygame.display.set_icon(programIcon)
@@ -71,20 +74,20 @@ class MainWindow:
 
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
-        self.right_components = None
+        # self.right_components = None
         self.extra_components_pos = (0,0) 
-        self._generate_right_base_gui()
-        if(self.tablet_mode):
-            self.tablet_gui_components = None
-            self._generate_tablet_gui(start_position=self.extra_components_pos)
-        self._generate_auto_controls_title(start_position=self.extra_components_pos)
+        # self._generate_right_base_gui()
+        # if(self.tablet_mode):
+        #     self.tablet_gui_components = None
+        #     self._generate_tablet_gui(start_position=self.extra_components_pos)
+        # self._generate_auto_controls_title(start_position=self.extra_components_pos)
 
         # Load the initial automaton
         self.auto = self.load_automaton(self._initial_automaton)
 
         # Text labels for description, help and automaton controls
-        self.left_components = None
-        self._generate_and_place_left_texts()  
+        # self.left_components = None
+        # self._generate_and_place_left_texts()  
 
         
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
@@ -205,9 +208,9 @@ class MainWindow:
             else:
                 defaults = {}
             auto = AUTOMATAS[automaton_name]((self.H,self.W),**defaults, device=self.device)
-            auto.set_components_fract_pos(self.extra_components_pos)
+            # auto.set_components_fract_pos(self.extra_components_pos)
             
-            self.automaton_controls_title.visible = len(auto._components)>0 and self.display_help.right_pane
+            # self.automaton_controls_title.visible = len(auto._components)>0 and self.display_help.right_pane
 
             return auto
         else:
@@ -233,7 +236,7 @@ class MainWindow:
             self._base_events(event)
             self.auto._process_event_focus_check(event, self.camera)
             self.auto._process_gui_event(event)
-            self._gui_events(event)
+            # self._gui_events(event)
         
     def main_loop(self):
         """
@@ -265,8 +268,8 @@ class MainWindow:
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
 
-            self.auto.draw_components(self.screen)
-            self.draw_help()
+            # self.auto.draw_components(self.screen)
+            # self.draw_help()
 
 
             pygame.display.flip()
@@ -305,9 +308,9 @@ class MainWindow:
         """
             Handles the base events, which are not automaton-specific.
         """
-        if(not BaseComponent.get_focus_manager().should_process_event(event)):
-            print('do NOT process base event')
-            return
+        # if(not BaseComponent.get_focus_manager().should_process_event(event)):
+        #     print('do NOT process base event')
+        #     return
         
         if event.type == pygame.QUIT:
             self.running = False

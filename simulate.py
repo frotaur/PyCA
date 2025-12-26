@@ -21,7 +21,7 @@ def parse_args():
 
 if __name__ == '__main__':
     screen, world, device, tablet_mode = parse_args()
-    window = WindowBench(screen, world, device, tablet_mode=tablet_mode)
-
+    # window = WindowBench(screen, world, device, tablet_mode=tablet_mode)
+    window = MainWindow(screen, world, device, tablet_mode=tablet_mode)
     window.main_loop()
     
