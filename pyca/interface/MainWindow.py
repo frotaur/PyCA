@@ -75,6 +75,7 @@ class MainWindow:
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
         # self.right_components = None
+        self.manager = pygame_gui.UIManager((self.sW, self.sH))
         self.extra_components_pos = (0,0) 
         # self._generate_right_base_gui()
         # if(self.tablet_mode):

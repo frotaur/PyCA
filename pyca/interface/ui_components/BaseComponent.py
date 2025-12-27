@@ -14,33 +14,48 @@ class BaseComponent:
 
         return cls._global_focus_manager
 
-    def __init__(self,fract_position=(0,0), fract_size=(0.1,0.1), max_size=None):
+    def __init__(self,manager, container= None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
         Args:
-            fract_position (tuple): Fractional position in [0,1] of the component (x (widthloc), y (heighloc)).
-            fract_size (tuple): Fractional size in [0,1] of the component (height, width).
+            manager: pygame-gui UIManager instance.
+            container: parent UI window, if any. All relative quantities are relative to this container.
+            rel_pos (tuple): Fractional position in [0,1] of the component (x (widthloc), y (heighloc)).
+            rel_size (tuple): Fractional size in [0,1] of the component (height, width).
             max_size (tuple, optional): Maximum size for the component (height, width).
         """
-        self.sH, self.sW = None, None # Is set on draw
-        self.f_pos = fract_position
-        self.f_size = fract_size
+        self.manager = manager
+        self.sW, self.sH = self.manager.window_resolution
+
+        self.container = container
+        self.rel_pos = rel_pos
+        self.rel_size = rel_size
 
         self.max_size = max_size if max_size else (float('inf'), float('inf'))
 
         self.visible = True
 
     @property
+    def parent_size(self):
+        """
+        Returns the size of the parent container, or the window size if no container.
+        """
+        if(self.container is not None):
+            rect = self.container.get_relative_rect()
+            return (rect.height, rect.width)
+        else:
+            sW, sH = self.manager.window_resolution
+            return (sH, sW)
+
+    @property
     def size(self):
         """
         Returns the size of the component based on the screen size and fractional size.
         """
-        if(self.sH is None or self.sW is None):
-            print(f"Warning: screen size not set. Returning 0,0. in {self.__class__.__name__}")
-            return (0,0)
+        self.sH, self.sW = self.parent_size
     
-        return (min(int(self.sH * self.f_size[0]), self.max_size[0]), min(int(self.sW * self.f_size[1]), self.max_size[1]))
+        return (min(int(self.sH * self.rel_size[0]), self.max_size[0]), min(int(self.sW * self.rel_size[1]), self.max_size[1]))
 
     @property
     def h(self):
@@ -69,7 +84,7 @@ class BaseComponent:
             print(f"Warning: screen size not set. Returning 0,0. in {self.__class__.__name__}")
             return (0,0)
         
-        return (int(self.sW * self.f_pos[0]), int(self.sH * self.f_pos[1]))
+        return (int(self.sW * self.rel_pos[0]), int(self.sH * self.rel_pos[1]))
 
     @property
     def x(self):
