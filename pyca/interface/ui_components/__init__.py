@@ -3,7 +3,7 @@ from .TextLabel import TextLabel
 from .DropDown import DropDown
 from .SmartFont import SmartFont
 from .InputField import InputField, InputBox
-from .Button import Button
+from .OldButton import Button
 from .Toggle import Toggle
 from .Slider import Slider, LabeledSlider
 from .MultiToggle import MultiToggle

@@ -15,6 +15,8 @@ from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputFi
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
+from pyca.interface.ui_components.NewButton import Button as NewButton
+from pyca.interface.ui_components.BoxHolder import BoxHolder
 
 class MainWindow:
     """
@@ -46,7 +48,6 @@ class MainWindow:
 
         # self.font_text = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH)
         # self.font_title = SmartFont(fract_font_size=self.title_f_size, font_path=BASE_FONT_PATH)
-        self.ui_manager =  pygame_gui.UIManager((self.sW, self.sH))
 
         programIcon = pygame.image.load(str(files(f'{__package__}.files') / 'icon.png'))
         pygame.display.set_icon(programIcon)
@@ -70,26 +71,29 @@ class MainWindow:
         self.display_help = HelpEnum() # 'ALL' by default
         self.vid_writer=None
 
-        self._initial_automaton = "MaCELenia"
+        self._initial_automaton = "ElementaryCA"
 
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
         # self.right_components = None
-        self.manager = pygame_gui.UIManager((self.sW, self.sH))
+        self.manager = pygame_gui.UIManager(window_resolution=(self.sW, self.sH))
         self.extra_components_pos = (0,0) 
         # self._generate_right_base_gui()
         # if(self.tablet_mode):
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
         # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-
+        self.test_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.2,0.2), rel_size=(0.2,0.2), visible=True)
+        self.test_button = NewButton(text="Test", parent=self.test_box, manager=self.manager, rel_pos=(0.,0.), rel_size=(0.2,0.2))
+        self.test_button2 = NewButton(text="Test2", parent=self.test_box, manager=self.manager, rel_pos=(0.2,0.), rel_size=(0.2,0.2))
+        
+        self.manager.set_visual_debug_mode(True)
         # Load the initial automaton
         self.auto = self.load_automaton(self._initial_automaton)
 
         # Text labels for description, help and automaton controls
         # self.left_components = None
         # self._generate_and_place_left_texts()  
-
         
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
         """
@@ -235,16 +239,21 @@ class MainWindow:
 
         for event in pygame.event.get():
             self._base_events(event)
-            self.auto._process_event_focus_check(event, self.camera)
-            self.auto._process_gui_event(event)
+            if(self.test_button.handle_event(event)):
+                print("Test button pressed!")
+            # self.auto._process_event_focus_check(event, self.camera)
+            # self.auto._process_gui_event(event)
             # self._gui_events(event)
+            self.manager.process_events(event)
         
     def main_loop(self):
         """
             Runs the PyCA main loop.
         """
         while self.running:
+            time_delta = self.clock.tick(self.fps)/1000.0
             self.handle_events()
+            self.manager.update(time_delta)
 
             if(not self.stopped):
                 self.auto.step()
@@ -268,13 +277,16 @@ class MainWindow:
                 add_frame(self.vid_writer, world_surface)
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
-
+            
+            self.test_button._render()
+            self.test_box._render()
+            self.test_button2._render()
+            self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)
             # self.draw_help()
 
 
             pygame.display.flip()
-            self.clock.tick(self.fps)
             
         if(self.vid_writer is not None):
             self.vid_writer.release()
@@ -348,6 +360,7 @@ class MainWindow:
             self.sW, self.sH = event.w, event.h
             self.s_size = (self.sW, self.sH)
             self.camera.resize(self.sW, self.sH)
+            self.manager.set_window_resolution((self.sW, self.sH))
 
     def _gui_events(self,event):
         """
