@@ -83,11 +83,9 @@ class MainWindow:
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
         # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-        self.test_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.2,0.2), rel_size=(0.2,0.2), visible=True)
-        self.test_button = NewButton(text="Test", parent=self.test_box, manager=self.manager, rel_pos=(0.,0.), rel_size=(0.2,0.2))
-        self.test_button2 = NewButton(text="Test2", parent=self.test_box, manager=self.manager, rel_pos=(0.2,0.), rel_size=(0.2,0.2))
-        
-        self.manager.set_visual_debug_mode(True)
+        self.left_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22), visible=True)
+        self.right_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22), visible=True)
+
         # Load the initial automaton
         self.auto = self.load_automaton(self._initial_automaton)
 
@@ -239,8 +237,6 @@ class MainWindow:
 
         for event in pygame.event.get():
             self._base_events(event)
-            if(self.test_button.handle_event(event)):
-                print("Test button pressed!")
             # self.auto._process_event_focus_check(event, self.camera)
             # self.auto._process_gui_event(event)
             # self._gui_events(event)
@@ -278,9 +274,8 @@ class MainWindow:
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
             
-            self.test_button._render()
-            self.test_box._render()
-            self.test_button2._render()
+            self.right_box._render()
+            self.left_box._render()
             self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)
             # self.draw_help()

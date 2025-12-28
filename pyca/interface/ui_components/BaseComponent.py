@@ -61,8 +61,13 @@ class BaseComponent:
         Returns the size of the component based on parent size and fractional size.
         """
         pH, pW = self.parent_size
-    
-        return (min(int(pH * self.rel_size[0]), self.max_size[0]), min(int(pW * self.rel_size[1]), self.max_size[1]))
+        h = min(int(pH * self.rel_size[0]), self.max_size[0])
+        w = min(int(pW * self.rel_size[1]), self.max_size[1])
+        # for dynamic sizing in pygame-gui
+        h = h if h>0 else -1 
+        w = w if w>0 else -1
+        
+        return (h, w)
 
     @property
     def h(self):

@@ -47,7 +47,6 @@ class Button(BaseComponent):
         """
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == self.button:
-                print(f"Button '{self.text}' pressed.")
                 return True
         
         return False
