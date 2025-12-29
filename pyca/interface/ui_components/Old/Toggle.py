@@ -1,4 +1,4 @@
-from ..files import BASE_FONT_PATH
+from ...files import BASE_FONT_PATH
 from .OldButton import Button
 import pygame
 

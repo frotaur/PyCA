@@ -1,11 +1,11 @@
 from .BaseComponent import BaseComponent
-from .TextLabel import TextLabel
-from .DropDown import DropDown
-from .SmartFont import SmartFont
-from .InputField import InputField, InputBox
-from .OldButton import Button
-from .Toggle import Toggle
-from .Slider import Slider, LabeledSlider
-from .MultiToggle import MultiToggle
+from .Old.TextLabel import TextLabel
+from .Old.DropDown import DropDown
+from .Old.SmartFont import SmartFont
+from .Old.InputField import InputField, InputBox
+from .Old.OldButton import Button
+from .Old.Toggle import Toggle
+from .Old.Slider import Slider, LabeledSlider
+from .Old.MultiToggle import MultiToggle
 
 __all__ = ['BaseComponent', 'TextLabel', 'DropDown', 'SmartFont', 'InputField', 'InputBox', 'Button', 'Toggle', 'Slider', 'LabeledSlider', 'MultiToggle']

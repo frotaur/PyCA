@@ -2,7 +2,7 @@ import torch, torch.nn.functional as F
 import pygame
 import showtens
 
-from pyca.interface.ui_components.Slider import LabeledSlider
+from pyca.interface.ui_components.Old.Slider import LabeledSlider
 from .lenia import Lenia
 import random
 import math

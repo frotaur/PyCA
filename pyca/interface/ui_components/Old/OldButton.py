@@ -1,5 +1,5 @@
-from ..files import BASE_FONT_PATH
-from .BaseComponent import BaseComponent
+from ...files import BASE_FONT_PATH
+from ..BaseComponent import BaseComponent
 from .SmartFont import SmartFont
 import pygame
 

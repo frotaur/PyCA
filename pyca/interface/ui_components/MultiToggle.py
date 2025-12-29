@@ -1,110 +1,94 @@
-from ..files import BASE_FONT_PATH
-from .OldButton import Button
+import pygame_gui
 import pygame
+from .BaseComponent import BaseComponent
 
 
-class MultiToggle(Button):
-    def __init__(self, states, fract_position=(0,0), fract_size=(0.05,0.1), init_true=True,
-                 state_bg_colors=[(20, 20, 20)]*2,
-                 text_color=(230, 230, 230), font_path: str = BASE_FONT_PATH):
+class MultiToggle(BaseComponent):
+    """
+    Represents a multi-toggle button. It is a button that cycles through
+    multiple states each time it is pressed.
+    """
+
+    def __init__(self, states, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1),
+                 state_bg_colors=None, init_state_index=0):
         """
-        Initializes the toggle component.
+        Initializes the multi-toggle button component.
 
         Args:
-            states (list): A list of strings representing the text to display in each state.
-            fract_position (tuple): Fractional position in [0,1] of the component (x, y).
-            fract_size (tuple): Fractional size in [0,1] of the toggle.
-            init_true (bool): If True, the initial state is the first state. If False, initial state is the second state.
-            state_bg_colors (list): A list of background colors for each state in RGB format (default: dark grey for all).
-            text_color (tuple): Color of the text in RGB format.
-            font_path (str): File path to the font to be used.
+            states (list): List of strings representing the different states.
+            manager: pygame-gui UIManager instance.
+            parent: parent BaseComponent if any. All relative quantities are relative to this container.
+            rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
+            rel_size (tuple): Fractional size in [0,1] of the button.
+            state_bg_colors (list): List of RGB tuples for background colors for each state.
+            init_state_index (int): Initial state index.
         """
-        # Initialize with the first state
-        super().__init__(states[0], fract_position, fract_size,
-                         bg_color=state_bg_colors[0], text_color=text_color, font_path=font_path)
+        super().__init__(manager, parent, rel_pos, rel_size)
 
-        # Store toggle-specific attributes
         self.states = states
-        self.state_bg_colors = state_bg_colors
+        self.current_state_index = init_state_index
 
-        # Current state (index of the active state)
-        self.current_state_index = 0
+        if state_bg_colors is None:
+            # Default colors if none provided
+            self.state_bg_colors = [(200, 200, 200) for _ in states]
+        else:
+            if len(state_bg_colors) != len(states):
+                raise ValueError("Length of state_bg_colors must match length of states.")
+            self.state_bg_colors = state_bg_colors
 
-        # Update pressed colors for all states
-        self.pressed_colors = [
-            tuple(max(0, bg-30) for bg in color) for color in state_bg_colors
-        ]
+        self.state_bg_active_colors = [
+                    tuple(max(0, bg-30) for bg in color) for color in self.state_bg_colors
+                ]
+        
+        self.button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
+            text=self.states[self.current_state_index],
+            container=self.parent.container if self.parent is not None else None,
+            manager=self.manager)
+        
+        self._set_aspect()
 
-        # Update border colors for all states
-        self.border_colors = [
-            tuple(min(bg+30, 255) for bg in color) for color in state_bg_colors
-        ]
-        self.border_colors = [
-            tuple(min(bg+30, 255) for bg in color) for color in state_bg_colors
-        ]
+    def _set_aspect(self):
+        """
+        Sets the button color based on the current state.
+        """
+        self.button.set_text(self.states[self.current_state_index])
+        self.button.colours["normal_bg"] = self.state_bg_colors[self.current_state_index]
+        # self.button.colours["hovered_bg"] = col
+        self.button.colours["active_bg"] = self.state_bg_active_colors[self.current_state_index]
+        self.button.rebuild()
+    
+    def toggle_state(self):
+        """
+        Toggles to the next state and updates the button appearance.
+        """
+        self.current_state_index = (self.current_state_index + 1) % len(self.states)
 
         self._set_aspect()
     
-    def _set_aspect(self):
-        """
-        Sets the button's appearance based on the current state.
-        """
-        self.text = self.states[self.current_state_index]
-        self.bg_color = self.state_bg_colors[self.current_state_index]
-        self.pressed_color = self.pressed_colors[self.current_state_index]
-        self.border_color = self.border_colors[self.current_state_index]
-        
-    def toggle_state(self):
-        """
-        Toggles between the two states and updates the button appearance.
-        """
-        self.current_state_index = (self.current_state_index + 1) % len(self.states)
-        
-        self._set_aspect()
-        
-        # Re-render with new state
-        self.render()
-
     @property
     def value(self):
         """
-        Returns the current state as a string.
-        
-        Returns:
-            str: The text of the current state.
+        Returns the current state value.
         """
-        return self.states[self.current_state_index]    
-
-    @value.setter
-    def value(self, state:str):
-        """
-        Sets the current state, if state is valid
-        """
-        if state in self.states:
-            self.current_state_index = self.states.index(state)
-            self._set_aspect()
-        else:
-            raise ValueError(f"Invalid state: {state}. Valid states are: {self.states}")
-        
-        self.render()
+        return self.states[self.current_state_index]
     
+    @value.setter
+    def value(self, state):
+        """
+        Sets the current state to the specified value.
 
-    def handle_event(self, event: pygame.event.Event) -> bool:
-        """
-        Handles events for the toggle component. Overrides Button's handle_event
-        to add toggle functionality.
-        
         Args:
-            event (pygame.event.Event): The event to handle.
-        
-        Returns:
-            bool: True if the toggle was just clicked (state changed), False otherwise.
+            state (str): The state to set. Must be one of the defined states.
         """
-        # Call parent's handle_event to get click detection
-        was_clicked = super().handle_event(event)
+        if state not in self.states:
+            raise ValueError(f"State '{state}' is not a valid state.")
+        self.current_state_index = self.states.index(state)
+
+        self._set_aspect()
+    
+    def handle_event(self, event):
         
-        # If the button was clicked, toggle the state
-        if was_clicked:
+        if self.button.handle_event(event):
             self.toggle_state()
-        
-        return was_clicked
+            return True

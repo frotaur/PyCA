@@ -15,7 +15,7 @@ from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputFi
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
-from pyca.interface.ui_components.NewButton import Button as NewButton
+from pyca.interface.ui_components.Button import Button as NewButton
 from pyca.interface.ui_components.BoxHolder import BoxHolder
 
 class MainWindow:

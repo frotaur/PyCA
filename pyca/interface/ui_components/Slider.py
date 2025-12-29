@@ -1,149 +1,63 @@
 from .BaseComponent import BaseComponent
-from .SmartFont import SmartFont
-from .TextLabel import TextLabel
-from ..files import BASE_FONT_PATH
-import pygame
-
+import pygame, pygame_gui
+from pygame_gui.elements.ui_horizontal_slider import UIHorizontalSlider
 
 class Slider(BaseComponent):
     """
     A horizontal slider component with configurable min/max values and steps.
     """
     
-    def __init__(self, min_value=0, max_value=100, num_steps=100, initial_value=None,
-                 fract_position=(0, 0), fract_size=(0.05, 0.2), 
-                 bg_color=(50, 50, 50), slider_color=(100, 100, 100), 
-                 handle_color=(200, 200, 200)):
+    def __init__(self, min_value, max_value, manager, parent=None,rel_pos=(0, 0), rel_size=(0.05, 0.2), tick_size=1, initial_value=None
+                 ):
         """
         Initializes the slider component.
         
         Args:
-            min_value (float): Minimum value of the slider.
-            max_value (float): Maximum value of the slider.
-            num_steps (int): Number of discrete steps between min and max values.
-            initial_value (float, optional): Initial value. If None, defaults to min_value.
-            fract_position (tuple): Fractional position in [0,1] of the component (x, y).
-            fract_size (tuple): Fractional size in [0,1] of the slider (height, width).
-            bg_color (tuple): Background color of the slider track in RGB format.
-            slider_color (tuple): Color of the slider track in RGB format.
-            handle_color (tuple): Color of the slider handle in RGB format.
+            min_value (float or int): Minimum value of the slider.
+            max_value (float or int): Maximum value of the slider.
+            manager: pygame-gui UIManager instance.
+            parent: parent BaseComponent if any. All relative quantities are relative to this container.
+            tick_size (float or int): Step size between min and max values.
+            initial_value (float or int, optional): Initial value. If None, defaults to min_value.
+            rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
+            rel_size (tuple): Fractional size in [0,1] of the component (height, width).
         """
-        super().__init__(fract_position, fract_size)
-        
-        self.min_value = min_value
-        self.max_value = max_value
-        self.num_steps = num_steps
-        self.step_size = (max_value - min_value) / num_steps
+        super().__init__(manager, parent, rel_pos, rel_size)
+        self.tick_size = tick_size
         
         # Initialize value
         if initial_value is None:
             self._value = min_value
         else:
             self._value = max(min_value, min(max_value, initial_value))
-        
-        # Colors
-        self.bg_color = bg_color
-        self.slider_color = slider_color
-        self.handle_color = handle_color
-        self.border_color = tuple(min(bg + 30, 255) for bg in bg_color)
-        
-        # State
-        self.is_dragging = False
-        self.mouse_was_pressed_on_slider = False
-        self.drag_offset = 0
-        self.value_changed = False
-        self.previous_value = self._value
-        
-        # Rendered surfaces
-        self.slider_surface = None
-        self.slider_rect = None
-        self.handle_rect = None
-        
-        # Dimensions (as fractions of component size)
-        self.track_height_fraction = 0.3  # Height of the track relative to component height
-        self.handle_width_fraction = 0.1   # Width of handle relative to component width
-        self.handle_height_fraction = 0.8  # Height of handle relative to component height
+
+        self.slider = UIHorizontalSlider(
+            relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
+            start_value=self._value,
+            value_range=(min_value, max_value),
+            manager=self.manager,
+            container=self.parent.container if self.parent is not None else None,
+            click_increment=tick_size
+        )
     
     @property
     def value(self):
         """Get the current value of the slider."""
-        return self._value
+        return self.slider.get_current_value()
     
     @value.setter
     def value(self, new_value):
         """Set the value of the slider."""
-        self._value = max(self.min_value, min(self.max_value, new_value))
-        if hasattr(self, 'slider_surface') and self.slider_surface:
-            self.render()
-    
-    def _value_to_position(self, value):
-        """Convert a value to x position on the slider track."""
-        if self.max_value == self.min_value:
-            return 0
-        
-        normalized = (value - self.min_value) / (self.max_value - self.min_value)
-        handle_width = int(self.w * self.handle_width_fraction)
-        usable_width = self.w - handle_width
-        return int(normalized * usable_width)
-    
-    def _position_to_value(self, x_pos):
-        """Convert x position on the slider track to a value."""
-        handle_width = int(self.w * self.handle_width_fraction)
-        usable_width = self.w - handle_width
-        
-        if usable_width <= 0:
-            return self.min_value
-        
-        # Clamp position to valid range
-        x_pos = max(0, min(usable_width, x_pos))
-        
-        normalized = x_pos / usable_width
-        raw_value = self.min_value + normalized * (self.max_value - self.min_value)
-        
-        # Snap to nearest step
-        step_index = round((raw_value - self.min_value) / self.step_size)
-        step_index = max(0, min(self.num_steps, step_index))
-        
-        return self.min_value + step_index * self.step_size
-    
+        self.slider.set_current_value(new_value)
+
     def render(self):
         """
         Renders the slider component.
         """
-        # Create slider surface
-        self.slider_surface = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-        self.slider_rect = pygame.Rect(self.x, self.y, self.w, self.h)
-        
-        # Draw background
-        self.slider_surface.fill(self.bg_color)
-        
-        # Draw slider track
-        track_height = max(2, int(self.h * self.track_height_fraction))
-        track_y = (self.h - track_height) // 2
-        track_rect = pygame.Rect(0, track_y, self.w, track_height)
-        pygame.draw.rect(self.slider_surface, self.slider_color, track_rect)
-        pygame.draw.rect(self.slider_surface, self.border_color, track_rect, 1)
-        
-        # Draw handle
-        handle_width = max(8, int(self.w * self.handle_width_fraction))
-        handle_height = max(8, int(self.h * self.handle_height_fraction))
-        handle_x = self._value_to_position(self._value)
-        handle_y = (self.h - handle_height) // 2
-        
-        self.handle_rect = pygame.Rect(handle_x, handle_y, handle_width, handle_height)
-        pygame.draw.rect(self.slider_surface, self.handle_color, self.handle_rect)
-        pygame.draw.rect(self.slider_surface, self.border_color, self.handle_rect, 1)
-    
-    def draw(self, screen: pygame.Surface) -> pygame.Surface:
-        """
-        Draws the slider component to the screen.
-        """        
-        if self.slider_surface:
-            screen.blit(self.slider_surface, (self.x, self.y))
-        
-        return screen
+        self.slider.set_relative_position((self.x, self.y))
+        self.slider.set_dimensions((self.w, self.h))
 
-    def handle_event(self, event: pygame.event.Event, parent_mouse_pos=None) -> bool:
+    def handle_event(self, event: pygame.event.Event) -> bool:
         """
         Handles events for the slider component.
         
@@ -151,62 +65,12 @@ class Slider(BaseComponent):
             event (pygame.event.Event): The event to handle.
         
         Returns:
-            bool: True if the slider value changed (on mouse release), False otherwise.
+            bool: True if the slider value changed
         """
-        super().handle_event(event, parent_mouse_pos)
-        self.value_changed = False
-        rerender = False
-        
-        if not self.slider_surface:
-            return False  # No surface means not rendered yet
-        
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left click
-                mouse_pos = self.get_mouse_pos(event, parent_mouse_pos)
-                # Check if clicked on slider area
-                if (0 <= mouse_pos[0] <= self.w and 0 <= mouse_pos[1] <= self.h):
-                    self.is_dragging = True
-                    self.mouse_was_pressed_on_slider = True
-                    
-                    # Calculate drag offset if clicked on handle
-                    if self.handle_rect and self.handle_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
-                        self.drag_offset = mouse_pos[0] - self.handle_rect.x
-                    else:
-                        # Clicked elsewhere on track, move handle there
-                        self.drag_offset = self.handle_rect.width // 2
-                        new_pos = mouse_pos[0] - self.drag_offset
-                        self._value = self._position_to_value(new_pos)
-                        rerender = True
-        
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1 and self.is_dragging:  # Left click release
-                self.is_dragging = False
-                
-                # Check if value actually changed since drag started
-                if abs(self._value - self.previous_value) > 1e-10:
-                    self.value_changed = True
-                
-                self.previous_value = self._value
-                self.mouse_was_pressed_on_slider = False
-        
-        elif event.type == pygame.MOUSEMOTION:
-            if self.is_dragging and self.mouse_was_pressed_on_slider:
-                mouse_pos = self.get_mouse_pos(event, parent_mouse_pos)
-                
-                # Update slider position
-                new_pos = mouse_pos[0] - self.drag_offset
-                old_value = self._value
-                self._value = self._position_to_value(new_pos)
-                
-                # Only rerender if value actually changed
-                if abs(self._value - old_value) > 1e-10:
-                    rerender = True
-        
-        if rerender:
-            self.render()
-        
-        return self.value_changed
-
+        if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
+            if event.ui_element == self.slider:
+                return True
+        return False
 
 class LabeledSlider(BaseComponent):
     """
