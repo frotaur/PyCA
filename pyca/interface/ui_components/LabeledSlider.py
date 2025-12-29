@@ -26,7 +26,7 @@ class LabeledSlider(BaseComponent):
         """
         super().__init__(manager, parent, rel_pos, rel_size)
 
-        self.component = BoxHolder(
+        self.holder = BoxHolder(
             manager=self.manager,
             parent=parent,
             rel_pos=rel_pos,
@@ -46,7 +46,7 @@ class LabeledSlider(BaseComponent):
             self.title_label = TextLabel(
                 text=title,
                 manager=manager,
-                parent=self.component,
+                parent=self.holder,
                 rel_pos=(0, 0),
                 rel_size=(title_height_fraction, 1.0)
             )
@@ -55,7 +55,7 @@ class LabeledSlider(BaseComponent):
             min_value=min_value,
             max_value=max_value,
             manager=manager,
-            parent=self.component,
+            parent=self.holder,
             rel_pos=slider_pos,
             rel_size=slider_size,
             tick_size=tick_size,
@@ -64,10 +64,11 @@ class LabeledSlider(BaseComponent):
         self.value_label = TextLabel(
             text=str(self.slider.value),
             manager=manager,
-            parent=self.component,
+            parent=self.holder,
             rel_pos=label_pos,
             rel_size=label_size)
-    
+
+        self.register_main_component(self.holder)
     @property
     def value(self):
         """

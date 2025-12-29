@@ -6,7 +6,7 @@ from pyca.interface.ui_components.Old.Slider import LabeledSlider
 from .lenia import Lenia
 import random
 import math
-from pyca.interface import Toggle, Slider
+from pyca.interface import MultiToggle, Slider
 
 class MaCELenia(Lenia):
     """

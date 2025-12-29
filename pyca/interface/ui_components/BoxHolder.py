@@ -27,7 +27,8 @@ class BoxHolder(BaseComponent):
         else:
             self.box = UIPanel(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
                                      manager=self.manager)
-    
+        self.register_main_component(self.box)
+
     @property
     def container(self):
         """
@@ -39,8 +40,6 @@ class BoxHolder(BaseComponent):
         """
         Renders the BoxHolder component with correct positioning and size.
         """
-        super().render() 
-
         # Update window position and size
         self.box.set_relative_position((self.x, self.y))
         self.box.set_dimensions((self.w, self.h))

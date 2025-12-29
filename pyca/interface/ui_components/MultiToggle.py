@@ -47,6 +47,7 @@ class MultiToggle(BaseComponent):
             manager=self.manager)
         
         self._set_aspect()
+        self.register_main_component(self.button)
 
     def _set_aspect(self):
         """

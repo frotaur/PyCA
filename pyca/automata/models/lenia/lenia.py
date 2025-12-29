@@ -8,7 +8,7 @@ import random, pygame
 from ...automaton import Automaton
 from pathlib import Path
 from copy import deepcopy
-from pyca.interface import Toggle, Button
+from pyca.interface import MultiToggle, Button
 
 class Lenia(DevModule, Automaton):
     """
@@ -127,9 +127,9 @@ class Lenia(DevModule, Automaton):
         self.register_component(self.random_rule)
         self.wipe_button = Button('Wipe State')
         self.register_component(self.wipe_button)
-        self.toggle_rand_type = Toggle('Smart Random Rule', 'Uniform Random Rule')
+        self.toggle_rand_type = MultiToggle('Smart Random Rule', 'Uniform Random Rule')
         self.register_component(self.toggle_rand_type)
-        self.toggle_add_remove = Toggle('Click to Add', 'Click to Remove')
+        self.toggle_add_remove = MultiToggle('Click to Add', 'Click to Remove')
         self.register_component(self.toggle_add_remove)
         
 

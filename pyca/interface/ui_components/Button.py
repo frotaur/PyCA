@@ -26,7 +26,8 @@ class Button(BaseComponent):
                                text=self.text,
                                container = self.parent.container if self.parent is not None else None,
                                manager=self.manager)
-    
+
+        self.register_main_component(self.button)
     def render(self):
         """
         Renders the button component with correct positioning and size.

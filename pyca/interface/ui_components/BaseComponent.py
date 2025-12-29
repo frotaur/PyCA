@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import pygame
+from pygame_gui.core.ui_element import UIElement
 
 class BaseComponent:
     """
@@ -27,12 +30,24 @@ class BaseComponent:
 
         self.visible = True
 
+        self.main_component = None
+    
+    def register_main_component(self, component: UIElement | 'BaseComponent'):
+        """
+        Registers the main component. Can be a pygame-gui UIElement (for core components) 
+        or another BaseComponent (for composite components).
+        """
+        if isinstance(component, BaseComponent):
+            self.main_component = component.main_component
+        else:
+            self.main_component = component
+
     @property
     def container(self):
         """
         Return the container of the component itself (not the parent!).
         """
-        raise NotImplementedError("Components must give access to the container of the main element!")
+        return self.main_component.get_container()
     
     @property
     def parent_size(self):
@@ -177,53 +192,13 @@ class BaseComponent:
             bool: True if some value of the component changed, False otherwise.
         """
         return False
-    
-
-        
-    # def get_mouse_pos(self, event, parent_mouse_pos):
-    #     """
-    #     Converts a mouse position in 'parent' coordinates to local component coordinates.
-        
-    #     Args:
-    #         mouse_pos (tuple): Mouse position in 'parent' coordinates.
-    #     """
-    #     if(parent_mouse_pos is None):
-    #         parent_mouse_pos = event.pos if hasattr(event, 'pos') else None
-        
-    #     return (parent_mouse_pos[0]-self.x, parent_mouse_pos[1]-self.y) if parent_mouse_pos is not None else None
-
-    # def request_keyboard_focus(self):
-    #     """
-    #     Requests keyboard focus for this component.
-    #     """
-    #     self.get_focus_manager().request_keyboard_focus(self)
-    
-    # def release_keyboard_focus(self):
-    #     """
-    #     Releases keyboard focus for this component.
-    #     """
-    #     self.get_focus_manager().release_keyboard_focus(self)
-    
-    # def am_focused(self):
-    #     """
-    #     Returns True if this component is currently focused, False otherwise.
-    #     """
-    #     return self.get_focus_manager().am_focused(self)
-
-    # def on_focus_lost(self):
-    #     """
-    #     Called when the component loses focus. Can be overridden in subclasses.
-    #     """
-    #     pass
-
-    # def on_focus_gained(self):
-    #     """
-    #     Called when the component gains focus. Can be overridden in subclasses.
-    #     """
-    #     pass
 
     def toggle_visibility(self):
         """
         Toggles the visibility state of the component.
         """
         self.visible = not self.visible
+        if self.visible:
+            self.main_component.show()
+        else:
+            self.main_component.hide()

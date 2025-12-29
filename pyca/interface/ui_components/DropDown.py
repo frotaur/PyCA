@@ -33,6 +33,8 @@ class DropDown(BaseComponent):
                                        container = self.parent.container if self.parent is not None else None,
                                        manager=self.manager)
 
+        self.register_main_component(self.dropdown)
+        
     def handle_event(self, event):
         """
         Handles pygame events for the dropdown.

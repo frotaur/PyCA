@@ -4,7 +4,7 @@ from pygame_gui.elements.ui_label import UILabel
 
 class TextLabel(BaseComponent):
     """
-    Represents a text label in the UI.
+    Represents a text label (single line) in the UI.
     """
 
     def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.1)):
@@ -24,7 +24,9 @@ class TextLabel(BaseComponent):
         self.textlabel = UILabel(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h), manager=self.manager,
                                  text=text,
                                  container = self.parent.container if self.parent is not None else None)
-    
+
+        self.register_main_component(self.textlabel)
+
     @property
     def text(self):
         """
@@ -44,6 +46,7 @@ class TextLabel(BaseComponent):
         Renders the text with correct font size and height/width.
         """
         self.textlabel.set_relative_position((self.x, self.y))
+        print('LABEL DIMS SET TO:', self.w, self.h)
         self.textlabel.set_dimensions((self.w, self.h))
 
 

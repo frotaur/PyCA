@@ -2,7 +2,7 @@ from ..automaton import Automaton
 import torch, pygame
 import torch.nn.functional as F
 import colorsys
-from ...interface.ui_components import Button,Toggle, InputField
+from ...interface.ui_components import Button,MultiToggle, InputField
 
 class CA2D(Automaton):
     """
@@ -47,7 +47,7 @@ the sum of the values of its neighbors.
             text_color=(230, 230, 230),
         )
         self.register_component(self.reset_button)
-        self.toggle_init = Toggle(state1="Init: Dot", state2="Init: Noise", init_true=self.dot, fract_position=(0, 0.12), fract_size=(0.05, 0.1),
+        self.toggle_init = MultiToggle(state1="Init: Dot", state2="Init: Noise", init_true=self.dot, fract_position=(0, 0.12), fract_size=(0.05, 0.1),
                                   state1_bg_color=(100, 100, 100), state2_bg_color=(20, 20, 80))
         
         self.register_component(self.toggle_init)

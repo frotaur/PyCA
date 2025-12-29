@@ -11,12 +11,10 @@ from importlib.resources import files
 import pygame_gui
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
-from .ui_components import BaseComponent,SmartFont, TextLabel, DropDown, InputField, Button, MultiToggle, Toggle
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
-from pyca.interface.ui_components.Button import Button as NewButton
-from pyca.interface.ui_components.BoxHolder import BoxHolder
+from .ui_components import VertContainer, Button, TextLabel, InputField, DropDown, TextBox
 
 class MainWindow:
     """
@@ -78,16 +76,32 @@ class MainWindow:
         # self.right_components = None
         self.manager = pygame_gui.UIManager(window_resolution=(self.sW, self.sH))
         self.extra_components_pos = (0,0) 
+        # Load the initial automaton
+        self.auto = self.load_automaton(self._initial_automaton)
         # self._generate_right_base_gui()
         # if(self.tablet_mode):
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
         # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-        self.left_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22), visible=True)
-        self.right_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22), visible=True)
+        self.left_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22))
+        self.automaton_name = TextLabel(self.auto.name(),manager=self.manager, parent=self.left_box,rel_pos=(0,0), rel_size=(-1,1.))
+        auto_desc, auto_help = self.auto.get_help()
+        print('AUTO DESC:', auto_desc)
+        self.automaton_text = TextLabel(auto_desc.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
+        controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.))
+        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
+        automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.))  
+        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
+        self.left_box.add_component(self.automaton_name)
+        self.left_box.add_component(self.automaton_text)
+        self.left_box.add_component(controls_title)
+        self.left_box.add_component(controls)
+        self.left_box.add_component(automaton_help_title)
+        self.left_box.add_component(self.automaton_help)
+        controls.main_component.set_text_scale(0.2)
+        self.right_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))
 
-        # Load the initial automaton
-        self.auto = self.load_automaton(self._initial_automaton)
+
 
         # Text labels for description, help and automaton controls
         # self.left_components = None
@@ -98,60 +112,62 @@ class MainWindow:
             Generates the tablet-mode GUI components, which are buttons for play/pause,
             step, reset, and a dropdown for automaton selection.
         """
-        H_SPACING = 0.007
-        W_SPACING = 0.01
-        BUTTONS_SIZE = (0.05,0.05)
-        next_pos = start_position
-        self.play_pause = Toggle(state1="Run", state2="Stop", fract_position=next_pos, fract_size=BUTTONS_SIZE)
-        next_pos = (next_pos[0]+BUTTONS_SIZE[1]+W_SPACING, next_pos[1])
-        self.step = Button(text="Step", fract_position=next_pos, fract_size=BUTTONS_SIZE)
-        next_pos = (next_pos[0]+BUTTONS_SIZE[1]+W_SPACING, next_pos[1])
-        self.hide_show = MultiToggle(states=["Hide Some", "Hide All", "Show"], fract_position=next_pos, fract_size=BUTTONS_SIZE,
-                       state_bg_colors=[(100, 100, 100), (20, 20, 80), (80, 20, 20)])
-        # For now, cam reset not needed as we can't move the camera in tablet mode
-        # self.cam_reset = Button(text="Center", fract_position=next_pos, fract_size=BUTTONS_SIZE)
-        next_pos = (start_position[0], next_pos[1]+BUTTONS_SIZE[0]+H_SPACING)
-        self.tablet_gui_components = [
-            self.play_pause,
-            self.step,
-            self.hide_show
-        ]
+        pass
+        # H_SPACING = 0.007
+        # W_SPACING = 0.01
+        # BUTTONS_SIZE = (0.05,0.05)
+        # next_pos = start_position
+        # self.play_pause = Toggle(state1="Run", state2="Stop", fract_position=next_pos, fract_size=BUTTONS_SIZE)
+        # next_pos = (next_pos[0]+BUTTONS_SIZE[1]+W_SPACING, next_pos[1])
+        # self.step = Button(text="Step", fract_position=next_pos, fract_size=BUTTONS_SIZE)
+        # next_pos = (next_pos[0]+BUTTONS_SIZE[1]+W_SPACING, next_pos[1])
+        # self.hide_show = MultiToggle(states=["Hide Some", "Hide All", "Show"], fract_position=next_pos, fract_size=BUTTONS_SIZE,
+        #                state_bg_colors=[(100, 100, 100), (20, 20, 80), (80, 20, 20)])
+        # # For now, cam reset not needed as we can't move the camera in tablet mode
+        # # self.cam_reset = Button(text="Center", fract_position=next_pos, fract_size=BUTTONS_SIZE)
+        # next_pos = (start_position[0], next_pos[1]+BUTTONS_SIZE[0]+H_SPACING)
+        # self.tablet_gui_components = [
+        #     self.play_pause,
+        #     self.step,
+        #     self.hide_show
+        # ]
 
-        self.extra_components_pos = (next_pos[0], next_pos[1])
+        # self.extra_components_pos = (next_pos[0], next_pos[1])
     
     def _generate_right_base_gui(self):
         """
             Generates the base GUI which go on the right side of the window
         """
-        # FPS live label
-        fps_font = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH, base_sH=self.sH, 
-                             max_font_size=16, min_font_size=10)
-        self.fps_label = TextLabel(f"FPS: {self.fps}", fract_position=(0.94, 0.01), fract_width=0.3, font=fps_font, color=(230, 120, 120))
-        # Dropdown for automaton selection
-        drop_size = (0.05, 0.17)  # Fractional size of the dropdown
-        drop_pos = (1-drop_size[1]-0.015, 1-drop_size[0]-0.015)  # Position at the bottom right
-        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=drop_pos, fract_size=drop_size,open_upward=True)
-        self.automaton_dropdown.selected = self._initial_automaton
+        pass
+        # # FPS live label
+        # fps_font = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH, base_sH=self.sH, 
+        #                      max_font_size=16, min_font_size=10)
+        # self.fps_label = TextLabel(f"FPS: {self.fps}", fract_position=(0.94, 0.01), fract_width=0.3, font=fps_font, color=(230, 120, 120))
+        # # Dropdown for automaton selection
+        # drop_size = (0.05, 0.17)  # Fractional size of the dropdown
+        # drop_pos = (1-drop_size[1]-0.015, 1-drop_size[0]-0.015)  # Position at the bottom right
+        # self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=drop_pos, fract_size=drop_size,open_upward=True)
+        # self.automaton_dropdown.selected = self._initial_automaton
 
-        # Input boxes for FPS, Width and Height
-        fps_size = (0.07, 0.04)
-        boxes_size = (0.07, 0.06)
-        spacing = 7/1000
-        boxes_pos = (1.-fps_size[1]-3*spacing-boxes_size[1]*2, 0.05)
+        # # Input boxes for FPS, Width and Height
+        # fps_size = (0.07, 0.04)
+        # boxes_size = (0.07, 0.06)
+        # spacing = 7/1000
+        # boxes_pos = (1.-fps_size[1]-3*spacing-boxes_size[1]*2, 0.05)
 
-        self.fps_box = InputField(fract_position=(boxes_pos[0], boxes_pos[1]), fract_size=fps_size, label="FPS",
-                                 init_text=str(self.fps), allowed_chars=lambda c: c.isdigit(), max_length=3,
-                                 font_path=BASE_FONT_PATH)
-        self.width_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+spacing, boxes_pos[1]), fract_size=boxes_size, label="Width",
-                                    init_text=str(self.W), allowed_chars=lambda c: c.isdigit(), max_length= 4,
-                                    font_path=BASE_FONT_PATH)
-        self.height_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+boxes_size[1]+2*spacing, boxes_pos[1]), fract_size=boxes_size, label="Height",
-                                     init_text=str(self.H), allowed_chars=lambda c: c.isdigit(), max_length=4,
-                                     font_path=BASE_FONT_PATH)
+        # self.fps_box = InputField(fract_position=(boxes_pos[0], boxes_pos[1]), fract_size=fps_size, label="FPS",
+        #                          init_text=str(self.fps), allowed_chars=lambda c: c.isdigit(), max_length=3,
+        #                          font_path=BASE_FONT_PATH)
+        # self.width_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+spacing, boxes_pos[1]), fract_size=boxes_size, label="Width",
+        #                             init_text=str(self.W), allowed_chars=lambda c: c.isdigit(), max_length= 4,
+        #                             font_path=BASE_FONT_PATH)
+        # self.height_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+boxes_size[1]+2*spacing, boxes_pos[1]), fract_size=boxes_size, label="Height",
+        #                              init_text=str(self.H), allowed_chars=lambda c: c.isdigit(), max_length=4,
+        #                              font_path=BASE_FONT_PATH)
 
-        self.extra_components_pos = (boxes_pos[0], boxes_pos[1]+boxes_size[0]+2*spacing)
+        # self.extra_components_pos = (boxes_pos[0], boxes_pos[1]+boxes_size[0]+2*spacing)
 
-        self.right_components = [self.fps_label, self.fps_box, self.width_box, self.height_box, self.automaton_dropdown]
+        # self.right_components = [self.fps_label, self.fps_box, self.width_box, self.height_box, self.automaton_dropdown]
 
     def _generate_auto_controls_title(self, start_position):
         self.automaton_controls_title = TextLabel("Automaton controls :", fract_position=start_position, fract_width=0.2, font=self.font_title, color=(230, 89, 89), bg_color=(0,0,0,150), h_margin=0.2)
@@ -276,6 +292,7 @@ class MainWindow:
             
             self.right_box._render()
             self.left_box._render()
+            self.automaton_text._render()
             self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)
             # self.draw_help()
