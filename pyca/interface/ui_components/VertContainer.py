@@ -34,11 +34,7 @@ class VertContainer(BaseComponent):
         self.components = []
 
         self.register_main_component(self.v_holder)
-    
-    def render(self):
-        self.v_holder._render()
-        for comp in self.components:
-            comp._render()
+
     
     def add_component(self, component: BaseComponent):
         """
@@ -49,15 +45,15 @@ class VertContainer(BaseComponent):
             component (BaseComponent): The component to add.
         """
         if len(self.components) >0 :
-            last_comp = self.components[-1].main_component
-            component.main_component.set_anchors({
+            last_el = self.components[-1].main_element
+            component.main_element.set_anchors({
                 'top': 'top',
-                'top_target': last_comp,
+                'top_target': last_el,
                 'centerx': 'centerx'
             })
             component.rel_pos = (0, self.padding) # Relative to last component
         else:
-            component.main_component.set_anchors({
+            component.main_element.set_anchors({
                 'top': 'top',
                 'centerx': 'centerx'
             })

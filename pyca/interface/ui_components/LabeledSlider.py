@@ -87,13 +87,13 @@ class LabeledSlider(BaseComponent):
         self.slider.value = new_value
         self.value_label.text = str(new_value)
     
-    def render(self):
-        # In an ideal world, a BaseComponent would render its children automatically
-        self.slider.render()
-        self.value_label.render()
-        if(self.title_label is not None):
-            self.title_label.render()
-        self.component.render()
+    # def render(self):
+    #     # In an ideal world, a BaseComponent would render its children automatically
+    #     self.slider.render()
+    #     self.value_label.render()
+    #     if(self.title_label is not None):
+    #         self.title_label.render()
+    #     self.component.render()
     
     def handle_event(self, event):
         """

@@ -8,7 +8,7 @@ class BaseComponent:
     Base class for UI components in the PyCA interface.
     """
 
-    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
+    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), font_rel_size=0.05, max_size=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -17,6 +17,8 @@ class BaseComponent:
             container: parent UI window, if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x (widthloc), y (heighloc)).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width).
+            font_rel_size (float): Relative font size for the component. It is ALWAYS relative to the screen height,
+                to make it easier to have consistent font sizes across components.
             max_size (tuple, optional): Maximum size for the component (height, width).
         """
         self.manager = manager
@@ -24,30 +26,110 @@ class BaseComponent:
 
         self.parent = parent
 
+        if(self.parent is not None):
+            self.parent._register_child_component(self)
+
         self.rel_pos = rel_pos
         self.rel_size = rel_size
         self.max_size = max_size if max_size else (float('inf'), float('inf'))
 
         self.visible = True
 
-        self.main_component = None
-    
+        self.main_element = None
+        self.main_base_component = None
+
+        self.font_rel_size = font_rel_size
+        self.font_abs_size = None
+
+        self._set_absolute_font_size()
+
+        self.child_components = []
+
     def register_main_component(self, component: UIElement | 'BaseComponent'):
         """
-        Registers the main component. Can be a pygame-gui UIElement (for core components) 
-        or another BaseComponent (for composite components).
+        Registers the main component. self.main_component will always be a pygame-gui UIElement,
+         though it can be registered by passing a BaseComponent. 
+
+        Args:
+            component (UIElement | BaseComponent): The main component to register.
         """
         if isinstance(component, BaseComponent):
-            self.main_component = component.main_component
+            self.main_element = component.main_element
+            self.main_base_component = component
         else:
-            self.main_component = component
+            self.main_element = component
+            self.main_base_component = None
+
+    def _set_absolute_font_size(self):
+        """
+        Sets the absolute font size of the component based on the relative font size and screen height.
+        """
+        self.font_abs_size = int(self.font_rel_size * self.sH)
+        
+    def _register_child_component(self, component: 'BaseComponent'):
+        """
+        Registers a child component. Used for composite components.
+        """
+        self.child_components.append(component)
+
+    def get_font(self):
+        """
+        Returns a dictionary with the pygame-gui font and the underlying pygame font.
+
+        Returns:
+            dict: {'font': pygame-gui font, 'pygame_font': pygame font}
+        """
+        if(not hasattr(self.main_element, 'font')):
+            return None
+        
+        return {'font': self.main_element.font, 'pygame_font': self.main_element.font._GUIFontPygame__internal_font}
+    
+    def set_font_size(self, size: int):
+        """
+        Sets the font size of the component.
+
+        Args:
+            size (int): The new font size.
+        """
+        font_dict = self.get_font()
+        if(font_dict is not None):
+            font, pygame_font = font_dict['font'], font_dict['pygame_font']
+            font.point_size=size
+            pygame_font.set_point_size(size)
+
+        for child in self.child_components:
+            child.set_font_size(size)
+
+        self.main_element.rebuild()
+
+    def get_font_size(self) -> int:
+        """
+        Returns the current font size of the component. If the
+        component itself has no font, attempts to get it from children.
+
+        Returns:
+            int: The current font size.
+        """
+        font_dict = self.get_font()
+
+        if(font_dict is None):
+            if(len(self.child_components)>0):
+                for child in self.child_components:
+                    f_size = child.get_font_size()
+                    if(f_size is not None):
+                        return f_size
+                return None
+            else:
+                return None
+        
+        return font_dict['font'].get_point_size()
 
     @property
     def container(self):
         """
         Return the container of the component itself (not the parent!).
         """
-        return self.main_component.get_container()
+        return self.main_element.get_container()
     
     @property
     def parent_size(self):
@@ -134,7 +216,8 @@ class BaseComponent:
         Sets the screen size for the component. Takes it from the manager.
         """
         self.sH, self.sW = self.manager.window_resolution
-    
+        self._set_absolute_font_size()
+
     def draw(self) -> None:
         """
         Draws the compo
@@ -162,15 +245,21 @@ class BaseComponent:
         else:
             return
         
+        for child in self.child_components:
+            child._render()
+        
+        if(self.main_base_component is not None):
+            self.main_base_component._render()
+        
+        self.set_font_size(self.font_abs_size)
         self.render()
 
     def render(self):
         """
-        Renders the component. If you are using base components that are already defined, you need only call
-        the .render() method for each of the used components. If you are using pygame-gui elements directly,
-        you should use *self.position* and *self.size* (equivalently,*self.h*, *self.w*, *self.x*, *self.y*) 
-        to define the pygame-gui elements you need, passing absolute sizes. This guarantees that on resize, 
-        the elements will be correctly resized, keeping their relative position and size.
+        'Renders' the component, i.e. recomputes sizes if necessary. Only redefine if you are using pygame-gui 
+        elements directly, in which case you should use *self.position* and *self.size* 
+        (equivalently,*self.h*, *self.w*, *self.x*, *self.y*) to resize/reposition the pygame-gui elements passing absolute sizes. 
+        This guarantees that on resize,  the elements will be correctly resized, keeping their relative position and size.
 
         NOTE: Make _render auto-wrap this method so I don't have to juggle between them.
         """
@@ -199,6 +288,6 @@ class BaseComponent:
         """
         self.visible = not self.visible
         if self.visible:
-            self.main_component.show()
+            self.main_element.show()
         else:
-            self.main_component.hide()
+            self.main_element.hide()

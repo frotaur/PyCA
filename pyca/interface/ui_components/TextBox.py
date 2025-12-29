@@ -42,3 +42,10 @@ class TextBox(BaseComponent):
         Sets the text of the text box 
         """
         self.textbox.set_text(new_text)
+    
+    def render(self):
+        """
+        Renders the text box with correct font size and height/width.
+        """
+        self.textbox.set_relative_position((self.x, self.y))
+        self.textbox.set_dimensions((self.w, self.h))

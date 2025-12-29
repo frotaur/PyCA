@@ -91,17 +91,18 @@ class MainWindow:
         controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.))
         controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
         automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.))  
-        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
+
+        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,.4))
         self.left_box.add_component(self.automaton_name)
         self.left_box.add_component(self.automaton_text)
         self.left_box.add_component(controls_title)
         self.left_box.add_component(controls)
         self.left_box.add_component(automaton_help_title)
         self.left_box.add_component(self.automaton_help)
-        controls.main_component.set_text_scale(0.2)
+
         self.right_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))
 
-
+        self.test_button = Button(text="Test", manager=self.manager, parent=self.right_box, rel_pos=(0.,0.), rel_size=(0.3,0.3))
 
         # Text labels for description, help and automaton controls
         # self.left_components = None
@@ -292,7 +293,7 @@ class MainWindow:
             
             self.right_box._render()
             self.left_box._render()
-            self.automaton_text._render()
+
             self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)
             # self.draw_help()
@@ -343,6 +344,15 @@ class MainWindow:
         self.camera.handle_event(event)
 
         if event.type == pygame.KEYDOWN:
+            if(event.key == pygame.K_UP):
+                f_size = self.left_box.get_font_size()
+                self.left_box.set_font_size(f_size+1)
+                print('Increased font size to ', f_size+1)
+            if(event.key == pygame.K_DOWN):
+                f_size = self.left_box.get_font_size()
+                if(f_size>1):
+                    self.left_box.set_font_size(f_size-1)
+                    print('Decreased font size to ', f_size-1)
             if(event.key == pygame.K_SPACE): # Space to start/stop the automaton
                 self.stopped=not(self.stopped)
             if(event.key == pygame.K_q):

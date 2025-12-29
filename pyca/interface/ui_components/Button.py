@@ -28,6 +28,8 @@ class Button(BaseComponent):
                                manager=self.manager)
 
         self.register_main_component(self.button)
+
+
     def render(self):
         """
         Renders the button component with correct positioning and size.
