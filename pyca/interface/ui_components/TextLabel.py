@@ -7,7 +7,7 @@ class TextLabel(BaseComponent):
     Represents a text label (single line) in the UI.
     """
 
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.1)):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.1), font_scale=1.0):
         """
         Initializes the text label component.
 
@@ -19,7 +19,7 @@ class TextLabel(BaseComponent):
             rel_size (tuple): Fractional size in [0,1] of the component (height, width). Height can be -1 for auto.
         """
 
-        super().__init__(manager, parent, rel_pos, rel_size)
+        super().__init__(manager, parent, rel_pos, rel_size, font_scale=font_scale)
 
         self.textlabel = UILabel(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h), manager=self.manager,
                                  text=text,
@@ -46,7 +46,6 @@ class TextLabel(BaseComponent):
         Renders the text with correct font size and height/width.
         """
         self.textlabel.set_relative_position((self.x, self.y))
-        print('LABEL DIMS SET TO:', self.w, self.h)
         self.textlabel.set_dimensions((self.w, self.h))
 
 

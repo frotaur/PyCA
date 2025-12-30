@@ -4,7 +4,7 @@ import pygame
 from .BaseComponent import BaseComponent
 
 class Button(BaseComponent):
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(0.05,0.1)):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(0.05,0.1),font_scale=1.0):
         """
         Initializes the button component.
 

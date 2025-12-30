@@ -19,7 +19,7 @@ class BoxHolder(BaseComponent):
             rel_size (tuple): Fractional size in [0,1] of the box holder.
             max_size (tuple, optional): Maximum size for the component (height, width).
         """
-        super().__init__(manager, parent, rel_pos, rel_size, max_size)
+        super().__init__(manager, parent, rel_pos, rel_size, max_size=max_size)
     
         if(not visible):
             self.box = UIContainer(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),

@@ -83,26 +83,22 @@ class MainWindow:
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
         # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-        self.left_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22))
-        self.automaton_name = TextLabel(self.auto.name(),manager=self.manager, parent=self.left_box,rel_pos=(0,0), rel_size=(-1,1.))
+        self.left_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22), visible=False)
+        self.automaton_name = TextLabel(self.auto.name(),manager=self.manager, parent=self.left_box,rel_pos=(0,0), rel_size=(-1,1.),font_scale=1.)
         auto_desc, auto_help = self.auto.get_help()
-        print('AUTO DESC:', auto_desc)
-        self.automaton_text = TextLabel(auto_desc.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
-        controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.))
-        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
-        automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.))  
+        self.automaton_text = TextLabel(auto_desc.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.), font_scale=1.)
+        controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.), font_scale=1.)
+        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.), font_scale=1.)
+        automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.), font_scale=1.)  
+        # self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
 
-        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,.4))
         self.left_box.add_component(self.automaton_name)
         self.left_box.add_component(self.automaton_text)
         self.left_box.add_component(controls_title)
         self.left_box.add_component(controls)
         self.left_box.add_component(automaton_help_title)
-        self.left_box.add_component(self.automaton_help)
-
+        # self.left_box.add_component(self.automaton_help)
         self.right_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))
-
-        self.test_button = Button(text="Test", manager=self.manager, parent=self.right_box, rel_pos=(0.,0.), rel_size=(0.3,0.3))
 
         # Text labels for description, help and automaton controls
         # self.left_components = None

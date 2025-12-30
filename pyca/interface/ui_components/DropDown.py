@@ -10,7 +10,7 @@ class DropDown(BaseComponent):
         Its state (self.selected) is simply a string. 
     """
 
-    def __init__(self, options, manager, parent=None, rel_pos=(0.,0.), rel_size=(0.05,0.1), open_upward=False):
+    def __init__(self, options, manager, parent=None, rel_pos=(0.,0.), rel_size=(0.05,0.1), open_upward=False, font_scale=1.0):
         """
         Initializes the dropdown component.
 
@@ -22,7 +22,7 @@ class DropDown(BaseComponent):
             rel_size (tuple): Fractional size in [0,1] of the dropdown WHEN CLOSED.
             open_upward (bool): If True, dropdown opens upward; if False, opens downward.
         """
-        super().__init__(manager, parent, rel_pos, rel_size)
+        super().__init__(manager, parent, rel_pos, rel_size, font_scale=font_scale)
         self.options = options
         self.open_upward = open_upward
         self.selected = options[0]

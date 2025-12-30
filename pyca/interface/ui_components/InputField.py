@@ -11,7 +11,7 @@ class InputField(BaseComponent):
     """
 
     def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), init_text='',
-                 allowed_chars: list | None = None, forbidden_chars: list | None = None, max_length: int=None):
+                 allowed_chars: list | None = None, forbidden_chars: list | None = None, max_length: int=None, font_scale=1.0):
         """
         Initializes the input box.
         
@@ -25,7 +25,7 @@ class InputField(BaseComponent):
             forbidden_chars (list|None): List of forbidden characters. If None, no characters are forbidden.
             max_length (int|None): Maximum length of the input text. If None, no limit.
         """
-        super().__init__(manager, parent, rel_pos, rel_size)
+        super().__init__(manager, parent, rel_pos, rel_size, font_scale=font_scale)
 
         self.text_entry = UITextEntryLine(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
                                           container = self.parent.container if self.parent is not None else None,

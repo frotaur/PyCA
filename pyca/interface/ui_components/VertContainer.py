@@ -20,7 +20,7 @@ class VertContainer(BaseComponent):
             rel_padding (float): Relative padding between stacked components.
             visible (bool): Whether the container is visible.
         """
-        super().__init__(manager, parent, rel_pos, rel_size, max_size)
+        super().__init__(manager, parent, rel_pos, rel_size,max_size= max_size)
 
         self.v_holder = BoxHolder(
             manager=self.manager,
@@ -28,7 +28,7 @@ class VertContainer(BaseComponent):
             rel_pos=rel_pos,
             rel_size=rel_size,
             max_size=max_size,
-            visible=True)
+            visible=visible)
         
         self.padding = rel_padding
         self.components = []

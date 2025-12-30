@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import pygame
 from pygame_gui.core.ui_element import UIElement
+from copy import deepcopy
 
 class BaseComponent:
     """
     Base class for UI components in the PyCA interface.
     """
-
-    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), font_rel_size=0.05, max_size=None):
+    BASE_FONT_REL_SIZE = 0.012  # Relative font size with respect to screen height
+    
+    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1),font_scale=1.,  max_size=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -38,10 +40,8 @@ class BaseComponent:
         self.main_element = None
         self.main_base_component = None
 
-        self.font_rel_size = font_rel_size
-        self.font_abs_size = None
-
-        self._set_absolute_font_size()
+        self.font_rel_size = self.BASE_FONT_REL_SIZE * font_scale
+        self.font_abs_size = int(self.font_rel_size * self.sH)
 
         self.child_components = []
 
@@ -60,11 +60,23 @@ class BaseComponent:
             self.main_element = component
             self.main_base_component = None
 
-    def _set_absolute_font_size(self):
+    def _adjust_font_size(self):
         """
         Sets the absolute font size of the component based on the relative font size and screen height.
         """
         self.font_abs_size = int(self.font_rel_size * self.sH)
+        self.make_font_unique()
+
+        font_dict = self.get_font()
+        if(font_dict is not None):
+            font, pygame_font = font_dict['font'], font_dict['pygame_font']
+            font.point_size=self.font_abs_size
+            pygame_font.set_point_size(self.font_abs_size)
+        
+        for child in self.child_components:
+            child._adjust_font_size()
+        
+        self.main_element.rebuild()
         
     def _register_child_component(self, component: 'BaseComponent'):
         """
@@ -84,6 +96,18 @@ class BaseComponent:
         
         return {'font': self.main_element.font, 'pygame_font': self.main_element.font._GUIFontPygame__internal_font}
     
+    def make_font_unique(self):
+        """
+        Sets the font of the component.
+
+        Args:
+            font (pygame.font.Font): The new font to set.
+        """
+        if(not hasattr(self.main_element, 'font')):
+            return
+        
+        self.main_element.font = deepcopy(self.main_element.font)
+
     def set_font_size(self, size: int):
         """
         Sets the font size of the component.
@@ -216,8 +240,7 @@ class BaseComponent:
         Sets the screen size for the component. Takes it from the manager.
         """
         self.sH, self.sW = self.manager.window_resolution
-        self._set_absolute_font_size()
-
+        self._adjust_font_size()
     def draw(self) -> None:
         """
         Draws the compo
@@ -241,6 +264,7 @@ class BaseComponent:
         Calls the user-defined render method.
         """
         if((self.sH, self.sW) != self.manager.window_resolution): # Window has been resized
+            print('AH YOU, RESIZED!')
             self.set_screen_size()
         else:
             return
@@ -251,7 +275,6 @@ class BaseComponent:
         if(self.main_base_component is not None):
             self.main_base_component._render()
         
-        self.set_font_size(self.font_abs_size)
         self.render()
 
     def render(self):

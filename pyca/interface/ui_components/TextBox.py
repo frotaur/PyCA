@@ -7,7 +7,7 @@ class TextBox(BaseComponent):
     """
     Represents a text box (word-wrapped text) in the UI.
     """
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3)):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3), font_scale=1.0):
         """
         Initializes the text box component.
 
@@ -18,7 +18,7 @@ class TextBox(BaseComponent):
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width). Height can be -1 for auto.
         """
-        super().__init__(manager, parent, rel_pos, rel_size)
+        super().__init__(manager, parent, rel_pos, rel_size, font_scale=font_scale)
 
         self.textbox = pygame_gui.elements.UITextBox(
             html_text=text,
@@ -42,7 +42,7 @@ class TextBox(BaseComponent):
         Sets the text of the text box 
         """
         self.textbox.set_text(new_text)
-    
+        self.main_element.rebuild()
     def render(self):
         """
         Renders the text box with correct font size and height/width.
