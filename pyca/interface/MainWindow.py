@@ -74,7 +74,9 @@ class MainWindow:
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
         # self.right_components = None
-        self.manager = pygame_gui.UIManager(window_resolution=(self.sW, self.sH))
+        theme_path = files('pyca.interface.ui_components.styling').joinpath('theme.json')
+
+        self.manager = pygame_gui.UIManager(window_resolution=(self.sW, self.sH), theme_path=str(theme_path))
         self.extra_components_pos = (0,0) 
         # Load the initial automaton
         self.auto = self.load_automaton(self._initial_automaton)
@@ -83,13 +85,13 @@ class MainWindow:
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
         # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-        self.left_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22), visible=False)
-        self.automaton_name = TextLabel(self.auto.name(),manager=self.manager, parent=self.left_box,rel_pos=(0,0), rel_size=(-1,1.),font_scale=1.)
+        self.left_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22), visible=True)
+        self.automaton_name = TextLabel(self.auto.name(),manager=self.manager, parent=self.left_box,rel_pos=(0,0), rel_size=(-1,1.),font_size='big')
         auto_desc, auto_help = self.auto.get_help()
-        self.automaton_text = TextLabel(auto_desc.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.), font_scale=1.)
-        controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.), font_scale=1.)
-        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.), font_scale=1.)
-        automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.), font_scale=1.)  
+        self.automaton_text = TextLabel(auto_desc.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
+        controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.),font_size='big')
+        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=14)
+        automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.),font_size='big')  
         # self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
 
         self.left_box.add_component(self.automaton_name)
@@ -103,6 +105,7 @@ class MainWindow:
         # Text labels for description, help and automaton controls
         # self.left_components = None
         # self._generate_and_place_left_texts()  
+        self.left_box._adjust_font_size()
         
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
         """
@@ -340,15 +343,6 @@ class MainWindow:
         self.camera.handle_event(event)
 
         if event.type == pygame.KEYDOWN:
-            if(event.key == pygame.K_UP):
-                f_size = self.left_box.get_font_size()
-                self.left_box.set_font_size(f_size+1)
-                print('Increased font size to ', f_size+1)
-            if(event.key == pygame.K_DOWN):
-                f_size = self.left_box.get_font_size()
-                if(f_size>1):
-                    self.left_box.set_font_size(f_size-1)
-                    print('Decreased font size to ', f_size-1)
             if(event.key == pygame.K_SPACE): # Space to start/stop the automaton
                 self.stopped=not(self.stopped)
             if(event.key == pygame.K_q):

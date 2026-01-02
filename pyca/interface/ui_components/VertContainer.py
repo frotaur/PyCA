@@ -60,5 +60,43 @@ class VertContainer(BaseComponent):
             component.rel_pos = (0, 0) # Relative to container top
         
         self.components.append(component)
-        
-        
+        component.main_element.rebuild()
+
+    def _add_component(self, component: BaseComponent):
+        """
+        Adds a BaseComponent to the vertical container using computed positions instead of anchors.
+        Note that the component's parent should be set to this VertContainer.
+
+        Args:
+            component (BaseComponent): The component to add.
+        """
+        # Get container dimensions
+        container_rect = self.v_holder.main_element.get_abs_rect()
+        container_width = container_rect.width
+
+        # Calculate padding in pixels
+        padding_pixels = self.padding * container_rect.height
+
+        # Calculate vertical position
+        if len(self.components) > 0:
+            # Position below the last component
+            last_component = self.components[-1]
+            last_rect = last_component.main_element.get_abs_rect()
+            y_pos = last_rect.bottom + padding_pixels - container_rect.y
+        else:
+            # First component, position at top
+            y_pos = 0
+
+        # Get component dimensions
+        component_rect = component.main_element.get_relative_rect()
+        component_width = component_rect.width
+
+        # Center horizontally
+        x_pos = (container_width - component_width) / 2
+
+        # Set the component's position
+        component.main_element.set_relative_position((x_pos, y_pos))
+
+        self.components.append(component)
+        component.main_element.rebuild()
+

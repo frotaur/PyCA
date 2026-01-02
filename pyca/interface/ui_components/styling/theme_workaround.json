@@ -1,0 +1,12 @@
+{
+    "@label_normal": {
+        "font_size": 12
+
+    },
+    "@label_big": {
+        "font_size": 16
+    },
+    "@label_small": {
+        "font_size": 8
+    }
+}

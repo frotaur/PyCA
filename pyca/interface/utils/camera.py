@@ -173,12 +173,12 @@ class Camera:
         
         return True
     
-    def apply(self, surface : pygame.Surface, border=False):
+    def apply(self, surface, border=False):
         """
             Given a pygame surface, return a new surface which is the view of the camera.
 
             Parameters:
-            surface : pygame.Surface
+            surface : 
                 Surface to apply the camera to
             border : bool
                 If True, a border will be drawn (if border is not None)

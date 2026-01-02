@@ -10,7 +10,7 @@ class BaseComponent:
     """
     BASE_FONT_REL_SIZE = 0.012  # Relative font size with respect to screen height
     
-    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1),font_scale=1.,  max_size=None):
+    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -19,8 +19,6 @@ class BaseComponent:
             container: parent UI window, if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x (widthloc), y (heighloc)).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width).
-            font_rel_size (float): Relative font size for the component. It is ALWAYS relative to the screen height,
-                to make it easier to have consistent font sizes across components.
             max_size (tuple, optional): Maximum size for the component (height, width).
         """
         self.manager = manager
@@ -40,10 +38,22 @@ class BaseComponent:
         self.main_element = None
         self.main_base_component = None
 
-        self.font_rel_size = self.BASE_FONT_REL_SIZE * font_scale
-        self.font_abs_size = int(self.font_rel_size * self.sH)
-
+        self.base_font_size = 12
         self.child_components = []
+
+    @property
+    def font_abs_size(self):
+        """
+        Returns the absolute font size of the component.
+        """
+        font_dict = self.get_font()
+        if(font_dict is None):
+            return None
+        
+        # base_size = font_dict['font'].point_size # NOTE : FOR NOW, BUGGED IN PYGAME-GUI so workaround
+        base_size = self.base_font_size
+
+        return int(self.BASE_FONT_REL_SIZE*self.sH*base_size/12.)
 
     def register_main_component(self, component: UIElement | 'BaseComponent'):
         """
@@ -64,13 +74,12 @@ class BaseComponent:
         """
         Sets the absolute font size of the component based on the relative font size and screen height.
         """
-        self.font_abs_size = int(self.font_rel_size * self.sH)
-        self.make_font_unique()
+        # self.font_abs_size = int(self.font_rel_size * self.sH)
 
         font_dict = self.get_font()
         if(font_dict is not None):
             font, pygame_font = font_dict['font'], font_dict['pygame_font']
-            font.point_size=self.font_abs_size
+            # font.point_size=self.font_abs_size
             pygame_font.set_point_size(self.font_abs_size)
         
         for child in self.child_components:
@@ -95,36 +104,7 @@ class BaseComponent:
             return None
         
         return {'font': self.main_element.font, 'pygame_font': self.main_element.font._GUIFontPygame__internal_font}
-    
-    def make_font_unique(self):
-        """
-        Sets the font of the component.
 
-        Args:
-            font (pygame.font.Font): The new font to set.
-        """
-        if(not hasattr(self.main_element, 'font')):
-            return
-        
-        self.main_element.font = deepcopy(self.main_element.font)
-
-    def set_font_size(self, size: int):
-        """
-        Sets the font size of the component.
-
-        Args:
-            size (int): The new font size.
-        """
-        font_dict = self.get_font()
-        if(font_dict is not None):
-            font, pygame_font = font_dict['font'], font_dict['pygame_font']
-            font.point_size=size
-            pygame_font.set_point_size(size)
-
-        for child in self.child_components:
-            child.set_font_size(size)
-
-        self.main_element.rebuild()
 
     def get_font_size(self) -> int:
         """
@@ -134,6 +114,7 @@ class BaseComponent:
         Returns:
             int: The current font size.
         """
+        pass # Will probably deprecate this
         font_dict = self.get_font()
 
         if(font_dict is None):
@@ -239,8 +220,9 @@ class BaseComponent:
         """
         Sets the screen size for the component. Takes it from the manager.
         """
-        self.sH, self.sW = self.manager.window_resolution
+        self.sW, self.sH = self.manager.window_resolution
         self._adjust_font_size()
+
     def draw(self) -> None:
         """
         Draws the compo
@@ -263,8 +245,7 @@ class BaseComponent:
         Internal render method called when screen size changes.
         Calls the user-defined render method.
         """
-        if((self.sH, self.sW) != self.manager.window_resolution): # Window has been resized
-            print('AH YOU, RESIZED!')
+        if((self.sW, self.sH) != self.manager.window_resolution): # Window has been resized
             self.set_screen_size()
         else:
             return

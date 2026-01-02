@@ -1,0 +1,50 @@
+{
+    
+    "#bigfont": {
+        "font": {
+            "name":"aldo",
+            "size":16,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "AldotheApache.ttf"
+            }
+        }
+    },
+    "#normalfont": {
+        "font": {
+            "name":"aldo",
+            "size":12,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "AldotheApache.ttf"
+            }
+        }
+    },
+    "#smallfont": {
+        "font": {
+            "name":"aldo",
+            "size":8,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "AldotheApache.ttf"
+            }
+        }
+    },
+
+    "@label_normal": {
+        "prototype": "#normalfont",
+        "colours": {"normal_text":"#c5cbd8"}
+    },
+    "@label_big": {
+        "prototype": "#bigfont"
+    },
+    "@label_small": {
+        "prototype": "#smallfont"
+    }
+}
