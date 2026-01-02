@@ -5,9 +5,9 @@ from .BaseComponent import BaseComponent
 
 class TextBox(BaseComponent):
     """
-    Represents a text box (word-wrapped text) in the UI.
+    Represents a text box (word-wrapped HTML text) in the UI.
     """
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3), font_size=12):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3), font_size=12,font_color=(230,230,230),text_align='left',*,theme_class=None,theme_id=None):
         """
         Initializes the text box component.
 
@@ -18,19 +18,23 @@ class TextBox(BaseComponent):
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width). Height can be -1 for auto.
             font_size: Base is 12, and changes are proportional based on that
+            font_color (tuple): Color of the text in RGB format.
         """
-        super().__init__(manager, parent, rel_pos, rel_size)
+        super().__init__(manager, parent, rel_pos, rel_size,theme_class=theme_class,theme_id=theme_id)
 
         self.base_font_size = font_size
 
         self._text = text
-        
+        self.font_color = font_color
+
         self.textbox = pygame_gui.elements.UITextBox(
             html_text=self._html_text,
             relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
             manager=self.manager,
-            container=self.parent.container if self.parent is not None else None
+            container=self.parent.container if self.parent is not None else None,
+            object_id=self.object_id
         )
+        self.textbox.text_horiz_alignment = text_align
 
         self.register_main_component(self.textbox)
     
@@ -39,7 +43,7 @@ class TextBox(BaseComponent):
         """
         Adjusts the font size in the HTML text based on the current absolute font size.
         """
-        return f"<font face='aldo' pixel_size={self.font_abs_size}>{self._text}</font>"
+        return f"<font face='aldo' color={self.to_hex(self.font_color)} pixel_size={self.font_abs_size}>{self._text}</font>"
     
     @property
     def font_abs_size(self):
@@ -85,3 +89,7 @@ class TextBox(BaseComponent):
         """
         self.textbox.set_relative_position((self.x, self.y))
         self.textbox.set_dimensions((self.w, self.h))
+
+    def to_hex(self, rgb):
+        r, g, b = rgb
+        return f'#{r:02x}{g:02x}{b:02x}'

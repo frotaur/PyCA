@@ -4,13 +4,15 @@ import pygame
 from pygame_gui.core.ui_element import UIElement
 from copy import deepcopy
 
+from pygame_gui.core import ObjectID
+
 class BaseComponent:
     """
     Base class for UI components in the PyCA interface.
     """
     BASE_FONT_REL_SIZE = 0.015  # Relative font size with respect to screen height
     
-    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
+    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None,*, theme_class=None,theme_id=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -20,6 +22,8 @@ class BaseComponent:
             rel_pos (tuple): Fractional position in [0,1] of the component (x (widthloc), y (heighloc)).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width).
             max_size (tuple, optional): Maximum size for the component (height, width).
+            theme_class (str, optional): Theme class for styling
+            theme_id (str, optional): Theme ID for styling
         """
         self.manager = manager
         self.sW, self.sH = self.manager.window_resolution
@@ -40,6 +44,11 @@ class BaseComponent:
 
         self.base_font_size = 12
         self.child_components = []
+
+        self.theme_class = theme_class
+        self.theme_id = theme_id
+
+        self.object_id = ObjectID(class_id=theme_class, object_id=theme_id)
 
     @property
     def font_abs_size(self):
@@ -257,6 +266,7 @@ class BaseComponent:
             self.main_base_component._render()
         
         self.render()
+        
 
     def render(self):
         """

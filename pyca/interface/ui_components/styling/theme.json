@@ -46,5 +46,19 @@
     },
     "@label_small": {
         "prototype": "#smallfont"
+    },
+    "text_box" :{
+        "misc": {
+            "border_width": 1,
+            "shadow_width": 0
+        },
+        "colours": {
+            "dark_bg": "rgba(30,30,30,80)"
+        }
+    },
+    "@better_label": {
+        "misc": {
+            "text_horiz_alignment": "center"
+        }
     }
 }

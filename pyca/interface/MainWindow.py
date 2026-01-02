@@ -14,7 +14,7 @@ from pyca.interface import Camera, launch_video, print_screen, add_frame
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
-from .ui_components import VertContainer, Button, TextLabel, InputField, DropDown, TextBox
+from .ui_components import VertContainer, Button, TextLabel, InputField, DropDown, TextBox, BoxHolder
 
 class MainWindow:
     """
@@ -85,27 +85,13 @@ class MainWindow:
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
         # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-        self.left_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22), visible=True)
-        self.automaton_name = TextLabel(self.auto.name(),manager=self.manager, parent=self.left_box,rel_pos=(0,0), rel_size=(-1,1.),font_size='big')
-        auto_desc, auto_help = self.auto.get_help()
-        self.automaton_text = TextLabel(auto_desc.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
-        controls_title = TextLabel("General Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.01), rel_size=(-1,1.),font_size='big')
-        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=14)
-        automaton_help_title = TextLabel("Automaton Controls",manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.),font_size='big')  
-        # self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_box,rel_pos=(0.,0.), rel_size=(-1,1.))
-
-        self.left_box.add_component(self.automaton_name)
-        self.left_box.add_component(self.automaton_text)
-        self.left_box.add_component(controls_title)
-        self.left_box.add_component(controls)
-        self.left_box.add_component(automaton_help_title)
-        # self.left_box.add_component(self.automaton_help)
-        self.right_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))
+        
+        self._generate_and_place_left_texts()
 
         # Text labels for description, help and automaton controls
         # self.left_components = None
         # self._generate_and_place_left_texts()  
-        self.left_box._adjust_font_size()
+        # self.left_box._adjust_font_size()
         
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
         """
@@ -138,8 +124,7 @@ class MainWindow:
         """
             Generates the base GUI which go on the right side of the window
         """
-        pass
-        # # FPS live label
+        self.right_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))        # # FPS live label
         # fps_font = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH, base_sH=self.sH, 
         #                      max_font_size=16, min_font_size=10)
         # self.fps_label = TextLabel(f"FPS: {self.fps}", fract_position=(0.94, 0.01), fract_width=0.3, font=fps_font, color=(230, 120, 120))
@@ -181,39 +166,29 @@ class MainWindow:
         """
         title_color = (230, 89, 89)
         description_color = (74, 101, 176)
-        text_color = (230, 230, 230)
-        bg_color = (0,0,0, 150)
-        auto_description, auto_help = self.auto.get_help()
 
-        self.auto_name = TextLabel(self.auto.name(), fract_position = (0.005, 0.005), fract_width=0.2, font=self.font_title, color=title_color, bg_color=bg_color, h_margin=0.2)
-        self.auto_text = TextLabel(auto_description,fract_position=(0.005,0.), fract_width=0.35,font=self.font_text, color=description_color, bg_color=bg_color)
-        self.help_title = TextLabel(INTERFACE_HELP['title'], fract_position=(0.005, 0.05), fract_width=0.2, font=self.font_title, color=title_color, bg_color=bg_color, h_margin=0.2)
-        self.help_text = TextLabel(INTERFACE_HELP['content'], fract_position=(0.005, 0.1), fract_width=0.35, font=self.font_text, line_spacing=0.15, color=text_color, bg_color=bg_color)
-        self.auto_controls_title = TextLabel("Automaton Controls", fract_position=(0.005, 0.2), fract_width=0.2, font=self.font_title, color=title_color, bg_color=bg_color, h_margin=0.2)
-        self.auto_controls_text = TextLabel(auto_help, fract_position=(0.005, 0.25), fract_width=0.35, font=self.font_text, line_spacing=0.15, color=text_color, bg_color=bg_color)
+        title_size = 16
 
-        self.left_components = [
-            self.auto_name,
-            self.auto_text,
-            self.help_title,
-            self.help_text,
-            self.auto_controls_title,
-            self.auto_controls_text
-        ]
+        self.left_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22))
+        self.left_text_container = VertContainer(manager=self.manager, parent=self.left_box, rel_pos=(0,0), rel_size=(1.0,1.0))
 
-        fractional_y_position = self.left_components[0].f_pos[1]
-        for component in self.left_components:
-            component.set_screen_size(self.sH, self.sW)
-            component.f_pos = (component.f_pos[0], fractional_y_position)
-            component.render()
-            fractional_y_position += component.f_size[0] # Add the now correct height to the next component's position
-        
-        # Live automaton label
-        self.auto_label = TextLabel(text = self.auto.get_string_state(),
-                                    fract_position=(0.02, 0.95), fract_width=0.8,color=(180,220,180),
-                                    h_margin=0.2, bg_color=(0,0,0,150), font=self.font_text)
-        
-        self.left_components.append(self.auto_label)
+        self.automaton_name = TextBox(self.auto.name(),manager=self.manager, parent=self.left_text_container,rel_pos=(0,0), rel_size=(-1,1.),font_size=title_size, text_align='center',font_color=title_color)
+        auto_desc, auto_help = self.auto.get_help()
+        self.automaton_text = TextBox(auto_desc.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_color=description_color)
+        controls_title = TextBox("General Controls",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.01), rel_size=(-1,1.), font_size=title_size, text_align='center', font_color=title_color)
+        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.))
+        automaton_help_title = TextBox("Automaton Controls",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=title_size, text_align='center', font_color=title_color)  
+        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.))
+
+        self.left_text_container.add_component(self.automaton_name)
+        self.left_text_container.add_component(self.automaton_text)
+        self.left_text_container.add_component(controls_title)
+        self.left_text_container.add_component(controls)
+        self.left_text_container.add_component(automaton_help_title)
+        self.left_text_container.add_component(self.automaton_help)
+
+        self.live_auto_label = TextBox(text = self.auto.get_string_state(), manager=self.manager, parent=self.left_box,
+                                       rel_pos=(0.,0.9),rel_size=(-1,1.), font_size=12, text_align='right')
 
     def load_automaton(self, automaton_name):
         """
@@ -290,7 +265,6 @@ class MainWindow:
                 pygame.draw.circle(self.screen, (255, 0, 0), (self.sW - 20, 15), 7)
             
             
-            self.right_box._render()
             self.left_box._render()
 
             self.manager.draw_ui(self.screen)

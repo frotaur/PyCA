@@ -4,13 +4,15 @@ from pygame_gui.elements.ui_label import UILabel
 from pygame_gui.core import ObjectID
 import json
 from importlib.resources import files
+from .TextBox import TextBox
+
 
 class TextLabel(BaseComponent):
     """
-    Represents a text label (single line) in the UI.
+    Represents a label using TextBox, easier to deal with than UILabel.
     """
 
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.1), font_size='normal'):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.1), font_size=12):
         """
         Initializes the text label component.
 
@@ -20,50 +22,27 @@ class TextLabel(BaseComponent):
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width). Height can be -1 for auto.
-            font_size: 'big', 'normal' or 'small' for different font sizes. May support arbitrary scaling in the future.
+            font_size: Base is 12, and changes are proportional based on that
         """
+        class_id = f"@better_label"
+        super().__init__(manager, parent, rel_pos, rel_size,theme_class=class_id)
 
-        super().__init__(manager, parent, rel_pos, rel_size)
-
-        id_str = f"@label_{font_size}"
-        self.textlabel = UILabel(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h), manager=self.manager,
-                                 text=text,
-                                 container = self.parent.container if self.parent is not None else None,
-                                 object_id=ObjectID(class_id=id_str))
-        # NOTE: for now, sizing with themes is bugged, I use a workaround
-        theme_workaround_file = files("pyca.interface.ui_components.styling").joinpath("theme_workaround.json")
-        with open(theme_workaround_file, "r") as f:
-            size_dict = json.load(f)
-
-        self.base_font_size = size_dict[id_str]["font_size"]
-        self.register_main_component(self.textlabel)
-
+        self.textbox = TextBox(
+            text=text, font_size=font_size, manager=manager, parent=parent, rel_pos=(0,0), rel_size=(-1,1), theme_class=class_id)
+        
+        self.register_main_component(self.textbox)
+    
     @property
     def text(self):
         """
-        Returns the text of the label.
+        Returns the text of the text box.
         """
-        return self.textlabel.text
+        return self.textbox.text
     
     @text.setter
     def text(self, new_text):
         """
-        Sets the text of the label 
+        Sets the text of the text box 
         """
-        self.textlabel.set_text(new_text)
-        self.main_element.rebuild()
-
-    def render(self):
-        """
-        Renders the text with correct font size and height/width.
-        """
-        self.textlabel.set_relative_position((self.x, self.y))
-        self.textlabel.set_dimensions((self.w, self.h))
-
-    def handle_event(self, event:pygame.event.Event) -> bool:
-        """
-        Text labels do not handle events by default.
-        Args:
-            event (pygame.event.Event): The event to handle (optional)
-        """
-        return False
+        self.textbox.text = new_text
+        self.textbox.rebuild()
