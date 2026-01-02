@@ -1,9 +1,9 @@
 from .BaseComponent import BaseComponent
 import pygame_gui
-from pygame_gui.elements import UITextEntryLine
+from pygame_gui.elements import UITextEntryLine, UITextEntryBox
 import pygame
 
-
+    
 class InputField(BaseComponent):
     """
         Basic input field, with configurable allow-list. Its state
@@ -11,7 +11,7 @@ class InputField(BaseComponent):
     """
 
     def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), init_text='',
-                 allowed_chars: list | None = None, forbidden_chars: list | None = None, max_length: int=None, font_scale=1.0):
+                 allowed_chars: list | None = None, forbidden_chars: list | None = None, max_length: int=None):
         """
         Initializes the input box.
         
@@ -25,7 +25,7 @@ class InputField(BaseComponent):
             forbidden_chars (list|None): List of forbidden characters. If None, no characters are forbidden.
             max_length (int|None): Maximum length of the input text. If None, no limit.
         """
-        super().__init__(manager, parent, rel_pos, rel_size, font_scale=font_scale)
+        super().__init__(manager, parent, rel_pos, rel_size )
 
         self.text_entry = UITextEntryLine(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
                                           container = self.parent.container if self.parent is not None else None,
@@ -40,6 +40,8 @@ class InputField(BaseComponent):
                 raise ValueError("Cannot set both allowed_chars and forbidden_chars.")
             self.text_entry.set_forbidden_characters(forbidden_chars)
         
+        self.register_main_component(self.text_entry)
+
     def render(self):
         """
         Renders the input box.
@@ -70,4 +72,5 @@ class InputField(BaseComponent):
             if event.ui_element == self.text_entry:
                 return True
 
+        return False
 

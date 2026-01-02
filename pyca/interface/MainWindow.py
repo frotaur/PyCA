@@ -12,9 +12,9 @@ import pygame_gui
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
 from .utils.help_enum import HelpEnum
-from ..automata import AUTOMATAS
+from ..automata import AUTOMATAS, Automaton
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
-from .ui_components import VertContainer, Button, TextLabel, InputField, DropDown, TextBox, BoxHolder
+from .ui_components import VertContainer, Button, TextLabel, InputField, DropDown, TextBox, BoxHolder, HorizContainer
 
 class MainWindow:
     """
@@ -77,21 +77,18 @@ class MainWindow:
         theme_path = files('pyca.interface.ui_components.styling').joinpath('theme.json')
 
         self.manager = pygame_gui.UIManager(window_resolution=(self.sW, self.sH), theme_path=str(theme_path))
-        self.extra_components_pos = (0,0) 
+        self.auto_gui = None
+
         # Load the initial automaton
+        self._generate_right_base_gui()
+
         self.auto = self.load_automaton(self._initial_automaton)
-        # self._generate_right_base_gui()
+        self._generate_left_base_gui()
+
         # if(self.tablet_mode):
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
-        # self._generate_auto_controls_title(start_position=self.extra_components_pos)
-        
-        self._generate_and_place_left_texts()
 
-        # Text labels for description, help and automaton controls
-        # self.left_components = None
-        # self._generate_and_place_left_texts()  
-        # self.left_box._adjust_font_size()
         
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
         """
@@ -124,42 +121,27 @@ class MainWindow:
         """
             Generates the base GUI which go on the right side of the window
         """
-        self.right_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))        # # FPS live label
-        # fps_font = SmartFont(fract_font_size=self.text_f_size, font_path=BASE_FONT_PATH, base_sH=self.sH, 
-        #                      max_font_size=16, min_font_size=10)
-        # self.fps_label = TextLabel(f"FPS: {self.fps}", fract_position=(0.94, 0.01), fract_width=0.3, font=fps_font, color=(230, 120, 120))
-        # # Dropdown for automaton selection
-        # drop_size = (0.05, 0.17)  # Fractional size of the dropdown
-        # drop_pos = (1-drop_size[1]-0.015, 1-drop_size[0]-0.015)  # Position at the bottom right
-        # self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), fract_position=drop_pos, fract_size=drop_size,open_upward=True)
-        # self.automaton_dropdown.selected = self._initial_automaton
+        self.right_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))
+        self.right_container = VertContainer(manager=self.manager, parent=self.right_box, rel_pos=(0,0), rel_size=(1.0,1.0))
+        ### FPS live label        
+        self.live_fps_label = TextBox(f"FPS: {self.fps}", manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(-1,1.), font_size=12, text_align='right', font_color=(230, 120, 120))
 
-        # # Input boxes for FPS, Width and Height
-        # fps_size = (0.07, 0.04)
-        # boxes_size = (0.07, 0.06)
-        # spacing = 7/1000
-        # boxes_pos = (1.-fps_size[1]-3*spacing-boxes_size[1]*2, 0.05)
+        ### FPS input box
+        self.fps_box = HorizContainer(manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(0.05,1.0),rel_padding=0.03)
+        self.fps_input = InputField(manager=self.manager, parent=self.fps_box, rel_pos=(0,0), rel_size=(1.0,0.3), init_text=str(self.fps), allowed_chars=[str(i) for i in range(10)], max_length=3)
+        self.width_input = InputField(manager=self.manager, parent=self.fps_box, rel_pos=(0,0), rel_size=(1.0,0.3), init_text=str(self.W), allowed_chars=[str(i) for i in range(10)], max_length=4)
+        self.height_input = InputField(manager=self.manager, parent=self.fps_box, rel_pos=(0.,0), rel_size=(1.0,0.3), init_text=str(self.H), allowed_chars=[str(i) for i in range(10)], max_length=4)
+        self.fps_box.add_component(self.fps_input)
+        self.fps_box.add_component(self.width_input)
+        self.fps_box.add_component(self.height_input)
 
-        # self.fps_box = InputField(fract_position=(boxes_pos[0], boxes_pos[1]), fract_size=fps_size, label="FPS",
-        #                          init_text=str(self.fps), allowed_chars=lambda c: c.isdigit(), max_length=3,
-        #                          font_path=BASE_FONT_PATH)
-        # self.width_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+spacing, boxes_pos[1]), fract_size=boxes_size, label="Width",
-        #                             init_text=str(self.W), allowed_chars=lambda c: c.isdigit(), max_length= 4,
-        #                             font_path=BASE_FONT_PATH)
-        # self.height_box = InputField(fract_position=(boxes_pos[0]+fps_size[1]+boxes_size[1]+2*spacing, boxes_pos[1]), fract_size=boxes_size, label="Height",
-        #                              init_text=str(self.H), allowed_chars=lambda c: c.isdigit(), max_length=4,
-        #                              font_path=BASE_FONT_PATH)
+        self.right_container.add_component(self.live_fps_label)
+        self.right_container.add_component(self.fps_box)
 
-        # self.extra_components_pos = (boxes_pos[0], boxes_pos[1]+boxes_size[0]+2*spacing)
+        # Dropdown for automaton selection
+        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), manager=self.manager, parent=self.right_box, rel_pos=(0.0,0.94), rel_size=(0.06,1.0), open_upward=True)
 
-        # self.right_components = [self.fps_label, self.fps_box, self.width_box, self.height_box, self.automaton_dropdown]
-
-    def _generate_auto_controls_title(self, start_position):
-        self.automaton_controls_title = TextLabel("Automaton controls :", fract_position=start_position, fract_width=0.2, font=self.font_title, color=(230, 89, 89), bg_color=(0,0,0,150), h_margin=0.2)
-        self.automaton_controls_title.compute_size(self.sH, self.sW)
-        self.extra_components_pos = (start_position[0], start_position[1]+self.automaton_controls_title.f_size[0]+0.007)
-
-    def _generate_and_place_left_texts(self):
+    def _generate_left_base_gui(self):
         """
         Generates and places the left text labels of the main GUI. Needs to do some hacking to get dynamic positions
         of the texts, because a TextLabel component's height cannot be computed before it is rendered (because of text wrapping).
@@ -190,19 +172,32 @@ class MainWindow:
         self.live_auto_label = TextBox(text = self.auto.get_string_state(), manager=self.manager, parent=self.left_box,
                                        rel_pos=(0.,0.9),rel_size=(-1,1.), font_size=12, text_align='right')
 
+    def _update_left_texts(self):
+        """
+            Updates the left text labels, for when the automaton changes.
+        """
+        self.automaton_name.text = self.auto.name()
+        auto_desc, auto_help = self.auto.get_help()
+        self.automaton_text.text = auto_desc.strip()
+        self.automaton_help.text = auto_help.strip()
+
     def load_automaton(self, automaton_name):
         """
             Loads and returns the specified automaton model.
             Args:
                 automaton_name (str): Name of the automaton model to load.
         """
+        if(self.auto_gui is not None):
+            self.right_container.remove_component(self.auto_gui)
+        
         if automaton_name in AUTOMATAS:
             if(automaton_name in DEFAULTS): 
                 defaults = DEFAULTS[automaton_name]
             else:
                 defaults = {}
-            auto = AUTOMATAS[automaton_name]((self.H,self.W),**defaults, device=self.device)
-            # auto.set_components_fract_pos(self.extra_components_pos)
+            auto : Automaton = AUTOMATAS[automaton_name]((self.H,self.W),**defaults, device=self.device)
+            self.auto_gui = auto.get_gui_component()
+            self.right_container.add_component(self.auto_gui)
             
             # self.automaton_controls_title.visible = len(auto._components)>0 and self.display_help.right_pane
 
@@ -225,12 +220,10 @@ class MainWindow:
         """
             Handles all events in the main loop.
         """
-
         for event in pygame.event.get():
             self._base_events(event)
-            # self.auto._process_event_focus_check(event, self.camera)
             # self.auto._process_gui_event(event)
-            # self._gui_events(event)
+            self._gui_events(event)
             self.manager.process_events(event)
         
     def main_loop(self):
@@ -266,10 +259,10 @@ class MainWindow:
             
             
             self.left_box._render()
-
+            self.right_box._render()
+            self.update_live_text()
             self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)
-            # self.draw_help()
 
 
             pygame.display.flip()
@@ -279,29 +272,20 @@ class MainWindow:
 
         pygame.quit()
     
-    def draw_help(self):
+    def update_live_text(self):
         """
             Draws the help text on the screen.
         """
-        for component in self.left_components:
-            component._draw(self.screen)
-
-        self.auto_label.text = self.auto.get_string_state() # Update live automaton label
-        self.fps_label.text = f"FPS: {round(self.clock.get_fps())}"
+        self.live_auto_label.text = self.auto.get_string_state() # Update live automaton label
+        self.live_fps_label.text = f"FPS: {round(self.clock.get_fps())}"
 
 
-        if(self.tablet_mode):
-            for component in self.tablet_gui_components:
-                component._draw(self.screen)
+        # if(self.tablet_mode):
+        #     for component in self.tablet_gui_components:
+        #         component._draw(self.screen)
 
-        if(self.tablet_mode):
-            self.hide_show._draw(self.screen) # Always draw the hide/show button in tablet mode
-
-
-        self.automaton_controls_title._draw(self.screen)
-
-        for component in self.right_components:
-            component._draw(self.screen)
+        # if(self.tablet_mode):
+        #     self.hide_show._draw(self.screen) # Always draw the hide/show button in tablet mode
 
     def _base_events(self,event):
         """
@@ -352,41 +336,41 @@ class MainWindow:
         """
             Handles the base GUI events, for fps, world size and automaton selection.
         """
-        if self.automaton_dropdown._handle_event(event):
+        if self.automaton_dropdown.handle_event(event):
             selected = self.automaton_dropdown.selected
             self.auto = self.load_automaton(selected)
-            self._generate_and_place_left_texts() # Need to update the text labels
+            self._update_left_texts()
 
-        if self.fps_box._handle_event(event):
+        if self.fps_input.handle_event(event):
             try:
-                self.fps = int(self.fps_box.value)
+                self.fps = int(self.fps_input.value)
             except ValueError:
-                print(f"Invalid FPS value: {self.fps_box.value}. Must be a positive integer.")
+                print(f"Invalid FPS value: {self.fps_input.value}. Must be a positive integer.")
         
-        if self.width_box._handle_event(event):
+        if self.width_input.handle_event(event):
             # TODO : find a way for this to be automatic in the automaton (i.e., by default resize and reset)
             # And that way, we can override to do smart resizing
-            if(self.width_box.value.strip() == ''):
-                self.width_box.value = str(self.W)
+            if(self.width_input.value.strip() == ''):
+                self.width_input.value = str(self.W)
                 return
-            self.W = int(self.width_box.value)
+            self.W = int(self.width_input.value)
             print(f"Resizing automaton to width {self.W}")
             self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new width
             self.camera.change_border((self.W, self.H))  # Update the camera border size
         
-        if self.height_box._handle_event(event):
-            if(self.height_box.value.strip() == ''):
-                self.height_box.value = str(self.W)
+        if self.height_input.handle_event(event):
+            if(self.height_input.value.strip() == ''):
+                self.height_input.value = str(self.H)
                 return
-            self.H = int(self.height_box.value)
+            self.H = int(self.height_input.value)
 
             self.auto = self.load_automaton(self.automaton_dropdown.selected)  # Reload the automaton with the new height
             self.camera.change_border((self.W, self.H))  # Update the camera border size
         
         if(self.tablet_mode):
-            if(self.play_pause._handle_event(event)):
+            if(self.play_pause.handle_event(event)):
                 self.stopped = not self.stopped
-            if(self.step._handle_event(event)):
+            if(self.step.handle_event(event)):
                 self.auto.step()
             if(self.hide_show.handle_event(event)):
                 self._hidden_pressed()

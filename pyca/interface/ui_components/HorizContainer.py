@@ -7,7 +7,7 @@ class HorizContainer(BaseComponent):
         Horizontal container for automatically stacking BaseComponents horizontally.
     """
 
-    def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None, rel_padding=0.01, visible=False):
+    def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None, rel_padding=0.01):
         """
         Initializes the HorizContainer component.
 
@@ -27,8 +27,7 @@ class HorizContainer(BaseComponent):
             parent=self.parent,
             rel_pos=rel_pos,
             rel_size=rel_size,
-            max_size=max_size,
-            visible=visible)
+            max_size=max_size)
 
         self.padding = rel_padding
         self.components = []
@@ -44,6 +43,7 @@ class HorizContainer(BaseComponent):
         Args:
             component (BaseComponent): The component to add.
         """
+        padding = self.padding*self.w
         if len(self.components) > 0:
             last_el = self.components[-1].main_element
             component.main_element.set_anchors({
@@ -51,10 +51,10 @@ class HorizContainer(BaseComponent):
                 'left_target': last_el,
                 'centery': 'centery'
             })
-            component.rel_pos = (self.padding, 0) # Relative to last component
+            component.rel_pos = (padding, 0) # Relative to last component
             # WORKAROUND: set_anchors() doesn't work properly unless we also call set_relative_position()
             # This forces pygame_gui to recalculate the position based on the anchors
-            component.main_element.set_relative_position((self.padding, 0))
+            component.main_element.set_relative_position((padding, 0))
         else:
             component.main_element.set_anchors({
                 'left': 'left',
@@ -66,6 +66,26 @@ class HorizContainer(BaseComponent):
         self.components.append(component)
         component.main_element.rebuild()
 
+    def remove_component(self, component: BaseComponent, kill=True):
+        """
+        Removes a BaseComponent from the vertical container.
+        Kills its main element and unsets its parent.
+
+        Args:
+            component (BaseComponent): The component to remove.
+        """
+        if component in self.components:
+            self.components.remove(component)
+            component.set_parent(None)
+            if kill:
+                component.main_element.kill()
+            else:
+                print("Warning: Tried to remove a component that is not in this VertContainer.")
+        else:
+            raise ValueError("Tried to remove a component that is not in this VertContainer.")
+        
+        self.render()
+    
     def render(self):
         """
         Renders the HorizContainer component with correct positioning and size.

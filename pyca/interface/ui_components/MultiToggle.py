@@ -54,10 +54,11 @@ class MultiToggle(BaseComponent):
         Sets the button color based on the current state.
         """
         self.button.set_text(self.states[self.current_state_index])
-        self.button.colours["normal_bg"] = self.state_bg_colors[self.current_state_index]
+        self.button.colours["normal_bg"] = pygame.Color(self.state_bg_colors[self.current_state_index])
         # self.button.colours["hovered_bg"] = col
-        self.button.colours["active_bg"] = self.state_bg_active_colors[self.current_state_index]
+        self.button.colours["active_bg"] = pygame.Color(self.state_bg_active_colors[self.current_state_index])
         self.button.rebuild()
+    
     
     def toggle_state(self):
         """

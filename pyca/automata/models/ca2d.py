@@ -41,33 +41,30 @@ the sum of the values of its neighbors.
         ### GUI components ###
         self.reset_button = Button(
             text="Reset",
-            fract_position=(0, 0),
-            fract_size=(0.05, 0.1),
-            bg_color=(100, 100, 100),
-            text_color=(230, 230, 230),
+            manager=self.manager
         )
         self.register_component(self.reset_button)
-        self.toggle_init = MultiToggle(state1="Init: Dot", state2="Init: Noise", init_true=self.dot, fract_position=(0, 0.12), fract_size=(0.05, 0.1),
-                                  state1_bg_color=(100, 100, 100), state2_bg_color=(20, 20, 80))
-        
+
+        self.toggle_init = MultiToggle(
+            manager=self.manager,
+            states=["Init: Dot", "Init: Noise"],
+            init_state_index=0 if self.dot else 1,
+            state_bg_colors=[(100, 100, 100), (20, 20, 80)]
+        )
         self.register_component(self.toggle_init)
 
         self.random_rule = Button(
             text="Random Rule",
-            fract_position=(0, 0.24),
-            fract_size=(0.05, 0.1),
-            bg_color=(100, 100, 100),
-            text_color=(230, 230, 230),
+            manager=self.manager
         )
         self.register_component(self.random_rule)
+
         self.highlight_button = Button(
             text="New Color",
-            fract_position=(0, 0.06),
-            fract_size=(0.05, 0.1),
-            bg_color=(100, 100, 100),
-            text_color=(230, 230, 230),
+            manager=self.manager
         )
         self.register_component(self.highlight_button)
+
 
     def change_highlight_color(self):
         """

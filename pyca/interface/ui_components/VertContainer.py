@@ -44,6 +44,7 @@ class VertContainer(BaseComponent):
         Args:
             component (BaseComponent): The component to add.
         """
+        padding = self.padding*self.h
         if len(self.components) >0 :
             last_el = self.components[-1].main_element
             component.main_element.set_anchors({
@@ -54,7 +55,7 @@ class VertContainer(BaseComponent):
             component.rel_pos = (0, self.padding) # Relative to last component
             # WORKAROUND: set_anchors() doesn't work properly unless we also call set_relative_position()
             # This forces pygame_gui to recalculate the position based on the anchors
-            component.main_element.set_relative_position((0, self.padding))
+            component.main_element.set_relative_position((0, padding))
         else:
             component.main_element.set_anchors({
                 'top': 'top',
@@ -63,8 +64,30 @@ class VertContainer(BaseComponent):
             component.rel_pos = (0, 0) # Relative to container top
             component.main_element.set_relative_position((0, 0))
 
+        component.set_parent(self)
+
         self.components.append(component)
         component.main_element.rebuild()
+
+    def remove_component(self, component: BaseComponent, kill=True):
+        """
+        Removes a BaseComponent from the vertical container.
+        Kills its main element and unsets its parent.
+
+        Args:
+            component (BaseComponent): The component to remove.
+        """
+        if component in self.components:
+            self.components.remove(component)
+            component.set_parent(None)
+            if kill:
+                component.main_element.kill()
+            else:
+                print("Warning: Tried to remove a component that is not in this VertContainer.")
+        else:
+            raise ValueError("Tried to remove a component that is not in this VertContainer.")
+        
+        self.render()
 
     def render(self):
         """

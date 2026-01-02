@@ -4,6 +4,8 @@ from textwrap import dedent
 import pygame
 from easydict import EasyDict
 from ..interface.ui_components.BaseComponent import BaseComponent
+from pygame_gui.core.utility import get_default_manager
+from ..interface import VertContainer
 
 AUTOMATAS = {}
 
@@ -33,7 +35,21 @@ class Automaton:
 
         # Obtain (H,W) tensors, containing the x (i.e. width, or column index) and y (i.e. height, or row index) coordinates of each pixel
         self.X, self.Y = torch.meshgrid(torch.arange(self.w), torch.arange(self.h), indexing='xy') 
+        
+        # NOTE: Get it automatically for now, since only one manager. Works for now
+        self.manager = get_default_manager() # For the GUI
+        self.gui_box = VertContainer(
+            manager=self.manager,
+            rel_pos=(0., 0.),
+            rel_size=(1., 1.),
+            rel_padding=0.02)
     
+    def get_gui_component(self):
+        """
+        Returns the main GUI container for this automaton.
+        """
+        return self.gui_box
+
     def __init_subclass__(cls, **kwargs):
             """
                 Automagically registers subclasses of Automaton in the
@@ -43,7 +59,7 @@ class Automaton:
 
             AUTOMATAS[cls.__name__] = cls
 
-    def register_component(self, component:BaseComponent, custom_size=False):
+    def register_component(self, component:BaseComponent, keep_size=False):
         """
         Registers a GUI component to this automaton. The componenents
         will be rendered on the right side of the screen, and the events
@@ -52,14 +68,16 @@ class Automaton:
         Parameters:
         component : BaseComponent
             The component to register.
-        custom_size : bool
-            If True, preserves the component's set fractional size,
-            otherwise, will be resized.
+        keep_size : bool
+            If True, the component will keep its relative size, otherwise
+            it is automatically set
         """
         assert isinstance(component, BaseComponent), "component must be an instance of BaseComponent"
+        if(not keep_size):
+            component.rel_size = (0.1, 1.)
+        self.gui_box.add_component(component)
         self._components.append(component)
-        self._custom_size_flags.append(custom_size)
-        self._place_components(None)  # Place components correctly
+        component.render()
 
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')
@@ -71,34 +89,6 @@ class Automaton:
         If you choose to use another format, you should override the worldmap property as well.
         """
         return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
-    
-    def draw_components(self, screen):
-        """
-        Draws all registered components to the screen.
-        """
-        for component in self._components:
-            screen = component._draw(screen)
-        
-        return screen
-
-    def _place_components(self, screen):
-        """
-            Called only once at the beginning. Puts the correct fractional positions
-            so that components are placed on a vertical column, starting at self._components_fract_pos.
-        """
-        # Constants for component placement
-        VERTICAL_SPACING = 0.01  # Fractional spacing between components
-        HORIZONTAL_MARGIN = 0.01  # Fractional margin from the right edge
-        current_y = self._components_fract_pos[1]  # Start at the specified y position
-        x_position = self._components_fract_pos[0]  # Use the specified x position
-        
-        for i,component in enumerate(self._components):
-            # Set the component's fractional position
-            component.f_pos = (x_position, current_y)
-            if(not self._custom_size_flags[i]):
-                component.f_size = (component.f_size[0], 1-x_position-HORIZONTAL_MARGIN)  # Set a fixed width for all components
-            # Move to the next position (current y + component height + spacing)
-            current_y += component.f_size[0] + VERTICAL_SPACING
 
     def _process_event_focus_check(self, event, camera=None):
         """
@@ -106,21 +96,11 @@ class Automaton:
         if it is being captured by (focused) component.
         """
         self._process_gui_event(event) # Always try to process GUI events
-        if not BaseComponent.get_focus_manager().should_process_event(event):
-            #Finish execution here !! 
-            return
 
         self.process_event(event, camera)
 
         self._changed_components = [] # Reset changed components after processing
     
-    def set_components_fract_pos(self, pos):
-        """
-        Sets the fractional position of the start of the GUI components
-        """
-        self._components_fract_pos = pos
-        self._place_components(None)  # Re-place components correctly
-
     def process_event(self, event, camera=None):
         """
         Processes a pygame event, if needed. Should be overriden to 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame
 from pygame_gui.core.ui_element import UIElement
+from pygame_gui.core.utility import get_default_manager
 from copy import deepcopy
 
 from pygame_gui.core import ObjectID
@@ -12,7 +13,7 @@ class BaseComponent:
     """
     BASE_FONT_REL_SIZE = 0.015  # Relative font size with respect to screen height
     
-    def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None,*, theme_class=None,theme_id=None):
+    def __init__(self, manager=None, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None,*, theme_class=None,theme_id=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -25,7 +26,7 @@ class BaseComponent:
             theme_class (str, optional): Theme class for styling
             theme_id (str, optional): Theme ID for styling
         """
-        self.manager = manager
+        self.manager = manager if manager is not None else get_default_manager()
         self.sW, self.sH = self.manager.window_resolution
 
         self.parent = parent
@@ -145,6 +146,24 @@ class BaseComponent:
         """
         return self.main_element.get_container()
     
+    def set_parent(self, new_parent: 'BaseComponent' | None):
+        """
+        Sets a new parent for the component.
+
+        Args:
+            new_parent (BaseComponent | None): The new parent component.
+        """
+        if(self.parent is not None):
+            self.parent.child_components.remove(self)
+        
+        self.parent = new_parent
+
+        if(self.parent is not None):
+            self.parent._register_child_component(self)
+        
+        # Update container in main element
+        self.main_element.set_container(self.parent.container if self.parent is not None else None
+                                        )
     @property
     def parent_size(self):
         """
@@ -266,7 +285,7 @@ class BaseComponent:
             self.main_base_component._render()
         
         self.render()
-        
+
 
     def render(self):
         """

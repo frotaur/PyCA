@@ -37,6 +37,9 @@
         }
     },
 
+    "text_entry_line": {
+        "prototype": "#smallfont"
+    },
     "@label_normal": {
         "prototype": "#normalfont",
         "colours": {"normal_text":"#c5cbd8"}
@@ -53,7 +56,28 @@
             "shadow_width": 0
         },
         "colours": {
-            "dark_bg": "rgba(30,30,30,80)"
+            "dark_bg": "rgba(30,30,30,80)",
+            "selected_bg": "rgba(30,30,30,80)"
+        }
+        },
+    "drop_down_menu": {
+        "misc": {
+            "open_button_width": 0
+        }
+    },
+    "drop_down_menu.button" : {
+        "prototype": "#normalfont"
+    },
+    "drop_down_menu.#drop_down_options_list.button" : {
+        "font": {
+            "name":"mussels",
+            "size":12,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "mussels.otf"
+            }
         }
     },
     "@better_label": {

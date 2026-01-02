@@ -7,7 +7,7 @@ class TextBox(BaseComponent):
     """
     Represents a text box (word-wrapped HTML text) in the UI.
     """
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3), font_size=12,font_color=(230,230,230),text_align='left',*,theme_class=None,theme_id=None):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3),*, font_size=12,font_color=(230,230,230),text_align='left',selectable=False,theme_class=None,theme_id=None):
         """
         Initializes the text box component.
 
@@ -19,6 +19,8 @@ class TextBox(BaseComponent):
             rel_size (tuple): Fractional size in [0,1] of the component (height, width). Height can be -1 for auto.
             font_size: Base is 12, and changes are proportional based on that
             font_color (tuple): Color of the text in RGB format.
+            text_align (str): Text alignment within the box. Options are 'left', 'center', 'right'.
+            selectable (bool): Whether the text is selectable.
         """
         super().__init__(manager, parent, rel_pos, rel_size,theme_class=theme_class,theme_id=theme_id)
 
@@ -36,8 +38,11 @@ class TextBox(BaseComponent):
         )
         self.textbox.text_horiz_alignment = text_align
 
-        self.register_main_component(self.textbox)
+        if(not selectable):
+            self.textbox.disable()
     
+        self.register_main_component(self.textbox)
+
     @property
     def _html_text(self):
         """
