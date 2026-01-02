@@ -8,7 +8,7 @@ class BaseComponent:
     """
     Base class for UI components in the PyCA interface.
     """
-    BASE_FONT_REL_SIZE = 0.023  # Relative font size with respect to screen height
+    BASE_FONT_REL_SIZE = 0.015  # Relative font size with respect to screen height
     
     def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
         """
@@ -53,7 +53,7 @@ class BaseComponent:
         # base_size = font_dict['font'].point_size # NOTE : FOR NOW, BUGGED IN PYGAME-GUI so workaround
         base_size = self.base_font_size
 
-        return int(self.BASE_FONT_REL_SIZE*self.sH*base_size/12.)
+        return int(self.BASE_FONT_REL_SIZE*(self.sH+self.sW)/2.*base_size/12.)
 
     def register_main_component(self, component: UIElement | 'BaseComponent'):
         """
