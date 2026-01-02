@@ -62,6 +62,16 @@ class VertContainer(BaseComponent):
         self.components.append(component)
         component.main_element.rebuild()
 
+    def render(self):
+        """
+        Renders the VertContainer component with correct positioning and size.
+        """
+        super().render()
+        componentos = self.components
+        self.components=[]
+        for comp in componentos:
+            self.add_component(comp)   
+        
     def _add_component(self, component: BaseComponent):
         """
         Adds a BaseComponent to the vertical container using computed positions instead of anchors.
@@ -81,7 +91,7 @@ class VertContainer(BaseComponent):
         if len(self.components) > 0:
             # Position below the last component
             last_component = self.components[-1]
-            last_rect = last_component.main_element.get_abs_rect()
+            last_rect = last_component.main_element.get_relative_rect()
             y_pos = last_rect.bottom + padding_pixels - container_rect.y
         else:
             # First component, position at top

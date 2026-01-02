@@ -8,7 +8,7 @@ class BaseComponent:
     """
     Base class for UI components in the PyCA interface.
     """
-    BASE_FONT_REL_SIZE = 0.012  # Relative font size with respect to screen height
+    BASE_FONT_REL_SIZE = 0.023  # Relative font size with respect to screen height
     
     def __init__(self, manager, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
         """

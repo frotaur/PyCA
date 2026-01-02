@@ -39,7 +39,8 @@ class TextBox(BaseComponent):
         """
         Adjusts the font size in the HTML text based on the current absolute font size.
         """
-        return f"<font face='verdana' size={self.font_abs_size:.1f}>{self._text}</font>"
+        print('FONT SIZE:', self.font_abs_size)
+        return f"<font face='aldo' size={self.font_abs_size:.1f}>{self._text}</font>"
     
     @property
     def font_abs_size(self):
@@ -49,10 +50,10 @@ class TextBox(BaseComponent):
         """
         maxi=16
         mini=6
-        actual_size = self.BASE_FONT_REL_SIZE * (self.sH+self.sW)/2 * self.base_font_size/12.
+        actual_size = self.BASE_FONT_REL_SIZE * (self.sH+self.sW)/2 * self.base_font_size/28.
         size = (max(mini, min(maxi, actual_size))-mini)/(maxi-mini) # Between 0 and 1
 
-        return int((size*6+1)*2)/2.
+        return int((size*4.6+1)*2)/2.
         
     
     def _adjust_font_size(self):
