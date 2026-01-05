@@ -268,12 +268,15 @@ class BaseComponent:
 
         raise NotImplementedError("Subclasses must implement this method.")
     
-    def _render(self):
+    def _render(self, force=False):
         """
         Internal render method called when screen size changes.
         Calls the user-defined render method.
+
+        Args:
+            force (bool): If True, forces re-rendering even if size hasn't changed.
         """
-        if((self.sW, self.sH) != self.manager.window_resolution): # Window has been resized
+        if((self.sW, self.sH) != self.manager.window_resolution or force): # Window has been resized
             self.set_screen_size()
         else:
             return

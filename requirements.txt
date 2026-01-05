@@ -1,9 +1,10 @@
 easydict
 matplotlib
 numpy
-pygame
+pygame-ce
 pyperlin
 showtens
 torch
 torchvision
 torchenhanced
+pygame_gui

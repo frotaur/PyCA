@@ -180,6 +180,7 @@ class MainWindow:
         auto_desc, auto_help = self.auto.get_help()
         self.automaton_text.text = auto_desc.strip()
         self.automaton_help.text = auto_help.strip()
+        self.left_box._render(force=True)
 
     def load_automaton(self, automaton_name):
         """
