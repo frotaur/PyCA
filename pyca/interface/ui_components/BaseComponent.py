@@ -38,8 +38,6 @@ class BaseComponent:
         self.rel_size = rel_size
         self.max_size = max_size if max_size else (float('inf'), float('inf'))
 
-        self.visible = True
-
         self.main_element = None
         self.main_base_component = None
 
@@ -164,6 +162,7 @@ class BaseComponent:
         # Update container in main element
         self.main_element.set_container(self.parent.container if self.parent is not None else None
                                         )
+        self._render(force=True)
     @property
     def parent_size(self):
         """
@@ -250,23 +249,6 @@ class BaseComponent:
         """
         self.sW, self.sH = self.manager.window_resolution
         self._adjust_font_size()
-
-    def draw(self) -> None:
-        """
-        Draws the compo
-        Draws the component on the given screen. Must be subclassed.
-        When called, screen size is automatically updated, and the 'render'
-        method is called if the screen size changed. In this method, use 
-        whatever is prepared in the render method to draw the component.
-        
-        Args:
-            screen (pygame.Surface): Screen surface.
-        
-        Returns:
-            pygame.Surface: The screen with the component drawn on it.
-        """
-
-        raise NotImplementedError("Subclasses must implement this method.")
     
     def _render(self, force=False):
         """
@@ -318,12 +300,19 @@ class BaseComponent:
         """
         return False
 
+    @property
+    def visible(self) -> bool:
+        return self.main_component.visible
+    
+    @visible.setter
+    def visible(self, value: bool):
+        if value:
+            self.main_element.show()
+        else:
+            self.main_element.hide()
+    
     def toggle_visibility(self):
         """
         Toggles the visibility state of the component.
         """
         self.visible = not self.visible
-        if self.visible:
-            self.main_element.show()
-        else:
-            self.main_element.hide()

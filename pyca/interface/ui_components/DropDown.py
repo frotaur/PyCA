@@ -10,7 +10,7 @@ class DropDown(BaseComponent):
         Its state (self.selected) is simply a string. 
     """
 
-    def __init__(self, options, manager, parent=None, rel_pos=(0.,0.), rel_size=(0.05,0.1), open_upward=False):
+    def __init__(self, options, manager, parent=None, rel_pos=(0.,0.), rel_size=(0.05,0.1), open_upward=False, starting_option=None):
         """
         Initializes the dropdown component.
 
@@ -25,10 +25,10 @@ class DropDown(BaseComponent):
         super().__init__(manager, parent, rel_pos, rel_size)
         self.options = options
         self.exp_direction = 'up' if open_upward else 'down'
-        self.selected = options[0]
+        self.selected = options[0] if starting_option is None else starting_option
         # Create UIDropDownMenu from pygame_gui
         self.dropdown = UIDropDownMenu(options_list=self.options,
-                                       starting_option=self.options[0],
+                                       starting_option=self.selected,
                                        relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
                                        container = self.parent.container if self.parent is not None else None,
                                        manager=self.manager,

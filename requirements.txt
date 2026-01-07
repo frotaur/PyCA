@@ -4,7 +4,7 @@ numpy
 pygame-ce
 pyperlin
 showtens
-torch
+torch # TODO : make torch optional!
 torchvision
 torchenhanced
 pygame_gui

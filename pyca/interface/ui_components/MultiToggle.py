@@ -90,7 +90,17 @@ class MultiToggle(BaseComponent):
         self._set_aspect()
     
     def handle_event(self, event):
+        if event.type == pygame_gui.UI_BUTTON_PRESSED:
+            if event.ui_element == self.button:
+                self.toggle_state()
+                return True
         
-        if self.button.handle_event(event):
-            self.toggle_state()
-            return True
+        return False
+    
+    def render(self):
+        """
+        Renders the multi-toggle button component with correct positioning and size.
+        """
+        # Update button position and size
+        self.button.set_relative_position((self.x, self.y))
+        self.button.set_dimensions((self.w, self.h))

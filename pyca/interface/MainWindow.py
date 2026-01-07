@@ -69,7 +69,7 @@ class MainWindow:
         self.display_help = HelpEnum() # 'ALL' by default
         self.vid_writer=None
 
-        self._initial_automaton = "ElementaryCA"
+        self._initial_automaton = "CA2D"
 
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
@@ -137,9 +137,9 @@ class MainWindow:
 
         self.right_container.add_component(self.live_fps_label)
         self.right_container.add_component(self.fps_box)
-
+        self.right_container.add_component(TextBox("Automaton controls:", manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(-1,1.), font_size=14, text_align='center', font_color=(200, 89, 89)))
         # Dropdown for automaton selection
-        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), manager=self.manager, parent=self.right_box, rel_pos=(0.0,0.94), rel_size=(0.06,1.0), open_upward=True)
+        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), manager=self.manager, parent=self.right_box, rel_pos=(0.0,0.94), rel_size=(0.06,1.0), open_upward=True, starting_option=self._initial_automaton)
 
     def _generate_left_base_gui(self):
         """
@@ -159,7 +159,7 @@ class MainWindow:
         self.automaton_text = TextBox(auto_desc.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_color=description_color)
         controls_title = TextBox("General Controls",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.01), rel_size=(-1,1.), font_size=title_size, text_align='center', font_color=title_color)
         controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.))
-        automaton_help_title = TextBox("Automaton Controls",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=title_size, text_align='center', font_color=title_color)  
+        automaton_help_title = TextBox("Automaton Keybinds",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=title_size, text_align='center', font_color=title_color)  
         self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.))
 
         self.left_text_container.add_component(self.automaton_name)
@@ -170,7 +170,7 @@ class MainWindow:
         self.left_text_container.add_component(self.automaton_help)
 
         self.live_auto_label = TextBox(text = self.auto.get_string_state(), manager=self.manager, parent=self.left_box,
-                                       rel_pos=(0.,0.9),rel_size=(-1,1.), font_size=12, text_align='right')
+                                       rel_pos=(0.,0.9),rel_size=(-1,1.), font_size=12, text_align='right', font_color=(120, 230, 120))
 
     def _update_left_texts(self):
         """
@@ -222,10 +222,10 @@ class MainWindow:
             Handles all events in the main loop.
         """
         for event in pygame.event.get():
-            self._base_events(event)
-            # self.auto._process_gui_event(event)
-            self._gui_events(event)
             self.manager.process_events(event)
+            self._base_events(event)
+            self.auto.process_all_events(event, camera=self.camera)
+            self._gui_events(event)
         
     def main_loop(self):
         """
@@ -384,10 +384,5 @@ class MainWindow:
 
     def _hidden_pressed(self):
         self.display_help.toggle()
-        for component in self.right_components:
-            component.visible = self.display_help.right_pane
-            self.auto.set_components_visibility(self.display_help.right_pane)
-
-            self.automaton_controls_title.visible = (self.display_help.right_pane and len(self.auto._components)>0)
-        for component in self.left_components:
-            component.visible = self.display_help.left_pane
+        self.right_box.visible = self.display_help.right_pane
+        self.left_box.visible = self.display_help.left_pane

@@ -146,16 +146,7 @@ the sum of the values of its neighbors.
                 self.decay_speed = max(self.decay_speed - 0.1 * self.decay_speed, 0.005)
             if event.key == pygame.K_DOWN:
                 self.decay_speed = min(0.1 * self.decay_speed + self.decay_speed, 3)
-
-        for component in self.changed_components:
-            if component == self.reset_button:
-                self.reset()
-            if component == self.toggle_init:
-                self._toggle_init_mode()
-            if component == self.random_rule:
-                self._random_rule()
-            if component == self.highlight_button:
-                self.change_highlight_color()
+            
         
         mouse = self.get_mouse_state(camera)
 
@@ -166,7 +157,17 @@ the sum of the values of its neighbors.
         if mouse.right:
             brush = self.get_brush_slice(mouse.x, mouse.y).to(self.device)
             self.world[brush] = 0
-        
+    
+    def process_gui_change(self, component):
+        if component == self.reset_button:
+            self.reset()
+        if component == self.toggle_init:
+            self._toggle_init_mode()
+        if component == self.random_rule:
+            self._random_rule()
+        if component == self.highlight_button:
+            self.change_highlight_color()
+
     def _toggle_init_mode(self):
         self.dot = not self.dot
         self.toggle_init.state = self.dot

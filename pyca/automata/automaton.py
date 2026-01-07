@@ -6,6 +6,7 @@ from easydict import EasyDict
 from ..interface.ui_components.BaseComponent import BaseComponent
 from pygame_gui.core.utility import get_default_manager
 from ..interface import VertContainer
+from pygame_gui.elements import UITextEntryLine, UITextEntryBox
 
 AUTOMATAS = {}
 
@@ -36,13 +37,19 @@ class Automaton:
         # Obtain (H,W) tensors, containing the x (i.e. width, or column index) and y (i.e. height, or row index) coordinates of each pixel
         self.X, self.Y = torch.meshgrid(torch.arange(self.w), torch.arange(self.h), indexing='xy') 
         
-        # NOTE: Get it automatically for now, since only one manager. Works for now
+        # NOTE: Get it automatically for now, since only one manager. Maybe in the future
+        # should be passed as an argument in the init
         self.manager = get_default_manager() # For the GUI
         self.gui_box = VertContainer(
             manager=self.manager,
             rel_pos=(0., 0.),
-            rel_size=(1., 1.),
+            rel_size=(1.,.8),
             rel_padding=0.02)
+
+        # For mouse state processing
+        self._m_right = False
+        self._m_left = False
+        self._m_middle = False
     
     def get_gui_component(self):
         """
@@ -74,7 +81,7 @@ class Automaton:
         """
         assert isinstance(component, BaseComponent), "component must be an instance of BaseComponent"
         if(not keep_size):
-            component.rel_size = (0.1, 1.)
+            component.rel_size = (0.05, 1.)
         self.gui_box.add_component(component)
         self._components.append(component)
         component._render(force=True)
@@ -90,17 +97,82 @@ class Automaton:
         """
         return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
 
-    def _process_event_focus_check(self, event, camera=None):
+    def _focus_check(self, event):
         """
-        Like process event, but checks first if we can handle the event, or
-        if it is being captured by (focused) component.
+        Internal method to check if a text input has focus.
         """
+        if event.type in (pygame.KEYDOWN, pygame.KEYUP):
+                focused_set = self.manager.get_focus_set()
+                if focused_set:
+                    for element in focused_set:
+                        if isinstance(element, (UITextEntryLine, UITextEntryBox)):
+                            # User is typing, don't process shortcuts
+                            return True
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.manager.get_hovering_any_element():
+                return  True # Don't process click on environment
+        return False
+
+    def _update_mouse_buttons(self, event):
+        """
+        Internal method to update mouse button states.
+        """
+        # Can ALWAYS un-press mouse buttons
+        if(event.type == pygame.MOUSEBUTTONUP):
+            if(event.button == 1):
+                self._m_left = False
+            if(event.button == 2):
+                self._m_middle = False
+            if(event.button == 3):
+                self._m_right = False
+        
+        if(event.type in pygame.MOUSEBUTTONDOWN):
+            # Can ONLY press mouse buttons if GUI does not have focus
+            if(not self.manager.get_hovering_any_element()):
+                self._m_left, self._m_middle, self._m_right = pygame.mouse.get_pressed()
+
+    def process_all_events(self, event, camera=None):
+        """
+        Should be called at each event loop iteration, to process events.
+        Avoids processing events (keyboard and mouse) if the GUI has focus.
+        NOTE ? : Should this be a decorator of some sorts?
+        """
+        self._changed_components = [] # Reset changed components after processing
+
         self._process_gui_event(event) # Always try to process GUI events
 
-        self.process_event(event, camera)
+        if(len(self._changed_components)>0):
+            for component in self._changed_components:
+                self.process_gui_change(component)
+            return # Stop here! Something happened with the GUI, do not process further
+        if(event.type == pygame.MOUSEBUTTONUP):
+            if(event.button == 1):
+                self._m_left = False
+            if(event.button == 2):
+                self._m_middle = False
+            if(event.button == 3):
+                self._m_right = False
+        if self._focus_check(event):
+            return  # GUI has focus, do not process further
+        
+        if(event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP):
+            # Update mouse button states
+            self._m_left, self._m_middle, self._m_right = pygame.mouse.get_pressed()
+        self.process_event(event, camera) # Process event not called if GUI has focus
 
-        self._changed_components = [] # Reset changed components after processing
     
+    def process_gui_change(self, component:BaseComponent):
+        """
+        Must be overriden to respond to GUI component interactions.
+        This method is called automatically when a component changes its state.
+        To add GUI-based functionality, use this method in your subclass.
+
+        Parameters:
+        component : BaseComponent
+            The component that changed.
+        """
+        pass
+
     def process_event(self, event, camera=None):
         """
         Processes a pygame event, if needed. Should be overriden to 
@@ -121,7 +193,8 @@ class Automaton:
         """
         
         for component in self._components:
-            if(component._handle_event(event)):
+            if(component.handle_event(event)):
+                print('HOLUP ! Component changed:', component)
                 self._changed_components.append(component)
 
     @property
@@ -169,13 +242,13 @@ class Automaton:
             middle : True if middle mouse button is pressed (access also as mouse_state.middle)
             inside : True if mouse is inside the CA world, False otherwise (access also as mouse_state.inside)
         """
-        left, middle, right = pygame.mouse.get_pressed()
+        left, middle, right = self._m_left, self._m_middle, self._m_right
         mouse_x, mouse_y = camera.convert_mouse_pos(pygame.mouse.get_pos())
         mods = pygame.key.get_mods()
         ctrl_pressed = mods & (pygame.KMOD_LCTRL | pygame.KMOD_RCTRL)
         
         # If CTRL is pressed, force all mouse buttons to be considered not pressed
-        if ctrl_pressed:
+        if ctrl_pressed: 
             left = middle = right = 0
         return EasyDict({"x":mouse_x, "y":mouse_y, 'left': left==1, 'right': right==1, 'middle': middle==1, 'inside':camera.mouse_in_border(pygame.mouse.get_pos())})
 

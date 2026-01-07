@@ -93,7 +93,6 @@ class VertContainer(BaseComponent):
         """
         Renders the VertContainer component with correct positioning and size.
         """
-        super().render()
         componentos = self.components
         self.components=[]
         for comp in componentos:
