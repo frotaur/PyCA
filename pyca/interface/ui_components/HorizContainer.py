@@ -46,17 +46,15 @@ class HorizContainer(BaseComponent):
         padding = self.padding*self.w
         if len(self.components) > 0:
             last_el = self.components[-1].main_element
-            component.main_element.set_anchors({
+            component.set_anchors({
                 'left': 'left',
                 'left_target': last_el,
                 'centery': 'centery'
             })
             component.rel_pos = (padding, 0) # Relative to last component
-            # WORKAROUND: set_anchors() doesn't work properly unless we also call set_relative_position()
-            # This forces pygame_gui to recalculate the position based on the anchors
             component.main_element.set_relative_position((padding, 0))
         else:
-            component.main_element.set_anchors({
+            component.set_anchors({
                 'left': 'left',
                 'centery': 'centery'
             })

@@ -45,4 +45,3 @@ class TextLabel(BaseComponent):
         Sets the text of the text box 
         """
         self.textbox.text = new_text
-        self.textbox.rebuild()

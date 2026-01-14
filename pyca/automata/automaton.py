@@ -84,7 +84,6 @@ class Automaton:
             component.rel_size = (0.05, 1.)
         self.gui_box.add_component(component)
         self._components.append(component)
-        component._render(force=True)
 
     def step(self):
         return NotImplementedError('Please subclass "Automaton" class, and define self.step')

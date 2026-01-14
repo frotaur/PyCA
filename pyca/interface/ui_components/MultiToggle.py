@@ -28,17 +28,7 @@ class MultiToggle(BaseComponent):
         self.states = states
         self.current_state_index = init_state_index
 
-        if state_bg_colors is None:
-            # Default colors if none provided
-            self.state_bg_colors = [(200, 200, 200) for _ in states]
-        else:
-            if len(state_bg_colors) != len(states):
-                raise ValueError("Length of state_bg_colors must match length of states.")
-            self.state_bg_colors = state_bg_colors
 
-        self.state_bg_active_colors = [
-                    tuple(max(0, bg-30) for bg in color) for color in self.state_bg_colors
-                ]
         
         self.button = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
@@ -46,8 +36,19 @@ class MultiToggle(BaseComponent):
             container=self.parent.container if self.parent is not None else None,
             manager=self.manager)
         
-        self._set_aspect()
+        if state_bg_colors is None:
+            # Default colors if none provided
+            self.state_bg_colors=[self.button.colours["normal_bg"] for _ in range(len(states))] # Do nothing for now, but in the future use default colors somehow
+            self.state_bg_active_colors = [self.button.colours["active_bg"] for _ in range(len(states))]
+        else:
+            if len(state_bg_colors) != len(states):
+                raise ValueError("Length of state_bg_colors must match length of states.")
+            self.state_bg_colors = state_bg_colors
+            self.state_bg_active_colors = [
+                        tuple(max(0, bg-30) for bg in color) for color in self.state_bg_colors
+                    ]
         self.register_main_component(self.button)
+        self._set_aspect()
 
     def _set_aspect(self):
         """
@@ -55,7 +56,7 @@ class MultiToggle(BaseComponent):
         """
         self.button.set_text(self.states[self.current_state_index])
         self.button.colours["normal_bg"] = pygame.Color(self.state_bg_colors[self.current_state_index])
-        # self.button.colours["hovered_bg"] = col
+        # self.button.colours["hovered_bg"] =todo
         self.button.colours["active_bg"] = pygame.Color(self.state_bg_active_colors[self.current_state_index])
         self.button.rebuild()
     
@@ -89,6 +90,16 @@ class MultiToggle(BaseComponent):
 
         self._set_aspect()
     
+    @property
+    def active(self):
+        """
+        Returns True if button is in first state, False otherwise.
+        Raises ValueError if there are more than 2 states.
+        """
+        if len(self.states) != 2:
+            raise ValueError("Active property is only valid for two-state toggles.")
+        return self.current_state_index == 0
+
     def handle_event(self, event):
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == self.button:

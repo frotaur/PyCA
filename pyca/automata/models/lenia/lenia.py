@@ -119,17 +119,23 @@ class Lenia(DevModule, Automaton):
 
 
         # GUI components
-        self.reset_button = Button('Re-initialize')
+        self.reset_button = Button('Re-initialize',
+                                   manager=self.manager)
         self.register_component(self.reset_button)
-        self.cool_rule = Button('Next Interesting Rule')
+        self.cool_rule = Button('Next Interesting Rule',
+                                manager=self.manager)
         self.register_component(self.cool_rule)
-        self.random_rule = Button('Re-roll Rule')
+        self.random_rule = Button('Re-roll Rule',
+                                 manager=self.manager)
         self.register_component(self.random_rule)
-        self.wipe_button = Button('Wipe State')
+        self.wipe_button = Button('Wipe State',
+                                 manager=self.manager)
         self.register_component(self.wipe_button)
-        self.toggle_rand_type = MultiToggle('Smart Random Rule', 'Uniform Random Rule')
+        self.toggle_rand_type = MultiToggle(states=['Smart Random Rule', 'Uniform Random Rule'],
+                                            manager=self.manager)
         self.register_component(self.toggle_rand_type)
-        self.toggle_add_remove = MultiToggle('Click to Add', 'Click to Remove')
+        self.toggle_add_remove = MultiToggle(states=['Click to Add', 'Click to Remove'],
+                                             manager=self.manager)
         self.register_component(self.toggle_add_remove)
         
 
@@ -652,23 +658,25 @@ class Lenia(DevModule, Automaton):
             x, y = mouse_state.x, mouse_state.y
             
             if mouse_state.left:
-                self._affect_matter(x,y, add = self.toggle_add_remove.state)
+                
+                self._affect_matter(x,y, add = self.toggle_add_remove.active)
             elif mouse_state.right:
-                self._affect_matter(x,y, add = not self.toggle_add_remove.state)
+                self._affect_matter(x,y, add = not self.toggle_add_remove.active)
 
-        for component in self.changed_components:
-            if component == self.reset_button:
-                self.set_init_circle()
-            if component == self.cool_rule:
-                self.load_interest_file()
-                self.set_init_circle()
-            if component == self.random_rule:
-                self.reroll_params(true_random=not self.toggle_rand_type.state)
-                self.set_init_circle()
-            if component == self.wipe_button:
-                self.frames = 0
-                self.state = torch.zeros_like(self.state)
-    
+    def process_gui_change(self,component):
+
+        if component == self.reset_button:
+            self.set_init_circle()
+        elif component == self.cool_rule:
+            self.load_interest_file()
+            self.set_init_circle()
+        elif component == self.random_rule:
+            self.reroll_params(true_random=not self.toggle_rand_type.value)
+            self.set_init_circle()
+        elif component == self.wipe_button:
+            self.frames = 0
+            self.state = torch.zeros_like(self.state)
+
     def _affect_matter(self, x, y, add=True):
         add_rad = self.k_size / 2.0
         add_mask = (self.X - x) ** 2 + (self.Y - y) ** 2 < add_rad**2  # (H,W)

@@ -160,9 +160,18 @@ class BaseComponent:
             self.parent._register_child_component(self)
         
         # Update container in main element
-        self.main_element.set_container(self.parent.container if self.parent is not None else None
-                                        )
+        self._set_container(self.parent.container if self.parent is not None else None)
         self._render(force=True)
+    
+    def _set_container(self, new_container):
+        """
+        Sets a new container for the main element.
+
+        Args:
+            new_container: The new container to set.
+        """
+        self.main_element.set_container(new_container)
+    
     @property
     def parent_size(self):
         """
@@ -316,3 +325,13 @@ class BaseComponent:
         Toggles the visibility state of the component.
         """
         self.visible = not self.visible
+
+    def set_anchors(self, anchors):
+        """
+        Sets the anchors for the component's main element.
+        Can be overridden in subclasses for elements with internal containers.
+
+        Args:
+            anchors (dict): A dictionary of anchors defining what the relative rect is relative to.
+        """
+        self.main_element.set_anchors(anchors)

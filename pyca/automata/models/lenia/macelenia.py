@@ -2,11 +2,12 @@ import torch, torch.nn.functional as F
 import pygame
 import showtens
 
-from pyca.interface.ui_components.Old.Slider import LabeledSlider
+from pyca.interface.ui_components import Slider
+
 from .lenia import Lenia
 import random
 import math
-from pyca.interface import MultiToggle, Slider
+from pyca.interface import MultiToggle, LabeledSlider
 
 class MaCELenia(Lenia):
     """
@@ -65,10 +66,12 @@ class MaCELenia(Lenia):
         self.add_speed = 1.
         
         # GUI components
-        self.tog_food_off = Toggle("Food: OFF", "Food: ON")
+        self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager,rel_pos=(0.1,0.1), rel_size=(0.1, 1.), parent=None, tick_size=0.1, initial_value=5.)
+        self.register_component(self.beta_slider, keep_size=True)
+        self.tog_food_off = MultiToggle(states=["Food: OFF", "Food: ON"],manager=self.manager)
         self.register_component(self.tog_food_off)
-        self.beta_slider = LabeledSlider(min_value=0., max_value=15., fract_size=(0.07, 0.18), title='Beta/Temp', initial_value=self.b)
-        self.register_component(self.beta_slider, custom_size=True)
+        # self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager, title='Beta/Temp', initial_value=self.b,tick_size=0.1,rel_size=(0.2,1))
+
 
     def step(self, sense_food=None):
         """
@@ -264,13 +267,12 @@ class MaCELenia(Lenia):
                     self.sense_food = not self.sense_food
                 else:
                     self.set_food(not self.has_food)
+    def process_gui_change(self, component):
+        if component == self.tog_food_off:
+            self.set_food(not self.tog_food_off.value)
+        elif component == self.beta_slider:
+            self.b = self.beta_slider.value
 
-        for component in self.changed_components:
-            if component == self.tog_food_off:
-                self.set_food(not self.tog_food_off.state)
-            if component == self.beta_slider:
-                self.b = self.beta_slider.value
-    
     def set_food(self, has_food: bool):
         """
         Sets the food state of the automaton.

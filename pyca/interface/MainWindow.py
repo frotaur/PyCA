@@ -14,7 +14,7 @@ from pyca.interface import Camera, launch_video, print_screen, add_frame
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS, Automaton
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
-from .ui_components import VertContainer, Button, TextLabel, InputField, DropDown, TextBox, BoxHolder, HorizContainer
+from .ui_components import VertContainer,Slider, Button, TextLabel, InputField, DropDown, TextBox, BoxHolder, HorizContainer
 
 class MainWindow:
     """
@@ -69,7 +69,7 @@ class MainWindow:
         self.display_help = HelpEnum() # 'ALL' by default
         self.vid_writer=None
 
-        self._initial_automaton = "CA2D"
+        self._initial_automaton = "MaCELenia"
 
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
@@ -85,11 +85,17 @@ class MainWindow:
         self.auto = self.load_automaton(self._initial_automaton)
         self._generate_left_base_gui()
 
+        # Test BoxHolder with slider in the middle
+        self.test_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.35, 0.4), rel_size=(0.3, 0.1))
+        # self.test_slider = Slider(min_value= 0, max_value=100, manager=self.manager, parent=self.test_box, rel_pos=(0, 0), rel_size=(.3, 1), tick_size=1, initial_value=50)
+        # self.test_button = Button(text="Test Button", manager=self.manager, parent=self.test_box, rel_pos=(0, 0), rel_size=(.3, 1))
+        # self.test_slider2 = Slider(min_value= 0, max_value=100, manager=self.manager, parent=self.test_box, rel_pos=(0, 0), rel_size=(.3, 1), tick_size=1, initial_value=75)
+        # self.test_box.add_component(self.test_slider)
+        # self.test_box.add_component(self.test_button)
+        # self.test_box.add_component(self.test_slider2)
         # if(self.tablet_mode):
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
-
-        
     def _generate_tablet_gui(self, start_position=(0.8,0.1)):
         """
             Generates the tablet-mode GUI components, which are buttons for play/pause,
@@ -121,7 +127,7 @@ class MainWindow:
         """
             Generates the base GUI which go on the right side of the window
         """
-        self.right_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1.0,0.22))
+        self.right_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0.78,0.), rel_size=(1,0.22), resize_dirs=['bottom'])
         self.right_container = VertContainer(manager=self.manager, parent=self.right_box, rel_pos=(0,0), rel_size=(1.0,1.0))
         ### FPS live label        
         self.live_fps_label = TextBox(f"FPS: {self.fps}", manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(-1,1.), font_size=12, text_align='right', font_color=(230, 120, 120))
@@ -151,16 +157,16 @@ class MainWindow:
 
         title_size = 16
 
-        self.left_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22))
+        self.left_box = BoxHolder(manager=self.manager, parent=None, rel_pos=(0,0), rel_size=(1.0,0.22),resize_dirs=['bottom'])
         self.left_text_container = VertContainer(manager=self.manager, parent=self.left_box, rel_pos=(0,0), rel_size=(1.0,1.0))
 
         self.automaton_name = TextBox(self.auto.name(),manager=self.manager, parent=self.left_text_container,rel_pos=(0,0), rel_size=(-1,1.),font_size=title_size, text_align='center',font_color=title_color)
         auto_desc, auto_help = self.auto.get_help()
         self.automaton_text = TextBox(auto_desc.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_color=description_color)
         controls_title = TextBox("General Controls",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.01), rel_size=(-1,1.), font_size=title_size, text_align='center', font_color=title_color)
-        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.))
+        controls = TextBox(INTERFACE_HELP['content'].strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=11)
         automaton_help_title = TextBox("Automaton Keybinds",manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=title_size, text_align='center', font_color=title_color)  
-        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.))
+        self.automaton_help = TextBox(auto_help.strip(),manager=self.manager, parent=self.left_text_container,rel_pos=(0.,0.), rel_size=(-1,1.),font_size=11)
 
         self.left_text_container.add_component(self.automaton_name)
         self.left_text_container.add_component(self.automaton_text)
@@ -171,7 +177,7 @@ class MainWindow:
 
         self.live_auto_label = TextBox(text = self.auto.get_string_state(), manager=self.manager, parent=self.left_box,
                                        rel_pos=(0.,0.9),rel_size=(-1,1.), font_size=12, text_align='right', font_color=(120, 230, 120))
-
+        self.left_text_container.add_component(self.live_auto_label)
     def _update_left_texts(self):
         """
             Updates the left text labels, for when the automaton changes.
@@ -261,6 +267,7 @@ class MainWindow:
             
             self.left_box._render()
             self.right_box._render()
+            self.test_box._render()
             self.update_live_text()
             self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)

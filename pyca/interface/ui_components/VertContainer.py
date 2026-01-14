@@ -39,33 +39,32 @@ class VertContainer(BaseComponent):
     def add_component(self, component: BaseComponent):
         """
         Adds a BaseComponent to the vertical container.
-        Note that the component's parent should be set to this VertContainer.
 
         Args:
             component (BaseComponent): The component to add.
         """
         padding = self.padding*self.h
+
+
         if len(self.components) >0 :
+            
             last_el = self.components[-1].main_element
-            component.main_element.set_anchors({
+            component.set_anchors({
                 'top': 'top',
                 'top_target': last_el,
                 'centerx': 'centerx'
             })
             component.rel_pos = (0, self.padding) # Relative to last component
-            # WORKAROUND: set_anchors() doesn't work properly unless we also call set_relative_position()
-            # This forces pygame_gui to recalculate the position based on the anchors
             component.main_element.set_relative_position((0, padding))
         else:
-            component.main_element.set_anchors({
+            component.set_anchors({
                 'top': 'top',
                 'centerx': 'centerx'
             })
             component.rel_pos = (0, 0) # Relative to container top
             component.main_element.set_relative_position((0, 0))
-
+        
         component.set_parent(self)
-
         self.components.append(component)
         component.main_element.rebuild()
 

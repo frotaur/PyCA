@@ -9,7 +9,7 @@ class LabeledSlider(BaseComponent):
         A (optionally labeled) slider component with a text label showing the current value.
     """
     def __init__(self, min_value, max_value, manager, parent=None, rel_pos=(0,0),
-                 rel_size=(0.05,0.3), title=None,tick_size=1, initial_value=None):
+                 rel_size=(0.05,0.3), title=None,tick_size=1., initial_value=None):
         """
         Initializes the LabeledSlider component.
         
@@ -32,8 +32,9 @@ class LabeledSlider(BaseComponent):
             rel_pos=rel_pos,
             rel_size=rel_size
         )
+        title=None
         # Compute the configuration inside the BoxHolder
-        title_height_fraction = 0.4 if title else 0.0
+        title_height_fraction = 0.1 if title else 0.0
         label_width_fraction = 0.15
         slider_pos = (0, title_height_fraction)
         slider_size = (1 - title_height_fraction, 1 - label_width_fraction)
@@ -69,6 +70,7 @@ class LabeledSlider(BaseComponent):
             rel_size=label_size)
 
         self.register_main_component(self.holder)
+
     @property
     def value(self):
         """

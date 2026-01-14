@@ -40,6 +40,19 @@ class Slider(BaseComponent):
             click_increment=tick_size
         )
         self.register_main_component(self.slider)
+
+    def _set_container(self, new_container):
+        """
+        Sets a new container for the main element.
+
+        Args:
+            new_container: The new container to set.
+        """
+        self.slider.set_container(new_container)
+
+        if self.slider.button_container:
+            self.slider.button_container.set_container(new_container)
+
     @property
     def value(self):
         """Get the current value of the slider."""
@@ -56,6 +69,21 @@ class Slider(BaseComponent):
         """
         self.slider.set_relative_position((self.x, self.y))
         self.slider.set_dimensions((self.w, self.h))
+        self.slider.rebuild()
+
+    def set_anchors(self, anchors):
+        """
+        Sets anchors for the slider and propagates to button_container.
+        This follows the UIPanel fix from pygame_gui PR #596.
+
+        Args:
+            anchors (dict): A dictionary of anchors defining what the relative rect is relative to.
+        """
+        self.slider.set_anchors(anchors)
+
+        # The button_container needs the same anchors so it moves with the slider
+        if self.slider.button_container:
+            self.slider.button_container.set_anchors(anchors)
 
     def handle_event(self, event: pygame.event.Event) -> bool:
         """

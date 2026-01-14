@@ -34,8 +34,6 @@ class Button(BaseComponent):
         """
         Renders the button component with correct positioning and size.
         """
-        super().render() 
-
         # Update button position and size
         self.button.set_relative_position((self.x, self.y))
         self.button.set_dimensions((self.w, self.h))
