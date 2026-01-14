@@ -28,7 +28,7 @@ class TextLabel(BaseComponent):
         super().__init__(manager, parent, rel_pos, rel_size,theme_class=class_id)
 
         self.textbox = TextBox(
-            text=text, font_size=font_size, manager=manager, parent=parent, rel_pos=(0,0), rel_size=(-1,1), theme_class=class_id)
+            text=text, font_size=font_size, manager=manager, parent=parent, rel_pos=rel_pos, rel_size=rel_size, theme_class=class_id)
         
         self.register_main_component(self.textbox)
     

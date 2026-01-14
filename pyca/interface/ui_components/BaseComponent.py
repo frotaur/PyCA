@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from pygame_gui.core import ObjectID
 
+
 class BaseComponent:
     """
     Base class for UI components in the PyCA interface.
@@ -34,8 +35,8 @@ class BaseComponent:
         if(self.parent is not None):
             self.parent._register_child_component(self)
 
-        self.rel_pos = rel_pos
-        self.rel_size = rel_size
+        self._rel_pos = rel_pos
+        self._rel_size = rel_size
         self.max_size = max_size if max_size else (float('inf'), float('inf'))
 
         self.main_element = None
@@ -48,6 +49,38 @@ class BaseComponent:
         self.theme_id = theme_id
 
         self.object_id = ObjectID(class_id=theme_class, object_id=theme_id)
+
+    @property
+    def rel_pos(self):
+        """
+        Returns the fractional position of the component.
+        """
+        return self._rel_pos
+    
+    @rel_pos.setter
+    def rel_pos(self, new_rel_pos):
+        """
+            Sets rel_pos, keeping main_base_component in sync if not a 'fundamental' element.
+        """
+        self._rel_pos = new_rel_pos
+        if(self.main_base_component is not None):
+            self.main_base_component.rel_pos = new_rel_pos
+
+    @property
+    def rel_size(self):
+        """
+        Returns the fractional size of the component.
+        """
+        return self._rel_size
+
+    @rel_size.setter
+    def rel_size(self, new_rel_size):
+        """
+            Sets rel_size, keeping main_base_component in sync if not a 'fundamental' element.
+        """
+        self._rel_size = new_rel_size
+        if(self.main_base_component is not None):
+            self.main_base_component.rel_size = new_rel_size
 
     @property
     def font_abs_size(self):
@@ -144,6 +177,22 @@ class BaseComponent:
         """
         return self.main_element.get_container()
     
+    def _reparent(self, reparent_target, new_parent):
+        """
+        Reparents a given BaseComponent to a new parent.
+
+        Args:
+            reparent_target (BaseComponent): The component to reparent.
+            new_parent (BaseComponent | None): The new parent component.
+        """
+        if(reparent_target.parent is not None):
+            reparent_target.parent.child_components.remove(reparent_target)
+
+        reparent_target.parent = new_parent
+
+        if(new_parent is not None):
+            new_parent._register_child_component(reparent_target)
+        
     def set_parent(self, new_parent: 'BaseComponent' | None):
         """
         Sets a new parent for the component.
@@ -151,26 +200,19 @@ class BaseComponent:
         Args:
             new_parent (BaseComponent | None): The new parent component.
         """
-        if(self.parent is not None):
-            self.parent.child_components.remove(self)
-        
-        self.parent = new_parent
+        if(self.main_base_component is not None):
+            self._reparent(reparent_target=self.main_base_component, new_parent=new_parent)
+            self.parent = new_parent # useless, but let's keep track of current parent in the wrapper as well
+        else:
+            #We are a 'fundamental' element, just change parent directly
+            self._reparent(reparent_target=self, new_parent=new_parent)
 
-        if(self.parent is not None):
-            self.parent._register_child_component(self)
         
-        # Update container in main element
-        self._set_container(self.parent.container if self.parent is not None else None)
-        self._render(force=True)
-    
-    def _set_container(self, new_container):
-        """
-        Sets a new container for the main element.
-
-        Args:
-            new_container: The new container to set.
-        """
+        # in any case, update container of main element
+        new_container = self.parent.container if self.parent is not None else None
         self.main_element.set_container(new_container)
+        self._render(force=True)
+        
     
     @property
     def parent_size(self):
@@ -267,16 +309,16 @@ class BaseComponent:
         Args:
             force (bool): If True, forces re-rendering even if size hasn't changed.
         """
-        if((self.sW, self.sH) != self.manager.window_resolution or force): # Window has been resized
+        if((self.sW, self.sH) != self.manager.window_resolution): # Window has been resized
             self.set_screen_size()
-        else:
+        elif(not force):
             return
         
         for child in self.child_components:
-            child._render()
+            child._render(force=force)
         
         if(self.main_base_component is not None):
-            self.main_base_component._render()
+            self.main_base_component._render(force=force)
         
         self.render()
 

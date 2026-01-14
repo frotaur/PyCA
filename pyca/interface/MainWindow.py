@@ -11,6 +11,7 @@ from importlib.resources import files
 import pygame_gui
 
 from pyca.interface import Camera, launch_video, print_screen, add_frame
+from pyca.interface.ui_components.LabeledSlider import LabeledSlider
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS, Automaton
 from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH
@@ -85,14 +86,6 @@ class MainWindow:
         self.auto = self.load_automaton(self._initial_automaton)
         self._generate_left_base_gui()
 
-        # Test BoxHolder with slider in the middle
-        self.test_box = VertContainer(manager=self.manager, parent=None, rel_pos=(0.35, 0.4), rel_size=(0.3, 0.1))
-        # self.test_slider = Slider(min_value= 0, max_value=100, manager=self.manager, parent=self.test_box, rel_pos=(0, 0), rel_size=(.3, 1), tick_size=1, initial_value=50)
-        # self.test_button = Button(text="Test Button", manager=self.manager, parent=self.test_box, rel_pos=(0, 0), rel_size=(.3, 1))
-        # self.test_slider2 = Slider(min_value= 0, max_value=100, manager=self.manager, parent=self.test_box, rel_pos=(0, 0), rel_size=(.3, 1), tick_size=1, initial_value=75)
-        # self.test_box.add_component(self.test_slider)
-        # self.test_box.add_component(self.test_button)
-        # self.test_box.add_component(self.test_slider2)
         # if(self.tablet_mode):
         #     self.tablet_gui_components = None
         #     self._generate_tablet_gui(start_position=self.extra_components_pos)
@@ -205,7 +198,6 @@ class MainWindow:
             auto : Automaton = AUTOMATAS[automaton_name]((self.H,self.W),**defaults, device=self.device)
             self.auto_gui = auto.get_gui_component()
             self.right_container.add_component(self.auto_gui)
-            
             # self.automaton_controls_title.visible = len(auto._components)>0 and self.display_help.right_pane
 
             return auto
@@ -267,7 +259,6 @@ class MainWindow:
             
             self.left_box._render()
             self.right_box._render()
-            self.test_box._render()
             self.update_live_text()
             self.manager.draw_ui(self.screen)
             # self.auto.draw_components(self.screen)

@@ -1,3 +1,4 @@
+from .TextBox import TextBox
 from .Slider import Slider
 from .TextLabel import TextLabel
 from .BoxHolder import BoxHolder
@@ -28,11 +29,10 @@ class LabeledSlider(BaseComponent):
 
         self.holder = BoxHolder(
             manager=self.manager,
-            parent=parent,
+            parent=self.parent,
             rel_pos=rel_pos,
             rel_size=rel_size
         )
-        title=None
         # Compute the configuration inside the BoxHolder
         title_height_fraction = 0.1 if title else 0.0
         label_width_fraction = 0.15
@@ -67,7 +67,8 @@ class LabeledSlider(BaseComponent):
             manager=manager,
             parent=self.holder,
             rel_pos=label_pos,
-            rel_size=label_size)
+            rel_size=label_size,
+            font_size=8)
 
         self.register_main_component(self.holder)
 
@@ -87,15 +88,7 @@ class LabeledSlider(BaseComponent):
             new_value (float): The new value to set.
         """
         self.slider.value = new_value
-        self.value_label.text = str(new_value)
-    
-    # def render(self):
-    #     # In an ideal world, a BaseComponent would render its children automatically
-    #     self.slider.render()
-    #     self.value_label.render()
-    #     if(self.title_label is not None):
-    #         self.title_label.render()
-    #     self.component.render()
+        self.value_label.text = f'{new_value:.1f}'
     
     def handle_event(self, event):
         """
@@ -106,6 +99,6 @@ class LabeledSlider(BaseComponent):
         """
         if self.slider.handle_event(event):
             # Update the value label if the slider value changed
-            self.value_label.text = str(self.slider.value)
+            self.value = self.slider.value
             return True
         return False

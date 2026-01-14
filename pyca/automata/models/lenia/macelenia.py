@@ -66,8 +66,8 @@ class MaCELenia(Lenia):
         self.add_speed = 1.
         
         # GUI components
-        self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager,rel_pos=(0.1,0.1), rel_size=(0.1, 1.), parent=None, tick_size=0.1, initial_value=5.)
-        self.register_component(self.beta_slider, keep_size=True)
+        self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager,rel_pos=(0.,0.), rel_size=(1., 1.), parent=None, tick_size=0.1, initial_value=5.)
+        self.register_component(self.beta_slider, keep_size=False)
         self.tog_food_off = MultiToggle(states=["Food: OFF", "Food: ON"],manager=self.manager)
         self.register_component(self.tog_food_off)
         # self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager, title='Beta/Temp', initial_value=self.b,tick_size=0.1,rel_size=(0.2,1))

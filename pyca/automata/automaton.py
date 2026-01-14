@@ -193,7 +193,6 @@ class Automaton:
         
         for component in self._components:
             if(component.handle_event(event)):
-                print('HOLUP ! Component changed:', component)
                 self._changed_components.append(component)
 
     @property

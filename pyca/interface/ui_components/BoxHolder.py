@@ -39,6 +39,7 @@ class BoxHolder(BaseComponent):
             manager=self.manager,
             container=parent.container if parent is not None else None
         )
+
         self.register_main_component(self.box)
 
     def render(self):
@@ -48,4 +49,5 @@ class BoxHolder(BaseComponent):
         # Update window position and size
         self.box.set_relative_position((self.x, self.y))
         self.box.set_dimensions((self.w, self.h))
+        
         self.box.rebuild()
