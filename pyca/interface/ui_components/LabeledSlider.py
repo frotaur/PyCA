@@ -2,10 +2,10 @@ from .TextBox import TextBox
 from .Slider import Slider
 from .TextLabel import TextLabel
 from .BoxHolder import BoxHolder
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 
 
-class LabeledSlider(BaseComponent):
+class LabeledSlider(BoxHolder):
     """
         A (optionally labeled) slider component with a text label showing the current value.
     """
@@ -27,12 +27,6 @@ class LabeledSlider(BaseComponent):
         """
         super().__init__(manager, parent, rel_pos, rel_size)
 
-        self.holder = BoxHolder(
-            manager=self.manager,
-            parent=self.parent,
-            rel_pos=rel_pos,
-            rel_size=rel_size
-        )
         # Compute the configuration inside the BoxHolder
         title_height_fraction = 0.1 if title else 0.0
         label_width_fraction = 0.15
@@ -47,7 +41,7 @@ class LabeledSlider(BaseComponent):
             self.title_label = TextLabel(
                 text=title,
                 manager=manager,
-                parent=self.holder,
+                parent=self,
                 rel_pos=(0, 0),
                 rel_size=(title_height_fraction, 1.0)
             )
@@ -56,7 +50,7 @@ class LabeledSlider(BaseComponent):
             min_value=min_value,
             max_value=max_value,
             manager=manager,
-            parent=self.holder,
+            parent=self,
             rel_pos=slider_pos,
             rel_size=slider_size,
             tick_size=tick_size,
@@ -65,12 +59,11 @@ class LabeledSlider(BaseComponent):
         self.value_label = TextLabel(
             text=str(self.slider.value),
             manager=manager,
-            parent=self.holder,
+            parent=self,
             rel_pos=label_pos,
             rel_size=label_size,
             font_size=8)
 
-        self.register_main_component(self.holder)
 
     @property
     def value(self):

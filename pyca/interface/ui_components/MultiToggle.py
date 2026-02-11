@@ -1,16 +1,15 @@
 import pygame_gui
 import pygame
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 
 
-class MultiToggle(BaseComponent):
+class MultiToggle(UIComponent):
     """
     Represents a multi-toggle button. It is a button that cycles through
     multiple states each time it is pressed.
     """
 
-    def __init__(self, states, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1),
-                 state_bg_colors=None, init_state_index=0):
+    def __init__(self, states, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1),state_bg_colors=None, init_state_index=0):
         """
         Initializes the multi-toggle button component.
 
@@ -20,6 +19,7 @@ class MultiToggle(BaseComponent):
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the button.
+            z_pos (int): Z-position for rendering order. Higher values are rendered on top.
             state_bg_colors (list): List of RGB tuples for background colors for each state.
             init_state_index (int): Initial state index.
         """

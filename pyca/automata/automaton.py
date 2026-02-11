@@ -3,7 +3,7 @@ import torch
 from textwrap import dedent
 import pygame
 from easydict import EasyDict
-from ..interface.ui_components.BaseComponent import BaseComponent
+from ..interface.ui_components.UIComponent import UIComponent
 from pygame_gui.core.utility import get_default_manager
 from ..interface import VertContainer
 from pygame_gui.elements import UITextEntryLine, UITextEntryBox
@@ -66,7 +66,7 @@ class Automaton:
 
             AUTOMATAS[cls.__name__] = cls
 
-    def register_component(self, component:BaseComponent, keep_size=False):
+    def register_component(self, component:UIComponent, keep_size=False):
         """
         Registers a GUI component to this automaton. The componenents
         will be rendered on the right side of the screen, and the events
@@ -79,7 +79,7 @@ class Automaton:
             If True, the component will keep its relative size, otherwise
             it is automatically set
         """
-        assert isinstance(component, BaseComponent), "component must be an instance of BaseComponent"
+        assert isinstance(component, UIComponent), "component must be an instance of BaseComponent"
         if(not keep_size):
             component.rel_size = (0.05, 1.)
         self.gui_box.add_component(component)
@@ -160,7 +160,7 @@ class Automaton:
         self.process_event(event, camera) # Process event not called if GUI has focus
 
     
-    def process_gui_change(self, component:BaseComponent):
+    def process_gui_change(self, component:UIComponent):
         """
         Must be overriden to respond to GUI component interactions.
         This method is called automatically when a component changes its state.

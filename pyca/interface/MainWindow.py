@@ -126,7 +126,7 @@ class MainWindow:
         self.live_fps_label = TextBox(f"FPS: {self.fps}", manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(-1,1.), font_size=12, text_align='right', font_color=(230, 120, 120))
 
         ### FPS input box
-        self.fps_box = HorizContainer(manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(0.05,1.0),rel_padding=0.03)
+        self.fps_box = HorizContainer(manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(0.05,1.0),rel_padding=0.03,resize=False)
         self.fps_input = InputField(manager=self.manager, parent=self.fps_box, rel_pos=(0,0), rel_size=(1.0,0.3), init_text=str(self.fps), allowed_chars=[str(i) for i in range(10)], max_length=3)
         self.width_input = InputField(manager=self.manager, parent=self.fps_box, rel_pos=(0,0), rel_size=(1.0,0.3), init_text=str(self.W), allowed_chars=[str(i) for i in range(10)], max_length=4)
         self.height_input = InputField(manager=self.manager, parent=self.fps_box, rel_pos=(0.,0), rel_size=(1.0,0.3), init_text=str(self.H), allowed_chars=[str(i) for i in range(10)], max_length=4)
@@ -138,8 +138,11 @@ class MainWindow:
         self.right_container.add_component(self.fps_box)
         self.right_container.add_component(TextBox("Automaton controls:", manager=self.manager, parent=self.right_container, rel_pos=(0,0), rel_size=(-1,1.), font_size=14, text_align='center', font_color=(200, 89, 89)))
         # Dropdown for automaton selection
-        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), manager=self.manager, parent=self.right_box, rel_pos=(0.0,0.94), rel_size=(0.06,1.0), open_upward=True, starting_option=self._initial_automaton)
-
+        # Need to wrap in a BoxHolder to make sure it appears above the automaton GUI components 
+        self.dropdown_z_holder = BoxHolder(manager=self.manager, parent=self.right_box, rel_pos=(0.0,0.0), rel_size=(1.0,1.0),z_pos=2)
+        self.automaton_dropdown = DropDown(options=list(AUTOMATAS.keys()), manager=self.manager, parent=self.dropdown_z_holder, rel_pos=(0.0,0.94), rel_size=(0.06,1.0), open_upward=True, starting_option=self._initial_automaton)
+        
+        
     def _generate_left_base_gui(self):
         """
         Generates and places the left text labels of the main GUI. Needs to do some hacking to get dynamic positions

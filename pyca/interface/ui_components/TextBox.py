@@ -1,9 +1,9 @@
 import pygame_gui
 import pygame
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 
 
-class TextBox(BaseComponent):
+class TextBox(UIComponent):
     """
     Represents a text box (word-wrapped HTML text) in the UI.
     """
@@ -22,7 +22,7 @@ class TextBox(BaseComponent):
             text_align (str): Text alignment within the box. Options are 'left', 'center', 'right'.
             selectable (bool): Whether the text is selectable.
         """
-        super().__init__(manager, parent, rel_pos, rel_size,theme_class=theme_class,theme_id=theme_id)
+        super().__init__(manager, parent, rel_pos, rel_size, theme_class=theme_class,theme_id=theme_id)
 
         self.base_font_size = font_size
 

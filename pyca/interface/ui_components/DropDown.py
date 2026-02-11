@@ -1,10 +1,10 @@
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 import pygame_gui
 from pygame_gui.elements import UIDropDownMenu
 import pygame
 
 
-class DropDown(BaseComponent):
+class DropDown(UIComponent):
     """
         Component for creating a dropdown/dropup menu, with text options to select from.
         Its state (self.selected) is simply a string. 
@@ -17,7 +17,7 @@ class DropDown(BaseComponent):
         Args:
             options (list): List of string options of the dropdown.
             manager: pygame-gui UIManager instance.
-            parent: parent BaseComponent if any. All relative quantities are relative to this container.
+            parent: parent UIComponent if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the dropdown WHEN CLOSED.
             open_upward (bool): If True, dropdown opens upward; if False, opens downward.

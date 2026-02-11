@@ -1,20 +1,19 @@
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 import pygame_gui
 from pygame_gui.elements import UITextEntryLine, UITextEntryBox
 import pygame
 
     
-class InputField(BaseComponent):
+class InputField(UIComponent):
     """
         Basic input field, with configurable allow-list. Its state
         is simply a string of the current text.
     """
 
-    def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), init_text='',
-                 allowed_chars: list | None = None, forbidden_chars: list | None = None, max_length: int=None):
+    def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), init_text='', allowed_chars: list | None = None, forbidden_chars: list | None = None, max_length: int=None):
         """
         Initializes the input box.
-        
+
         Args:
             manager: pygame-gui UIManager instance.
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
@@ -25,11 +24,9 @@ class InputField(BaseComponent):
             forbidden_chars (list|None): List of forbidden characters. If None, no characters are forbidden.
             max_length (int|None): Maximum length of the input text. If None, no limit.
         """
-        super().__init__(manager, parent, rel_pos, rel_size )
+        super().__init__(manager, parent, rel_pos, rel_size)
 
-        self.text_entry = UITextEntryLine(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
-                                          container = self.parent.container if self.parent is not None else None,
-                                          manager=self.manager, initial_text=init_text)
+        self.text_entry = UITextEntryLine(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),container = self.parent.container if self.parent is not None else None,manager=self.manager, initial_text=init_text)
         if(max_length is not None):
             self.text_entry.set_text_length_limit(max_length)
         

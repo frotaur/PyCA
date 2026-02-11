@@ -8,3 +8,6 @@ build
 .vscode
 .venv
 data/
+.claude
+*.egg-info
+uv.lock

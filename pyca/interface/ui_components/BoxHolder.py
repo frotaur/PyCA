@@ -1,15 +1,15 @@
 import pygame_gui
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 import pygame
 from pygame_gui.core.ui_container import UIContainer
 from pygame_gui.elements.ui_panel import UIPanel
 from pygame_gui.elements.ui_auto_resizing_container import UIAutoResizingContainer
 
-class BoxHolder(BaseComponent):
+class BoxHolder(UIComponent):
     """
         Transparent container, used only for relative positioning of other components.
     """
-    def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None, resize_dirs=[]):
+    def __init__(self, manager, parent=None, rel_pos=(0,0), rel_size=(0.1,0.1), z_pos=1, max_size=None, resize_dirs=[]):
         """
         Initializes the BoxHolder component.
 
@@ -18,6 +18,7 @@ class BoxHolder(BaseComponent):
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the box holder.
+            z_pos (int): Z-position for rendering order. Higher values are rendered on top.
             max_size (tuple, optional): Maximum size for the component (height, width).
             resize_dirs (list, optional): List of directions to allow resizing. Options are 'left', 'right', 'top', 'bottom'.
         """
@@ -37,7 +38,8 @@ class BoxHolder(BaseComponent):
             resize_top='top' in resize_dirs,
             resize_bottom='bottom' in resize_dirs,
             manager=self.manager,
-            container=parent.container if parent is not None else None
+            container=parent.container if parent is not None else None,
+            starting_height=z_pos
         )
 
         self.register_main_component(self.box)

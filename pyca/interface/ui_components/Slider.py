@@ -1,9 +1,9 @@
-from .BaseComponent import BaseComponent
+from .UIComponent import UIComponent
 import pygame, pygame_gui
 from pygame_gui.elements.ui_horizontal_slider import UIHorizontalSlider
 from pygame_gui.core.ui_container import UIContainer
 
-class Slider(BaseComponent):
+class Slider(UIComponent):
     """
     A horizontal slider component with configurable min/max values and steps.
     """
@@ -12,16 +12,17 @@ class Slider(BaseComponent):
                  ):
         """
         Initializes the slider component.
-        
+
         Args:
             min_value (float or int): Minimum value of the slider.
             max_value (float or int): Maximum value of the slider.
             manager: pygame-gui UIManager instance.
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
-            tick_size (float or int): Step size between min and max values.
-            initial_value (float or int, optional): Initial value. If None, defaults to min_value.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the component (height, width).
+            z_pos (int): Z-position for rendering order. Higher values are rendered on top.
+            tick_size (float or int): Step size between min and max values.
+            initial_value (float or int, optional): Initial value. If None, defaults to min_value.
         """
         super().__init__(manager, parent, rel_pos, rel_size)
         self.tick_size = tick_size
