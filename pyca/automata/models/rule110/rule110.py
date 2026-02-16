@@ -4,16 +4,13 @@
 
 from ...automaton import Automaton
 import json
-import colorsys
 import random
 import pygame
 import torch
 import numpy as np
 from pathlib import Path
 from importlib.resources import files
-import re, torchvision
-from torchvision import transforms
-import torch.nn.functional as F
+import re
 import time
 
 class Rule110Universality(Automaton):
@@ -21,7 +18,7 @@ class Rule110Universality(Automaton):
         Universality in rule 110.
     """
 
-    def __init__(self, size, wolfram_num : int, random: bool = True):
+    def __init__(self, size, random: bool = True, device='cpu'):
         """
             Parameters:
             size : 2-uple (H,W)
@@ -30,6 +27,8 @@ class Rule110Universality(Automaton):
                 Number of the wolfram rule
             random : bool
                 If True, the initial tape of the automaton is random. Otherwise, the initial tape is 'YN'
+            device : str
+                Not used, but for compatibility with the automaton class
         """
         super().__init__(size)
         # Below here I do what I need to do to initialize the automaton
@@ -78,7 +77,7 @@ class Rule110Universality(Automaton):
         #set up text params
         self.text_size = int(self.h/45)
         self.label_color = (230, 230, 230)
-        font_path = str(files('pyca.interface.files').joinpath('AldotheApache.ttf'))
+        font_path = str(files('pyca.interface.files').joinpath('octosquare.ttf'))
         self.font = pygame.font.Font(font_path, size=self.text_size)
 
         #set up arrows
@@ -129,13 +128,13 @@ class Rule110Universality(Automaton):
         self.long_ossifier_distance =  int((76*self.num_ys+80*self.num_ns+60*self.num_non_empty+43*self.num_empty)//4)*4*2+3    #to be double-checked, is from Cooks paper concrete view of rule 110 computation   #to be double-checked, is from Cooks paper concrete view of rule 110 computation 
 
     def load_patterns(self):
-        self.dict_yn = json.load(open('pyca/automata/utils/rule110/dict_yn.json', 'r'))
-        self.dict_rl = json.load(open('pyca/automata/utils/rule110/dict_rl.json', 'r'))
+        self.dict_yn = json.load(open(Path(__file__).parent / 'dicts' / 'dict_yn.json', 'r'))
+        self.dict_rl = json.load(open(Path(__file__).parent / 'dicts' / 'dict_rl.json', 'r'))
         self.dict_oss = {0: (1, 1), 1: (2, 0), 2:(0, 0)} #dictionary for ossifiers; example: if last appended ossifier is O[1], then what gets prepended is 0[2]+0*ether+(short or long distance * ether) 
-        self.gliders = json.load(open('pyca/automata/utils/rule110/gliders.json', 'r'))
-        self.dict_sc_sl = json.load(open('pyca/automata/utils/rule110/dict_sc_sl.json', 'r'))
-        self.dict_sl_rl = json.load(open('pyca/automata/utils/rule110/dict_sl_rl.json', 'r'))
-        self.dict_sl_sl = json.load(open('pyca/automata/utils/rule110/dict_sl_sl.json', 'r'))
+        self.gliders = json.load(open(Path(__file__).parent / 'dicts' / 'gliders.json', 'r'))
+        self.dict_sc_sl = json.load(open(Path(__file__).parent / 'dicts' / 'dict_sc_sl.json', 'r'))
+        self.dict_sl_rl = json.load(open(Path(__file__).parent / 'dicts' / 'dict_sl_rl.json', 'r'))
+        self.dict_sl_sl = json.load(open(Path(__file__).parent / 'dicts' / 'dict_sl_sl.json', 'r'))
 
         self.ether = self.gliders['ether']
         self.str_ether = self.to_str(self.ether)

@@ -1,30 +1,29 @@
 from ..automaton import Automaton
-from ...interface import text
 import torch, pygame
 import torch.nn.functional as F
 import colorsys
-
+from ...interface.ui_components import Button,MultiToggle, InputField
 
 class CA2D(Automaton):
     """
-    2D Cellular Automaton, with outer-holistic rules and binary values.
-    The state of a pixel in the next generation depends on its own state and
-    the sum of the values of its neighbors.
+2D Cellular Automaton, with outer-holistic rules and binary values.\
+The state of a pixel in the next generation depends on its own state and\
+the sum of the values of its neighbors.
     """
 
-    def __init__(self, size, s_num="23", b_num="3", random=False, device="cpu"):
+    def __init__(self, size, s_num="23", b_num="3", dot=False, device="cpu"):
         """
         Params :
         size : tuple, size of the automaton
         s_num : str, rule for survival
         b_num : str, rule for birth
-        random : bool, if True, the initial state of the automaton is random. Otherwise, a small random square is placed in the middle.
+        dot : bool, if True, the initial state of the automaton is a dot. Otherwise, a small random square is placed in the middle.
         """
         super().__init__(size)
 
         self.s_num = self.get_num_from_rule(s_num)  # Translate string to number form
         self.b_num = self.get_num_from_rule(b_num)  # Translate string to number form
-        self.random = random
+        self.dot = dot
         self.device = device
 
         self.world = torch.zeros((self.h, self.w), dtype=torch.int, device=device)
@@ -38,6 +37,34 @@ class CA2D(Automaton):
         self.decay_speed = 0.1
 
         self._worldmap = self._worldmap.to(device)
+
+        ### GUI components ###
+        self.reset_button = Button(
+            text="Reset",
+            manager=self.manager
+        )
+        self.register_component(self.reset_button)
+
+        self.toggle_init = MultiToggle(
+            manager=self.manager,
+            states=["Init: Dot", "Init: Noise"],
+            init_state_index=0 if self.dot else 1,
+            state_bg_colors=[(100, 100, 100), (20, 20, 80)]
+        )
+        self.register_component(self.toggle_init)
+
+        self.random_rule = Button(
+            text="Random Rule",
+            manager=self.manager
+        )
+        self.register_component(self.random_rule)
+
+        self.highlight_button = Button(
+            text="New Color",
+            manager=self.manager
+        )
+        self.register_component(self.highlight_button)
+
 
     def change_highlight_color(self):
         """
@@ -79,7 +106,7 @@ class CA2D(Automaton):
         """
         self._worldmap = torch.zeros((3, self.h, self.w), device=self.device)
 
-        if self.random:
+        if not self.dot:
             self.world = self.get_init_mat(0.5)
         else:
             self.world = torch.zeros_like(self.world, dtype=torch.int, device=self.device)
@@ -91,40 +118,67 @@ class CA2D(Automaton):
         """
         Updates the worldmap with the current state of the automaton.
         """
-        echo = torch.clamp(self._worldmap - self.decay_speed * self.highlight_color[:, None, None], min=0, max=1).to(
-            self.device
-        )
+        echo = torch.clamp(self._worldmap - self.decay_speed * self.highlight_color[:, None, None], min=0, max=1)
         self._worldmap = torch.clamp(
             self.world[None, :, :].expand(3, -1, -1).to(dtype=torch.float) + echo, min=0, max=1
-        ).to(self.device)
+        )
 
     def process_event(self, event, camera=None):
         """
-        DEL -> re-initializes the automaton
-        I -> toggles initialization between noise and a single dot
-        N -> pick a new random rule
-        Z -> change the highlight color
-        UP -> longer-lasting highlights
-        DOWN -> shorter-lasting highlights
+        DEL: re-initializes the automaton
+        I: toggles initialization between noise and a single dot
+        N: pick a new random rule
+        Z: change the highlight color
+        UP: longer-lasting highlights
+        DOWN: shorter-lasting highlights
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
                 self.reset()
             if event.key == pygame.K_i:
-                self.random = not self.random
+                self._toggle_init_mode()
             if event.key == pygame.K_n:
                 # Picks a random rule
-                b_rule = torch.randint(0, 2**9, (1,)).item()
-                s_rule = torch.randint(0, 2**9, (1,)).item()
-                self.change_num(s_rule, b_rule)
-                print(f"rule :  s:{self.get_rule_from_num(s_rule)}, b:{self.get_rule_from_num(b_rule)}")
+                self._random_rule()
             if event.key == pygame.K_z:
                 self.change_highlight_color()
             if event.key == pygame.K_UP:
                 self.decay_speed = max(self.decay_speed - 0.1 * self.decay_speed, 0.005)
             if event.key == pygame.K_DOWN:
                 self.decay_speed = min(0.1 * self.decay_speed + self.decay_speed, 3)
+            
+        
+        mouse = self.get_mouse_state(camera)
 
+        if mouse.left:
+            brush = self.get_brush_slice(mouse.x, mouse.y).to(self.device)
+            self.world[brush] = torch.randint(0, 2, brush.shape,device=self.device,dtype=self.world.dtype)[brush]
+
+        if mouse.right:
+            brush = self.get_brush_slice(mouse.x, mouse.y).to(self.device)
+            self.world[brush] = 0
+    
+    def process_gui_change(self, component):
+        if component == self.reset_button:
+            self.reset()
+        if component == self.toggle_init:
+            self._toggle_init_mode()
+        if component == self.random_rule:
+            self._random_rule()
+        if component == self.highlight_button:
+            self.change_highlight_color()
+
+    def _toggle_init_mode(self):
+        self.dot = not self.dot
+        self.toggle_init.state = self.dot
+        self.reset()
+    
+    def _random_rule(self):
+        b_rule = torch.randint(0, 2**9, (1,)).item()
+        s_rule = torch.randint(0, 2**9, (1,)).item()
+        self.change_num(s_rule, b_rule)
+
+    
     def change_num(self, s_num: int | str, b_num: int | str):
         """
         	Changes the rule of the automaton to the one specified by s_num and b_num
@@ -191,3 +245,16 @@ class CA2D(Automaton):
 
         return init_mat.to(self.device)  # (B,H,W)
 
+    def name(self):
+        """
+        Returns the name of the automaton.
+        """
+        return "2D Cellular Automaton"
+
+    def get_string_state(self):
+        return f"Rule: s:{self.get_rule_from_num(self.s_num)}, b:{self.get_rule_from_num(self.b_num)}"
+    
+    def get_brush_slice(self, x, y, radius=10):
+        """Gets coordinate slices corresponding to the brush located at x,y"""
+        set_mask = (self.Y-y)**2 + (self.X-x)**2 < radius**2 # (H,W) boolean mask
+        return set_mask # (H,W)

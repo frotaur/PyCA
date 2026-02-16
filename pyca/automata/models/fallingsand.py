@@ -8,7 +8,7 @@ class FallingSand(Automaton):
         Inefficient (sequential) implementation of the falling sand automaton.
     """
 
-    def __init__(self, size):
+    def __init__(self, size, device="cpu"):
         super().__init__(size)
         self.h, self.w = size
         self.size = size
@@ -78,12 +78,12 @@ class FallingSand(Automaton):
     
     def process_event(self, event, camera):
         """
-        LEFT CLICK -> add material
-        RIGHT CLICK -> remove material
-        MOUSE WHEEL -> adjust brush size
-        E -> toggle sand/water material
-        W -> select 'wall' material
-        DEL -> clear the world
+        LEFT CLICK: add material
+        RIGHT CLICK: remove material
+        MOUSE WHEEL: adjust brush size
+        E: toggle sand/water material
+        W: select 'wall' material
+        DEL: clear the world
         """
         m = self.get_mouse_state(camera)
 

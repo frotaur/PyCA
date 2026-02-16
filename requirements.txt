@@ -1,9 +1,0 @@
-easydict
-matplotlib
-numpy
-pygame
-pyperlin
-showtens
-torch
-torchenhanced
-torchvision

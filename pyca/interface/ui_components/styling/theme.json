@@ -1,0 +1,93 @@
+{
+    
+    "#bigfont": {
+        "font": {
+            "name":"octo",
+            "size":16,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "octosquare.ttf"
+            }
+        }
+    },
+    "#normalfont": {
+        "font": {
+            "name":"octo",
+            "size":11,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "octosquare.ttf"
+            }
+        }
+    },
+    "#smallfont": {
+        "font": {
+            "name":"octo",
+            "size":8,
+            "bold":0,
+            "italic":0,
+            "regular_resource": {
+                "package": "pyca.interface.files",
+                "resource": "octosquare.ttf"
+            }
+        }
+    },
+
+    "text_entry_line": {
+        "prototype": "#smallfont"
+    },
+    "@label_normal": {
+        "prototype": "#normalfont",
+        "colours": {"normal_text":"#c5cbd8"}
+    },
+    "@label_big": {
+        "prototype": "#bigfont"
+    },
+    "@label_small": {
+        "prototype": "#smallfont"
+    },
+    "text_box" :{
+        "misc": {
+            "border_width": 0,
+            "shadow_width": 0,
+            "line_spacing": 0.8
+        },
+        "colours": {
+            "dark_bg": "rgba(30,30,30,80)",
+            "selected_bg": "rgba(30,30,30,80)"
+        }
+        },
+    "drop_down_menu": {
+        "misc": {
+            "open_button_width": 0
+        }
+    },
+    "drop_down_menu.#drop_down_options_list": {
+        "prototype": "#smallfont",
+        "misc": {
+            "list_item_height": "30"
+        }
+    },
+    "drop_down_menu.button" : {
+        "prototype": "#normalfont"
+    },
+    "drop_down_menu.#drop_down_options_list.button" : {
+        "prototype": "#smallfont"
+    },
+    "@better_label": {
+        "misc": {
+            "text_horiz_alignment": "center"
+        }
+    },
+    "button" : {
+        "prototype": "#normalfont",
+        "misc": {
+            "border_width": 0,
+            "shadow_width": 0
+        }
+    }
+}

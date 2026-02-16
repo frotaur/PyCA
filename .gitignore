@@ -1,11 +1,13 @@
 .DS_Store
-videos/
 __pycache__
 wandb
 runs
-images
 train_nca/nca_train_state
 env
 build
 .vscode
 .venv
+data/
+.claude
+*.egg-info
+uv.lock

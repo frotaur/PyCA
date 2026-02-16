@@ -15,7 +15,7 @@ class ElementaryCA(Automaton):
         1D Elementary Cellular Automata.
     """
 
-    def __init__(self, size, wolfram_num : int, random: bool = False):
+    def __init__(self, size, wolfram_num : int, random: bool = False, device="cpu"):
         """
             Parameters:
             size : 2-uple (H,W)
@@ -27,7 +27,6 @@ class ElementaryCA(Automaton):
         """
         super().__init__(size)
         # Below here I do what I need to do to initialize the automaton
-        wolfram_num = 90
         self.rule = self.convert_wolfram_num(wolfram_num) # (8,) tensor, rule[i] is 0 if the i'th neighborhood yields 0, 1 otherwise
 
         self.world = torch.zeros((self.w),dtype=torch.int) # Vector of W elements
@@ -43,8 +42,8 @@ class ElementaryCA(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        CANC -> resets the automaton
-        N -> pick a new random rule
+        CANC: resets the automaton
+        N: pick a new random rule
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
@@ -52,7 +51,6 @@ class ElementaryCA(Automaton):
             if(event.key == pygame.K_n): #Pressed the letter n
                 # Picks a random rule
                 rule = torch.randint(0,256,(1,)).item()
-                rule = 90
                 self.change_num(rule)
                 print('rule : ', rule)
             if(event.key == pygame.K_c):
@@ -144,7 +142,7 @@ class TotalisticCA1D(Automaton):
         Totalistic means that the output state of a cell depends only on the sum of the states of the neighborhood.
     """
 
-    def __init__(self, size, wolfram_num: int, r=1, k=2, random=False):
+    def __init__(self, size, wolfram_num: int, r=1, k=2, random=False, device='cpu'):
         """
             Parameters :
             size : 2-uple (H,W)
@@ -170,10 +168,10 @@ class TotalisticCA1D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        DELETE -> resets the automaton
-        N -> pick a new random rule
-        UP -> increase the number of states
-        DOWN -> decrease the number of states(resets the automaton)
+        DELETE: resets the automaton
+        N: pick a new random rule
+        UP: increase the number of states
+        DOWN: decrease the number of states(resets the automaton)
         """
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:

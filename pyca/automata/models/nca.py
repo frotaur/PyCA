@@ -7,7 +7,7 @@ import math
 from easydict import EasyDict
 from pathlib import Path
 
-class NCA(Automaton):
+class NeuralCA(Automaton):
     """
         Neural Cellular Automaton. Can be trained to grow any image
         from a 'seed', using only local interactions, and a neural network.
@@ -88,12 +88,12 @@ class NCA(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        DELETE              -> resets the automaton
-        R                   -> randomize NCA parameters
-        LEFT CLICK + DRAG   -> erase cells
-        RIGHT CLICK         -> insert seed at cursor position
-        SCROLL WHEEL        -> change brush size
-        M                   -> load next trained model
+        DELETE:              resets the automaton
+        R:                   randomize NCA parameters
+        LEFT CLICK + DRAG:   erase cells
+        RIGHT CLICK:         insert seed at cursor position
+        SCROLL WHEEL:        change brush size
+        M:                   load next trained model
         """
         mouse = self.get_mouse_state(camera)
         #Update mouse position, to have it for drawing
