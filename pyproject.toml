@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyca"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     { name = "Vassilis Papadopoulos", email = "vassilis.physics@gmail.com" },
     { name = "Marco Tuccio", email = "marco.tuccio95@gmail.com" },
 ]
-description = "PyCA, a small python package to facilitate implementing artificial life worlds with pytorch."
+description = "PyCA, a small python package to facilitate implementing artificial life worlds."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
