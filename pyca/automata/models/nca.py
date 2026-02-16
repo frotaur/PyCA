@@ -88,12 +88,12 @@ class NeuralCA(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        DELETE              -> resets the automaton
-        R                   -> randomize NCA parameters
-        LEFT CLICK + DRAG   -> erase cells
-        RIGHT CLICK         -> insert seed at cursor position
-        SCROLL WHEEL        -> change brush size
-        M                   -> load next trained model
+        DELETE:              resets the automaton
+        R:                   randomize NCA parameters
+        LEFT CLICK + DRAG:   erase cells
+        RIGHT CLICK:         insert seed at cursor position
+        SCROLL WHEEL:        change brush size
+        M:                   load next trained model
         """
         mouse = self.get_mouse_state(camera)
         #Update mouse position, to have it for drawing

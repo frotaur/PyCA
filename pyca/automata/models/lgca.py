@@ -45,11 +45,11 @@ class LGCA(Automaton):
         
     def process_event(self, event, camera=None):
         """
-            LEFT CLICK      -> add particles
-            RIGHT CLICK     -> remove particles
-            LEFT CLICK + W  -> add walls
-            RIGHT CLICK + W -> remove walls
-            SCROLL WHEEL    -> change brush size
+            LEFT CLICK:      add particles
+            RIGHT CLICK:     remove particles
+            LEFT CLICK + W:  add walls
+            RIGHT CLICK + W: remove walls
+            SCROLL WHEEL:    change brush size
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:

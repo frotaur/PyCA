@@ -19,7 +19,6 @@ class MultiToggle(UIComponent):
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
             rel_size (tuple): Fractional size in [0,1] of the button.
-            z_pos (int): Z-position for rendering order. Higher values are rendered on top.
             state_bg_colors (list): List of RGB tuples for background colors for each state.
             init_state_index (int): Initial state index.
         """

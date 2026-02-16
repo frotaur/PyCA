@@ -1,5 +1,6 @@
 import pygame_gui
 import pygame
+from pygame_gui.core import ObjectID
 from .UIComponent import UIComponent
 
 
@@ -7,7 +8,7 @@ class TextBox(UIComponent):
     """
     Represents a text box (word-wrapped HTML text) in the UI.
     """
-    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3),*, font_size=12,font_color=(230,230,230),text_align='left',selectable=False,theme_class=None,theme_id=None):
+    def __init__(self, text, manager, parent=None, rel_pos=(0,0), rel_size=(-1,0.3),*, font_size=12,font_color=(230,230,230),font='aldo',text_align='left',selectable=False,theme_class=None,theme_id=None):
         """
         Initializes the text box component.
 
@@ -19,10 +20,11 @@ class TextBox(UIComponent):
             rel_size (tuple): Fractional size in [0,1] of the component (height, width). Height can be -1 for auto.
             font_size: Base is 12, and changes are proportional based on that
             font_color (tuple): Color of the text in RGB format.
+            font (str): Font name for the text. Must be defined in theme.json
             text_align (str): Text alignment within the box. Options are 'left', 'center', 'right'.
             selectable (bool): Whether the text is selectable.
         """
-        super().__init__(manager, parent, rel_pos, rel_size, theme_class=theme_class,theme_id=theme_id)
+        super().__init__(manager, parent, rel_pos, rel_size)
 
         self.base_font_size = font_size
 
@@ -34,7 +36,7 @@ class TextBox(UIComponent):
             relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
             manager=self.manager,
             container=self.parent.container if self.parent is not None else None,
-            object_id=self.object_id
+            object_id=ObjectID(class_id=theme_class, object_id=theme_id)
         )
         self.textbox.text_horiz_alignment = text_align
 
@@ -48,7 +50,7 @@ class TextBox(UIComponent):
         """
         Adjusts the font size in the HTML text based on the current absolute font size.
         """
-        return f"<font face='aldo' color={self.to_hex(self.font_color)} pixel_size={self.font_abs_size}>{self._text}</font>"
+        return f"<font face='octo' color={self.to_hex(self.font_color)} pixel_size={self.font_abs_size}>{self._text}</font>"
     
     @property
     def font_abs_size(self):
@@ -56,9 +58,7 @@ class TextBox(UIComponent):
         Returns the absolute font size based on the base font size and scaling.
         In 0.5 increments, compatible with html font sizing.
         """
-
-        actual_size = self.BASE_FONT_REL_SIZE * (self.sH+self.sW)/2 * self.base_font_size/12.
-        # size = (max(mini, min(maxi, actual_size))-mini)/(maxi-mini) # Between 0 and 1
+        actual_size = self.BASE_FONT_REL_SIZE * min(self.sH,self.sW) * self.base_font_size/12.
 
         return int(actual_size)
         

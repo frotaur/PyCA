@@ -28,8 +28,8 @@ class LabeledSlider(BoxHolder):
         super().__init__(manager, parent, rel_pos, rel_size)
 
         # Compute the configuration inside the BoxHolder
-        title_height_fraction = 0.1 if title else 0.0
-        label_width_fraction = 0.15
+        title_height_fraction = 0.4 if title else 0.0
+        label_width_fraction = 0.2
         slider_pos = (0, title_height_fraction)
         slider_size = (1 - title_height_fraction, 1 - label_width_fraction)
         label_pos = (1 - label_width_fraction, title_height_fraction)
@@ -43,7 +43,8 @@ class LabeledSlider(BoxHolder):
                 manager=manager,
                 parent=self,
                 rel_pos=(0, 0),
-                rel_size=(title_height_fraction, 1.0)
+                rel_size=(title_height_fraction, 1.0),
+                font_size=8
             )
         
         self.slider = Slider(

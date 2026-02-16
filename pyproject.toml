@@ -36,14 +36,8 @@ nca = [
 [tool.hatch.build.targets.wheel]
 packages = ["pyca"]
 
-[[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
-explicit = true
-
-[tool.uv.sources]
-torch = { index = "pytorch-cu128" }
-torchvision = { index = "pytorch-cu128" }
+# Windows GPU users: install with CUDA support via
+#   pip install pyca --extra-index-url https://download.pytorch.org/whl/cu128
 
 [tool.ruff]
 line-length = 120

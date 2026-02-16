@@ -125,12 +125,12 @@ the sum of the values of its neighbors.
 
     def process_event(self, event, camera=None):
         """
-        DEL -> re-initializes the automaton
-        I -> toggles initialization between noise and a single dot
-        N -> pick a new random rule
-        Z -> change the highlight color
-        UP -> longer-lasting highlights
-        DOWN -> shorter-lasting highlights
+        DEL: re-initializes the automaton
+        I: toggles initialization between noise and a single dot
+        N: pick a new random rule
+        Z: change the highlight color
+        UP: longer-lasting highlights
+        DOWN: shorter-lasting highlights
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:

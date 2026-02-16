@@ -42,8 +42,8 @@ class ElementaryCA(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        CANC -> resets the automaton
-        N -> pick a new random rule
+        CANC: resets the automaton
+        N: pick a new random rule
         """
         if(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_DELETE):
@@ -168,10 +168,10 @@ class TotalisticCA1D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        DELETE -> resets the automaton
-        N -> pick a new random rule
-        UP -> increase the number of states
-        DOWN -> decrease the number of states(resets the automaton)
+        DELETE: resets the automaton
+        N: pick a new random rule
+        UP: increase the number of states
+        DOWN: decrease the number of states(resets the automaton)
         """
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:

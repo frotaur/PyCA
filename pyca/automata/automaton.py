@@ -5,7 +5,7 @@ import pygame
 from easydict import EasyDict
 from ..interface.ui_components.UIComponent import UIComponent
 from pygame_gui.core.utility import get_default_manager
-from ..interface import VertContainer
+from ..interface import *
 from pygame_gui.elements import UITextEntryLine, UITextEntryBox
 
 AUTOMATAS = {}
@@ -44,7 +44,7 @@ class Automaton:
             manager=self.manager,
             rel_pos=(0., 0.),
             rel_size=(1.,.8),
-            rel_padding=0.02)
+            rel_padding=0.005)
 
         # For mouse state processing
         self._m_right = False
@@ -81,7 +81,10 @@ class Automaton:
         """
         assert isinstance(component, UIComponent), "component must be an instance of BaseComponent"
         if(not keep_size):
-            component.rel_size = (0.05, 1.)
+            if(isinstance(component, LabeledSlider)):
+                component.rel_size = (0.08, 1.)
+            else:
+                component.rel_size = (0.04, 1.)
         self.gui_box.add_component(component)
         self._components.append(component)
 

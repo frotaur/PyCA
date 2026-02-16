@@ -479,17 +479,17 @@ class VonNeumann(Automaton):
 
     def process_event(self, event, camera=None):
         """
-            B -> Toggle select bar
-            O -> Reset to random squar
-            E -> Inject random excitations
-            Tab -> Cycle pre-sets
-            DELETE -> Reset to empty state
-            A -> Save state (not great for now)
-            0-9 -> Choose drawing state
-            DOWN -> Erase mode
-            UP -> Excitation mode
-            Left-click-> Insert selected state
-            Right-click -> Add excitation, or erase chunk
+            B: Toggle select bar
+            O: Reset to random squar
+            E: Inject random excitations
+            Tab: Cycle pre-sets
+            DELETE: Reset to empty state
+            A: Save state (not great for now)
+            0-9: Choose drawing state
+            DOWN: Erase mode
+            UP: Excitation mode
+            Left-click: Insert selected state
+            Right-click: Add excitation, or erase chunk
             
             Please stop the simulation before drawing.
         """

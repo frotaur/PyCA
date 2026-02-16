@@ -564,17 +564,17 @@ class Lenia(DevModule, Automaton):
         
     def process_event(self, event, camera=None):  # This method is used to process the pygame events
         """
-        N (+ shift) -> New random (truerandom) parameters
-        A -> Random params, with arbitrary function (if active)
-        W (+shift) -> Reroll kernel (growth)
-        M -> Load new interesting param
-        U -> Variate around parameters
-        I (+shift/+ctrl) -> Intialize with perlin noise
-        O -> Initialize with circle
-        S (+shift) -> Save the current parameters (+state)
-        K -> Toggle display kernel
-        Y (+shift) -> Toggle arbi random param generation
-        DEL -> sets state to 0
+        N (+ shift): New random (truerandom) parameters
+        A: Random params, with arbitrary function (if active)
+        W (+shift): Reroll kernel (growth)
+        M: Load new interesting param
+        U: Variate around parameters
+        I (+shift/+ctrl): Intialize with perlin noise
+        O: Initialize with circle
+        S (+shift): Save the current parameters (+state)
+        K: Toggle display kernel
+        Y (+shift): Toggle arbi random param generation
+        DEL: sets state to 0
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_n:

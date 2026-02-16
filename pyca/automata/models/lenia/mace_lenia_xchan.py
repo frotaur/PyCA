@@ -48,8 +48,8 @@ class MaCELeniaXChan(MaCELenia):
         self.alpha = 0.03
         self.params["alpha"] = self.alpha
 
-        self.alpha_slider = LabeledSlider(0.0, 0.3,title="alpha", fract_size=(0.07, 0.18), precision=2, initial_value=self.alpha)
-        self.register_component(self.alpha_slider, custom_size=True)
+        self.alpha_slider = LabeledSlider(0.0, 0.3,manager=self.manager,title="alpha",  tick_size=0.1, initial_value=self.alpha)
+        self.register_component(self.alpha_slider)
 
     def update_params(self, params, k_size_override=None):
         super().update_params(params, k_size_override=k_size_override)
@@ -88,10 +88,12 @@ class MaCELeniaXChan(MaCELenia):
                 self.alpha += 0.02
                 self.params["alpha"] = self.alpha
 
-        for compo in self.changed_components:
-            if compo == self.alpha_slider:
-                self.alpha = self.alpha_slider.value
-                self.params["alpha"] = self.alpha
+    def process_gui_change(self, component):
+        super().process_gui_change(component)
+        if component == self.alpha_slider:
+            self.alpha = self.alpha_slider.get_value()
+            self.params["alpha"] = self.alpha
+
     process_event.__doc__ = Lenia.process_event.__doc__.rstrip("\n") + process_event.__doc__.lstrip(
         "\n"
     )  # Hack to append the docstring of MCLenia.process_event

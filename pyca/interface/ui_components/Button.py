@@ -13,8 +13,7 @@ class Button(UIComponent):
             manager: pygame-gui UIManager instance.
             parent: parent BaseComponent if any. All relative quantities are relative to this container.
             rel_pos (tuple): Fractional position in [0,1] of the component (x, y).
-            rel_size (tuple): Fractional size in [0,1] of the button.
-            font_scale (float): Font scale factor.
+            rel_size (tuple): Fractional size in [0,1] of the button
         """
         super().__init__(manager, parent, rel_pos, rel_size)
 

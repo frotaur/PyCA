@@ -67,7 +67,7 @@ def construct_ds(dd, device="cpu"):
 
 
 
-class TrueRT:
+class ReintegrationTracker:
     def __init__(self, W, H, dt, dd=2, sigma=0.65,device='cpu'):
         self.X = W
         self.Y = H
@@ -175,7 +175,7 @@ class FlowLenia(Lenia):
         self.sigma_rt = sigma_rt
         self.theta_x = 2
         self.n = 2
-        self.rt = TrueRT(size[2], size[1], dt, dd=self.dd,  sigma=self.sigma_rt, device=device)
+        self.rt = ReintegrationTracker(size[2], size[1], dt, dd=self.dd,  sigma=self.sigma_rt, device=device)
 
         # self.rt = ReintegrationTracker(size[1], size[2], dt, dd=self.dd, sigma=self.sigma_rt)
         self.has_food = has_food
@@ -255,10 +255,10 @@ class FlowLenia(Lenia):
 
     def process_event(self, event, camera=None):
         """
-        UP -> Increase temperature
-        DOWN -> Decrease temperature
-        RIGHT-> Increase sigma
-        LEFT -> Decrease sigma
+        UP: Increase temperature
+        DOWN: Decrease temperature
+        RIGHT: Increase sigma
+        LEFT: Decrease sigma
         """
         super().process_event(event, camera)
         if event.type == pygame.KEYDOWN:

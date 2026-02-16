@@ -4,8 +4,6 @@ import pygame
 from pygame_gui.core.ui_element import UIElement
 from pygame_gui.core.utility import get_default_manager
 
-from pygame_gui.core import ObjectID
-
 
 class UIComponent:
     """
@@ -13,7 +11,7 @@ class UIComponent:
     """
     BASE_FONT_REL_SIZE = 0.015  # Relative font size with respect to screen height
     
-    def __init__(self, manager=None, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None,*, theme_class=None,theme_id=None):
+    def __init__(self, manager=None, parent = None, rel_pos=(0,0), rel_size=(0.1,0.1), max_size=None):
         """
         Initializes the base component with screen size, fractional position, and size.
         
@@ -44,11 +42,7 @@ class UIComponent:
         self.base_font_size = 12
         self.child_components = []
 
-        self.theme_class = theme_class
-        self.theme_id = theme_id
-
-
-        self.object_id = ObjectID(class_id=theme_class, object_id=theme_id)
+        
 
     @property
     def rel_pos(self):
@@ -92,7 +86,7 @@ class UIComponent:
         # base_size = font_dict['font'].point_size # NOTE : FOR NOW, BUGGED IN PYGAME-GUI so workaround
         base_size = self.base_font_size
 
-        return int(self.BASE_FONT_REL_SIZE*(self.sH+self.sW)/2.*base_size/12.)
+        return int(self.BASE_FONT_REL_SIZE*min(self.sH, self.sW)*base_size/12.)
 
     def register_main_component(self, component: UIElement):
         """

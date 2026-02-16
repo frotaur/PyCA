@@ -2,37 +2,37 @@
     
     "#bigfont": {
         "font": {
-            "name":"aldo",
+            "name":"octo",
             "size":16,
             "bold":0,
             "italic":0,
             "regular_resource": {
                 "package": "pyca.interface.files",
-                "resource": "AldotheApache.ttf"
+                "resource": "octosquare.ttf"
             }
         }
     },
     "#normalfont": {
         "font": {
-            "name":"aldo",
-            "size":12,
+            "name":"octo",
+            "size":11,
             "bold":0,
             "italic":0,
             "regular_resource": {
                 "package": "pyca.interface.files",
-                "resource": "AldotheApache.ttf"
+                "resource": "octosquare.ttf"
             }
         }
     },
     "#smallfont": {
         "font": {
-            "name":"aldo",
+            "name":"octo",
             "size":8,
             "bold":0,
             "italic":0,
             "regular_resource": {
                 "package": "pyca.interface.files",
-                "resource": "AldotheApache.ttf"
+                "resource": "octosquare.ttf"
             }
         }
     },
@@ -52,8 +52,9 @@
     },
     "text_box" :{
         "misc": {
-            "border_width": 1,
-            "shadow_width": 0
+            "border_width": 0,
+            "shadow_width": 0,
+            "line_spacing": 0.8
         },
         "colours": {
             "dark_bg": "rgba(30,30,30,80)",
@@ -65,20 +66,17 @@
             "open_button_width": 0
         }
     },
+    "drop_down_menu.#drop_down_options_list": {
+        "prototype": "#smallfont",
+        "misc": {
+            "list_item_height": "30"
+        }
+    },
     "drop_down_menu.button" : {
         "prototype": "#normalfont"
     },
     "drop_down_menu.#drop_down_options_list.button" : {
-        "font": {
-            "name":"mussels",
-            "size":12,
-            "bold":0,
-            "italic":0,
-            "regular_resource": {
-                "package": "pyca.interface.files",
-                "resource": "mussels.otf"
-            }
-        }
+        "prototype": "#smallfont"
     },
     "@better_label": {
         "misc": {

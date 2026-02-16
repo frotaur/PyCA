@@ -1,4 +1,3 @@
-import pygame_gui
 from .UIComponent import UIComponent
 from .BoxHolder import BoxHolder
 
@@ -40,7 +39,6 @@ class HorizContainer(BoxHolder):
         Args:
             component (BaseComponent): The component to add.
         """
-        padding = self.padding*self.w
         if len(self.components) > 0:
             last_el = self.components[-1].main_element
             component.set_anchors({
@@ -48,7 +46,7 @@ class HorizContainer(BoxHolder):
                 'left_target': last_el,
                 'centery': 'centery'
             })
-            component.rel_pos = (padding, 0) # Relative to last component
+            component.rel_pos = (self.padding, 0) # Relative to last component
             # component.main_element.set_relative_position((padding, 0))
         else:
             component.set_anchors({
@@ -60,6 +58,7 @@ class HorizContainer(BoxHolder):
 
         self.components.append(component)
         component.rebuild()
+
     def remove_component(self, component: UIComponent, kill=True):
         """
         Removes a BaseComponent from the vertical container.

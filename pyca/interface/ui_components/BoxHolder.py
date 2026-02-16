@@ -1,8 +1,6 @@
 import pygame_gui
 from .UIComponent import UIComponent
 import pygame
-from pygame_gui.core.ui_container import UIContainer
-from pygame_gui.elements.ui_panel import UIPanel
 from pygame_gui.elements.ui_auto_resizing_container import UIAutoResizingContainer
 
 class BoxHolder(UIComponent):
@@ -24,12 +22,6 @@ class BoxHolder(UIComponent):
         """
         super().__init__(manager, parent, rel_pos, rel_size, max_size=max_size)
     
-        # if(not visible):
-        #     self.box = UIContainer(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
-        #                              manager=self.manager)
-        # else:
-        #     self.box = UIPanel(relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),
-        #                              manager=self.manager)
         
         self.box = UIAutoResizingContainer(
             relative_rect=pygame.Rect(self.x, self.y, self.w, self.h),

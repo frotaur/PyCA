@@ -1,8 +1,5 @@
 import torch.nn as nn, torch
 from torch import Tensor
-import random
-from torchenhanced import DevModule
-from collections.abc import Callable
 
 
 class ArbitraryFunction(nn.Module):

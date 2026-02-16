@@ -113,10 +113,10 @@ class Baricelli1D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        DEL -> resets the automaton
-        UP -> increase the number of species by 1 (max 20)
-        DOWN -> decrease the number of species by 1 (min 1)
-        G -> toggle collision reproduction 
+        DEL: resets the automaton
+        UP: increase the number of species by 1 (max 20)
+        DOWN: decrease the number of species by 1 (min 1)
+        G: toggle collision reproduction
         """
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
@@ -256,10 +256,10 @@ class Baricelli2D(Automaton):
 
     def process_event(self, event, camera=None):
         """
-        DEL -> resets the automaton
-        UP -> increase the number of species by 1 (max 20)
-        DOWN -> decrease the number of species by 1 (min 1)
-        G -> toggle collision reproduction 
+        DEL: resets the automaton
+        UP: increase the number of species by 1 (max 20)
+        DOWN: decrease the number of species by 1 (min 1)
+        G: toggle collision reproduction
         """
         if(event.type == pygame.KEYDOWN):
             if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:

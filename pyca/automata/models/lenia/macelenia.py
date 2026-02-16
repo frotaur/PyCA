@@ -1,9 +1,6 @@
 import torch, torch.nn.functional as F
 import pygame
 import showtens
-
-from pyca.interface.ui_components import Slider
-
 from .lenia import Lenia
 import random
 import math
@@ -66,13 +63,12 @@ class MaCELenia(Lenia):
         self.add_speed = 1.
         
         # GUI components
-        self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager,rel_pos=(0.,0.), rel_size=(1., 1.), parent=None, tick_size=0.1, initial_value=5.)
-        self.register_component(self.beta_slider, keep_size=False)
+        self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager, title='Beta', initial_value=self.b,tick_size=0.1)
+        self.register_component(self.beta_slider)
         self.tog_food_off = MultiToggle(states=["Food: OFF", "Food: ON"],manager=self.manager)
         self.register_component(self.tog_food_off)
-        # self.beta_slider = LabeledSlider(min_value=0., max_value=15.,manager=self.manager, title='Beta/Temp', initial_value=self.b,tick_size=0.1,rel_size=(0.2,1))
 
-
+        
     def step(self, sense_food=None):
         """
         Steps the alife model by one time step
@@ -242,12 +238,12 @@ class MaCELenia(Lenia):
 
     def process_event(self, event, camera=None):
         """
-        UP -> Increase temperature
-        DOWN -> Decrease temperature
-        PLUS -> Show next batch
-        MINUS -> Show previous batch
-        B -> Toggle show all batches (only if batch > 1)
-        F (+shift) -> Toggle food and decay (+shift toggle food sensing)
+        UP: Increase temperature
+        DOWN: Decrease temperature
+        PLUS: Show next batch
+        MINUS: Show previous batch
+        B: Toggle show all batches (only if batch > 1)
+        F (+shift): Toggle food and decay (+shift toggle food sensing)
         """
         super().process_event(event, camera)
         if event.type == pygame.KEYDOWN:
@@ -267,9 +263,11 @@ class MaCELenia(Lenia):
                     self.sense_food = not self.sense_food
                 else:
                     self.set_food(not self.has_food)
+
     def process_gui_change(self, component):
+        super().process_gui_change(component)
         if component == self.tog_food_off:
-            self.set_food(not self.tog_food_off.value)
+            self.set_food(not self.tog_food_off.active)
         elif component == self.beta_slider:
             self.b = self.beta_slider.value
 
