@@ -8,4 +8,3 @@ from .nca import NeuralCA
 from .lenia import Lenia, MaCELenia
 from .vonneumann import VonNeumann
 from .rule110 import Rule110Universality
-from .newgol import NewGol

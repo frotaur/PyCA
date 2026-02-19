@@ -4,7 +4,7 @@
     required (h,w) size, and device parameters.
 """
 
-DEFAULT_AUTOMATON="NewGol"
+DEFAULT_AUTOMATON="CA2D"
 
 DEFAULTS = {
     "Lenia" : {
