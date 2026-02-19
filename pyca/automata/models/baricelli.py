@@ -7,7 +7,6 @@ import torch
 from matplotlib.colors import hsv_to_rgb
 import pygame
 
-
 class Baricelli1D(Automaton):
     """
         1D Baricelli cellular automaton. 

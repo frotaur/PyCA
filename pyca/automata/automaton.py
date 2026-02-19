@@ -13,15 +13,18 @@ AUTOMATAS = {}
 class Automaton:
     """
     Class that internalizes the rules and evolution of 
-    an Alife model. By default, the world tensor has shape
-    (3,H,W) and should contain floats with values in [0.,1.].
+    an Alife model. 
+    Sub-class it, and define self.step() and self.draw() at 
+    a minimum to have a model than can be run in PyCA
     """
 
-    def __init__(self, size):
+    def __init__(self, size, device='cpu'):
         """
-        Parameters :
+        Parameters:
         size : 2-uple (H,W)
             Shape of the CA world
+        device : 'cpu', 'cuda', 'mps' or any other torch device
+            Used if the automaton implements functionality with torch
         """
         self.h, self.w = size
         self.size = size
@@ -50,7 +53,48 @@ class Automaton:
         self._m_right = False
         self._m_left = False
         self._m_middle = False
+
+        self.device=device
+    def step(self):
+        """
+            This function should update the state of the automaton
+            by one time-step.
+        """
+        return NotImplementedError('Please subclass "Automaton" class, and define self.step')
+
+    def draw(self):
+        """
+        This method should be overriden. It should update the self._worldmap tensor,
+        drawing the current state of the CA world. self._worldmap is a torch tensor of shape (3,H,W).
+        If you choose to use another format, you should override the worldmap property as well.
+        """
+        return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
     
+    def process_gui_change(self, component:UIComponent):
+        """
+        Must be overriden to respond to GUI component interactions.
+        This method is called automatically when a component changes its state.
+        To add GUI-based functionality, use this method in your subclass.
+
+        Parameters:
+        component : BaseComponent
+            The component that changed.
+        """
+        pass
+
+    def process_event(self, event, camera=None):
+        """
+        Processes a pygame event, if needed. Should be overriden to 
+        add interactivity to the automaton.
+
+        Parameters:
+        event : pygame.event
+            The event to process
+        camera : Camera
+            The camera object. Need for the call to self.get_mouse_state.
+        """
+        pass
+
     def get_gui_component(self):
         """
         Returns the main GUI container for this automaton.
@@ -87,17 +131,6 @@ class Automaton:
                 component.rel_size = (0.04, 1.)
         self.gui_box.add_component(component)
         self._components.append(component)
-
-    def step(self):
-        return NotImplementedError('Please subclass "Automaton" class, and define self.step')
-
-    def draw(self):
-        """
-        This method should be overriden. It should update the self._worldmap tensor,
-        drawing the current state of the CA world. self._worldmap is a torch tensor of shape (3,H,W).
-        If you choose to use another format, you should override the worldmap property as well.
-        """
-        return NotImplementedError('Please subclass "Automaton" class, and define self.draw')
 
     def _focus_check(self, event):
         """
@@ -163,31 +196,6 @@ class Automaton:
         self.process_event(event, camera) # Process event not called if GUI has focus
 
     
-    def process_gui_change(self, component:UIComponent):
-        """
-        Must be overriden to respond to GUI component interactions.
-        This method is called automatically when a component changes its state.
-        To add GUI-based functionality, use this method in your subclass.
-
-        Parameters:
-        component : BaseComponent
-            The component that changed.
-        """
-        pass
-
-    def process_event(self, event, camera=None):
-        """
-        Processes a pygame event, if needed. Should be overriden to 
-        add interactivity to the automaton.
-
-        Parameters:
-        event : pygame.event
-            The event to process
-        camera : Camera
-            The camera object. Need for the call to self.get_mouse_state.
-        """
-        pass
-    
     def _process_gui_event(self, event):
         """
         Internal. When implemented, will simply pass the event to all defined GUI components,
@@ -235,7 +243,8 @@ class Automaton:
         camera : Camera
             The camera object. Needed to convert mouse positions to world coordinates.
         
-        Returns: mouse_state, an EasyDict with keys :
+        Returns:   
+        mouse_state, an EasyDict with keys :
             x : x position in the CA world (access also as mouse_state.x)
             y : y position in the CA world (access also as mouse_state.y)
             left : True if left mouse button is pressed (access also as mouse_state.left)

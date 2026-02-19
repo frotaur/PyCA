@@ -15,7 +15,7 @@ uv sync
 ```
 All set!
 
-<font color="red">ONLY FOR WINDOWS PC WITH GPUS</font>:  If you are running windows, and have a NVIDIA GPU, run the following command before proceeding : `uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128`. If you get cuda-related crashes afterwards, visit https://pytorch.org/ and try installing another version of `torch`.  
+<font color="red">ONLY FOR WINDOWS PC WITH GPUS</font>:  If you are running windows, and have a NVIDIA GPU, run the following command before proceeding : `uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128 --upgrade`. If you get cuda-related crashes afterwards, visit https://pytorch.org/ and try installing another version of `torch`.  
 
 
 ### Alternative: using pip
@@ -43,9 +43,9 @@ With `pip`, first make sure the venv in which you installe PyCA is activated, th
 
 You can change the Screen size with the options `simulate.py [-h] [-s SCREEN SCREEN] [-w WORLD WORLD] [-d DEVICE]`
 ```options:
-  -s SCREEN SCREEN, --screen SCREEN SCREEN
+  -s WIDTH HEIGHT, --screen WIDTH HEIGHT
                         Screen dimensions as width height (default: 1280 720)
-  -w WORLD WORLD, --world WORLD WORLD
+  -w WIDTH HEIGHT, --world WIDTH HEIGHT
                         World dimensions as width height (default: 250 250)
   -d DEVICE, --device DEVICE
                         Device to run on: "cuda" or "cpu" or "mps" (default: cpu)
@@ -53,7 +53,7 @@ You can change the Screen size with the options `simulate.py [-h] [-s SCREEN SCR
 
 
 ## Tutorial
-To learn to use the library, the best way is to follow the <a href='https://amldworlds.notion.site/'>tutorial at this link.</a> (current NOT UP TO DATE! Though the general philosophy is still valid.) It will teach all the basics how to implement the Game of Life, with mouse and keyboard interactivity!
+To learn to use the library, the best way is to follow the <a href='https://amldworlds.notion.site/PyCA-hands-on-199e18ef6eec806ea445f4e9a09edcee?pvs=74'>tutorial at this link.</a> (current NOT UP TO DATE! Though the general philosophy is still valid.) It will teach all the basics how to implement the Game of Life, with mouse and keyboard interactivity!
 
 ## Documentation
 Documentation is under construction. In the meantime, the code is heavily documented with docstrings

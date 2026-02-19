@@ -9,8 +9,9 @@ from ...automaton import Automaton
 from pathlib import Path
 from copy import deepcopy
 from pyca.interface import MultiToggle, Button
+import torch.nn as nn
 
-class Lenia(DevModule, Automaton):
+class Lenia(nn.Module, Automaton):
     """
     Multi-channel lenia automaton. A multi-colored GoL-inspired continuous automaton. Introduced by Bert Chan.   
     """
@@ -53,10 +54,10 @@ class Lenia(DevModule, Automaton):
             save_dir : str, directory to save interesting states to
             device : str, device
         """
-        DevModule.__init__(self)
+        nn.Module.__init__(self)
         if(len(size) == 2):
             size = (1,)+size
-        Automaton.__init__(self, size[1:])
+        Automaton.__init__(self, size[1:],device)
 
         self.to(device)
 

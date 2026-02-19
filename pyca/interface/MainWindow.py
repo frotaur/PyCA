@@ -14,7 +14,8 @@ from pyca.interface import Camera, launch_video, print_screen, add_frame
 from pyca.interface.ui_components.LabeledSlider import LabeledSlider
 from .utils.help_enum import HelpEnum
 from ..automata import AUTOMATAS, Automaton
-from .files import DEFAULTS, INTERFACE_HELP, BASE_FONT_PATH, Colors, FontSizes
+from .defaults import DEFAULTS, DEFAULT_AUTOMATON
+from .files import INTERFACE_HELP, Colors, FontSizes
 from .ui_components import VertContainer,Slider, Button, TextLabel, InputField, DropDown, TextBox, BoxHolder, HorizContainer
 
 class MainWindow:
@@ -70,7 +71,7 @@ class MainWindow:
         self.display_help = HelpEnum() # 'ALL' by default
         self.vid_writer=None
 
-        self._initial_automaton = "MaCELenia"
+        self._initial_automaton = DEFAULT_AUTOMATON
 
         ## Right Panel Base Component
         # Define a position where we can put extra components. Its moved appropriately as we add stuff
