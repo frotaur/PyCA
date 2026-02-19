@@ -53,7 +53,7 @@ You can change the Screen size with the options `simulate.py [-h] [-s SCREEN SCR
 
 
 ## Tutorial
-To learn to use the library, the best way is to follow the <a href='https://amldworlds.notion.site/PyCA-hands-on-199e18ef6eec806ea445f4e9a09edcee?pvs=74'>tutorial at this link.</a> (current NOT UP TO DATE! Though the general philosophy is still valid.) It will teach all the basics how to implement the Game of Life, with mouse and keyboard interactivity!
+To learn to use the library, the best way is to follow the <a href='https://amldworlds.notion.site/PyCA-hands-on-199e18ef6eec806ea445f4e9a09edcee?pvs=74'>tutorial at this link.</a>. It will teach all the basics how to implement the Game of Life, with mouse and keyboard interactivity!
 
 ## Documentation
 Documentation is under construction. In the meantime, the code is heavily documented with docstrings
