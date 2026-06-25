@@ -23,6 +23,13 @@ DEFAULTS = {
         "interest_files": "./demo_data/demo_macelenia_xchan",
         "save_dir": "./data/macelenia_xchan_saved_params"
     },
+    "TestConservLenia" :{
+        "interest_files": "./demo_data/demo_macelenia",
+        "save_dir": "./data/testconserv_lenia_saved_params"
+    },
+    "StateLenia" :{
+        "save_dir": "./data/statelenia_saved_params"
+    },
     "NeuralCA" : {
         "models_folder": './demo_data/NCA_models'
     },

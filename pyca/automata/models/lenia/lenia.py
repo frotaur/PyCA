@@ -13,7 +13,24 @@ import torch.nn as nn
 
 class Lenia(nn.Module, Automaton):
     """
-    Multi-channel lenia automaton. A multi-colored GoL-inspired continuous automaton. Introduced by Bert Chan.   
+    Multi-channel lenia automaton. A multi-colored GoL-inspired continuous automaton. Introduced by Bert Chan.
+
+    Keyboard shortcuts (handled in `process_event`):
+        N (+shift)        : New random parameters (+shift: fully random instead of "smart")
+        A                 : New random parameters using the arbitrary (Fourier) function generator
+        W (+shift)        : Reroll the kernels (+shift: reroll the growth functions instead)
+        U                 : Mutate / variate around the current parameters
+        M                 : Load the next "interesting" saved parameter set
+        I (+shift/+ctrl)  : Re-initialise with perlin noise (+shift: fractal, +ctrl: random wavelength)
+        O (+shift)        : Re-initialise with a circle (+shift: larger radius)
+        S (+shift)        : Save current parameters (+shift: also save the current state)
+        K                 : Toggle kernel display (overlaid bottom-left)
+        Y (+shift)        : Toggle arbitrary-function generation for kernels (+shift: for growths)
+        DEL / BACKSPACE   : Clear the state to 0
+
+    Mouse:
+        Left / Right click: add / remove matter under the cursor (roles swap with the
+                            "Click to Add / Remove" toggle in the GUI).
     """
 
     def __init__(
