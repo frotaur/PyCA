@@ -144,7 +144,7 @@ class MaCELenia(Lenia):
         Aff = self.kernel_fftconv(
             self.state
         )  # Compute the convolution of Lenia kernel with the state, (B,C,C,H,W)
-        weights = self.weights[..., None, None]  # (B,C,C,1,1)
+        weights = self._affinity_weights()  # (B,C*k_mult,C,1,1), or (B,C*k_mult,C,H,W) for spatial weights
         Aff = (self.growth(Aff) * weights).sum(
             dim=1
         )  # (B,C,H,W) Proper affinity, by applying growth function and summing contributions
@@ -157,6 +157,15 @@ class MaCELenia(Lenia):
             Aff = Aff + (food_aff)  # (B,C,H,W) food affinity
 
         return Aff  # (B,C,H,W) Affinity tensor
+
+    def _affinity_weights(self):
+        """
+        Returns the growth-mixing weights, broadcastable against the growth
+        output (B,C*k_mult,C,H,W). The base model uses the global per-batch
+        weights; subclasses (e.g. MaCELeniaMultiParam) may override this to
+        return a spatial weight field (B,C*k_mult,C,H,W).
+        """
+        return self.weights[..., None, None]  # (B,C*k_mult,C,1,1)
 
     def _food_step(self):
         """

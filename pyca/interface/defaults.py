@@ -23,6 +23,12 @@ DEFAULTS = {
         "interest_files": "./demo_data/demo_macelenia_xchan",
         "save_dir": "./data/macelenia_xchan_saved_params"
     },
+    "MaCELeniaMultiParam" :{
+        "save_dir": "./data/macelenia_multiparam_saved_params"
+    },
+    "MaCELeniaMultiParam1C" :{
+        "save_dir": "./data/macelenia_multiparam_saved_params"
+    },
     "NeuralCA" : {
         "models_folder": './demo_data/NCA_models'
     },
